@@ -1,0 +1,22 @@
+.parameter {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  margin: 2px 4px;
+  border: 1px solid var(--borderColor);
+  border-radius: 4px;
+  background-color: var(--defaultHoverBackgroundColor);
+  cursor: default;
+}
+
+.info {
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.value {
+  padding: 0 4px;
+  background-color: var(--defaultButtonBackgroundColor);
+  color: var(--defaultColor);
+  white-space: nowrap;
+}

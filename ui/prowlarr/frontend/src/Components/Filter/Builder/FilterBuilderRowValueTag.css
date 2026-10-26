@@ -1,0 +1,21 @@
+.tag {
+  height: 21px;
+
+  &.isLastTag {
+    .or {
+      display: none;
+    }
+  }
+}
+
+.label {
+  composes: label from '~Components/Label.css';
+
+  border-style: none;
+  font-size: 13px;
+}
+
+.or {
+  margin: 0 3px;
+  color: var(--themeDarkColor);
+}
