@@ -1,0 +1,386 @@
+/*
+ * Copyright (c) 2021 - 2025, Ludvig Lundgren and the autobrr contributors.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+import React, { useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useSearch, useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
+import {
+  useTable,
+  flexRender,
+  ColumnDef,
+  Column,
+  PaginationState,
+  ColumnFiltersState,
+  OnChangeFn,
+} from "@tanstack/react-table";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
+
+import { ReleasesListQueryOptions } from "@api/queries";
+import { RandomLinuxIsos, RandomIsoTracker } from "@utils";
+import { RingResizeSpinner } from "@components/Icons";
+import { IndexerSelectColumnFilter, PushStatusSelectColumnFilter, SearchColumnFilter } from "./ReleaseFilters";
+import { EmptyListState } from "@components/emptystates";
+import { TablePagination, AgeCell, IndexerCell, LinksCell, NameCell, ReleaseStatusCell } from "@components/data-table";
+import { dataTableFeatures, type DataTableFeatures } from "@components/data-table/features";
+import { SettingsContext } from "@utils/Context";
+
+const PAGE_SIZES = [5, 10, 20, 50] as const;
+
+const EmptyReleaseList = () => {
+  const { t } = useTranslation("common");
+  return (
+  <div
+    className="bg-white dark:bg-gray-800 border border-gray-250 dark:border-gray-775 shadow-table rounded-md overflow-auto">
+    <table className="min-w-full rounded-md divide-y divide-gray-200 dark:divide-gray-750">
+      <thead className="bg-gray-100 dark:bg-gray-850 border-b border-gray-200 dark:border-gray-750">
+      <tr>
+        <th>
+          <div className="flex items-center justify-between">
+            <span className="h-10"/>
+          </div>
+        </th>
+      </tr>
+      </thead>
+    </table>
+    <div className="flex items-center justify-center py-52">
+      <EmptyListState text={t("releaseTable.noResults")}/>
+    </div>
+  </div>
+  );
+};
+
+function Filter({ column }: { column: Column<DataTableFeatures, Release, unknown> }) {
+  const { filterVariant } = column.columnDef.meta ?? {}
+
+  switch (filterVariant) {
+    case "search":
+      return <SearchColumnFilter column={column}/>
+
+    case "indexerSelect":
+      return <IndexerSelectColumnFilter column={column}/>
+
+    case "actionPushStatus":
+      return <PushStatusSelectColumnFilter column={column}/>
+
+    default:
+      return null;
+  }
+}
+
+export const ReleaseTable = () => {
+  const { t } = useTranslation("common");
+  const search = useSearch({
+    from: "/auth/authenticated-routes/releases" as const,
+  });
+  const navigate = useNavigate({ from: "/releases" });
+
+  // Derive column filters from URL search params
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    const filters: ColumnFiltersState = [];
+    if (search.q) filters.push({ id: "name", value: search.q });
+    if (search.action_status) filters.push({ id: "action_status", value: search.action_status });
+    if (search.indexer) filters.push({ id: "indexer_identifier", value: search.indexer.split(",") });
+    return filters;
+  }, [search.q, search.action_status, search.indexer]);
+
+  // Derive pagination from URL search params
+  const pagination = useMemo<PaginationState>(() => ({
+    pageIndex: search.page ?? 0,
+    pageSize: search.pageSize ?? 10,
+  }), [search.page, search.pageSize]);
+
+  // Write column filter changes back to URL
+  const onColumnFiltersChange = useCallback<OnChangeFn<ColumnFiltersState>>((updaterOrValue) => {
+    const newFilters = typeof updaterOrValue === "function"
+      ? updaterOrValue(columnFilters)
+      : updaterOrValue;
+
+    const q = (newFilters.find(f => f.id === "name")?.value as string) || undefined;
+    const action_status = (newFilters.find(f => f.id === "action_status")?.value as string) || undefined;
+    const indexerValues = newFilters.find(f => f.id === "indexer_identifier")?.value;
+    const indexer = Array.isArray(indexerValues) && indexerValues.length > 0
+      ? indexerValues.join(",")
+      : undefined;
+
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        q,
+        action_status: action_status as "PUSH_APPROVED" | "PUSH_REJECTED" | "PENDING" | "PUSH_ERROR" | "" | undefined,
+        indexer,
+        // Reset to first page when filters change
+        page: undefined,
+      }),
+      replace: true,
+    });
+  }, [columnFilters, navigate]);
+
+  // Write pagination changes back to URL
+  const onPaginationChange = useCallback<OnChangeFn<PaginationState>>((updaterOrValue) => {
+    const newPagination = typeof updaterOrValue === "function"
+      ? updaterOrValue(pagination)
+      : updaterOrValue;
+
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        // Only set page/pageSize if not at defaults, to keep URLs clean
+        page: newPagination.pageIndex === 0 ? undefined : newPagination.pageIndex,
+        pageSize: newPagination.pageSize === 10 ? undefined : newPagination.pageSize,
+      }),
+      replace: false,
+    });
+  }, [pagination, navigate]);
+
+  const columns = React.useMemo<ColumnDef<DataTableFeatures, Release, unknown>[]>(() => [
+    {
+      header: t("releaseTable.columns.age"),
+      accessorKey: "timestamp",
+      cell: AgeCell
+    },
+    {
+      header: t("releaseTable.columns.release"),
+      accessorKey: "name",
+      cell: NameCell,
+      meta: {
+        filterVariant: 'search',
+      },
+    },
+    {
+      header: t("releaseTable.columns.links"),
+      accessorFn: (row) => ({ download_url: row.download_url, info_url: row.info_url }),
+      id: "links",
+      cell: LinksCell
+    },
+    {
+      header: t("releaseTable.columns.actions"),
+      accessorKey: "action_status",
+      cell: ReleaseStatusCell,
+      meta: {
+        filterVariant: 'actionPushStatus',
+      },
+    },
+    {
+      header: t("releaseTable.columns.indexer"),
+      accessorKey: "indexer.identifier",
+      cell: IndexerCell,
+      meta: {
+        filterVariant: 'indexerSelect',
+      },
+    }
+  ], [t]);
+
+  const {
+    isLoading,
+    error,
+    data,
+  } = useQuery(ReleasesListQueryOptions(pagination.pageIndex * pagination.pageSize, pagination.pageSize, columnFilters));
+
+  const [settings, setSettings] = SettingsContext.use();
+
+  const displayData = useMemo(() => {
+    const releases = data?.data ?? [];
+    if (!settings.incognitoMode) {
+      return releases;
+    }
+
+    const randomIsoNames = RandomLinuxIsos(releases.length);
+    const randomTorrentSiteNames = RandomIsoTracker(releases.length);
+    return releases.map((item, index) => {
+      const siteName = randomTorrentSiteNames[index % randomTorrentSiteNames.length];
+      return {
+        ...item,
+        name: randomIsoNames[index],
+        indexer: {
+          id: 0,
+          name: siteName,
+          identifier: siteName,
+          identifier_external: siteName,
+        },
+        category: "Linux ISOs",
+        size: index % 2 === 0 ? 4566784529 : (index % 3 === 0 ? 7427019812 : 2312122455),
+        source: "",
+        container: "",
+        codec: "",
+        resolution: "",
+      };
+    });
+  }, [settings.incognitoMode, data?.data]);
+
+  const toggleReleaseNames = () => {
+    setSettings(prev => ({ ...prev, incognitoMode: !prev.incognitoMode }));
+  };
+
+  const tableInstance = useTable({
+    features: dataTableFeatures,
+    columns,
+    data: displayData,
+    manualFiltering: true,
+    manualPagination: true,
+    rowCount: data?.count,
+    state: {
+      columnFilters,
+      pagination,
+    },
+    initialState: {
+      pagination
+    },
+    onPaginationChange,
+    onColumnFiltersChange,
+  });
+
+  // Manage your own state
+  // const [state, setState] = React.useState(tableInstance.initialState)
+
+  // Override the state managers for the table to your own
+  // tableInstance.setOptions(prev => ({
+  //   ...prev,
+  //   state,
+  //   onStateChange: setState,
+  //   // These are just table options, so if things
+  //   // need to change based on your state, you can
+  //   // derive them here
+  //
+  //   // Just for fun, let's debug everything if the pageIndex
+  //   // is greater than 2
+  //   // debugTable: state.pagination.pageIndex > 2,
+  // }))
+
+  if (error) {
+    return <p>{t("releaseTable.error")}</p>;
+  }
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="flex mb-6 flex-col sm:flex-row">
+          {tableInstance.getHeaderGroups().map((headerGroup) =>
+            headerGroup.headers.map((header) => (
+              header.column.getCanFilter() ? (
+                <Filter key={header.column.id} column={header.column}/>
+              ) : null
+            ))
+          )}
+        </div>
+        <div
+          className="bg-white dark:bg-gray-800 border border-gray-250 dark:border-gray-775 shadow-lg rounded-md mt-4">
+          <div className="bg-gray-100 dark:bg-gray-850 border-b border-gray-200 dark:border-gray-750">
+            <div className="flex h-10"/>
+          </div>
+          <div className="flex items-center justify-center py-64">
+            <RingResizeSpinner className="text-blue-500 size-24"/>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col">
+      <div className="flex mb-6 flex-col sm:flex-row">
+        {tableInstance.getHeaderGroups().map((headerGroup) =>
+          headerGroup.headers.map((header) => (
+            header.column.getCanFilter() ? (
+              <Filter key={header.column.id} column={header.column}/>
+            ) : null
+          ))
+        )}
+      </div>
+      <div className="relative">
+        {displayData.length === 0
+          ? <EmptyReleaseList/>
+          : (
+            <div
+              className="bg-white dark:bg-gray-800 border border-gray-250 dark:border-gray-775 shadow-table rounded-md overflow-auto">
+              <table className="min-w-full rounded-md divide-y divide-gray-200 dark:divide-gray-750">
+                <thead className="bg-gray-100 dark:bg-gray-850">
+                {tableInstance.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        scope="col"
+                        colSpan={header.colSpan}
+                        className="first:pl-5 first:rounded-tl-md last:rounded-tr-md pl-3 pr-3 py-3 text-xs font-medium tracking-wider text-left uppercase group text-gray-600 dark:text-gray-400"
+                      >
+                        <div className="flex items-center justify-between">
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                          {/*<>{header.render("Header")}</>*/}
+                          {/*/!* Add a sort direction indicator *!/*/}
+                          {/*<span>*/}
+                          {/*  {header.isSorted ? (*/}
+                          {/*    header.isSortedDesc ? (*/}
+                          {/*      <SortDownIcon className="w-4 h-4 text-gray-400"/>*/}
+                          {/*    ) : (*/}
+                          {/*      <SortUpIcon className="w-4 h-4 text-gray-400"/>*/}
+                          {/*    )*/}
+                          {/*  ) : (*/}
+                          {/*    <SortIcon className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100"/>*/}
+                          {/*  )}*/}
+                          {/*</span>*/}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+                </thead>
+
+                <tbody className="divide-y divide-gray-150 dark:divide-gray-750">
+                {tableInstance.getRowModel().rows.map((row) => (
+                  <tr key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        className="first:pl-5 pl-3 pr-3 whitespace-nowrap"
+                        role="cell"
+                      >
+                        <>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                </tbody>
+              </table>
+
+              <TablePagination
+                pageIndex={tableInstance.state.pagination.pageIndex}
+                pageCount={tableInstance.getPageCount()}
+                pageSize={tableInstance.state.pagination.pageSize}
+                pageSizes={PAGE_SIZES}
+                onPageChange={(pageIndex) => tableInstance.setPageIndex(pageIndex)}
+                onPageSizeChange={(pageSize) => tableInstance.setPageSize(pageSize)}
+              />
+
+              <div className="absolute -bottom-11 right-0 p-2">
+                <button
+                  onClick={toggleReleaseNames}
+                  className="p-2 absolute bottom-0 right-0 bg-gray-750 text-white rounded-full opacity-10 hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+                  aria-label={t("releaseTable.toggleView")}
+                  title={t(settings.incognitoMode ? "releaseTable.exitIncognito" : "releaseTable.goIncognito")}
+                >
+                  {settings.incognitoMode ? (
+                    <EyeIcon className="h-4 w-4"/>
+                  ) : (
+                    <EyeSlashIcon className="h-4 w-4"/>
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+      </div>
+    </div>
+  );
+};
