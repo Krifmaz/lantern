@@ -34,6 +34,13 @@
 - `scripts/upstream-merge.sh` brings Prowlarr's web frontend into `ui/prowlarr/` at the commit `UPSTREAM.lock`
   pins, as merges of an `upstream/prowlarr` snapshot branch, so later Prowlarr versions merge in with Lantern's
   changes kept (see `UPSTREAM.md`).
+- Cross-seeding now decides like cross-seed v6.13.9: the match modes strict, flexible (the new default) and partial,
+  all of cross-seed's decisions (kept on each result), its size, file, release group, resolution, source and
+  proper/repack checks, its block list types and its rules for what to leave out (single episodes, non-video,
+  recently searched, searched for too long). Its settings are under Cross-seed with cross-seed's defaults, and its
+  daemon API (`/api/webhook`, `/api/announce`, `/api/job`, `/api/ping`, `/api/status`) answers on port 2468 with
+  Lantern's API key, word for word as cross-seed does. "Search again after (days)" is replaced by cross-seed's
+  "Search again after" and "Stop searching after".
 - Prowlarr's own API for its web app, ported from Prowlarr v2.7.0.5723: system status, general, UI and development
   settings (with Prowlarr's defaults and checks), tags, custom filters, Prowlarr's translations, health, scheduled
   tasks, the command queue (test, health check, new API key, clearing the log), the log, backups and updates,

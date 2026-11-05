@@ -2,7 +2,8 @@
 //!
 //! ```text
 //! The web app (signed in; running needs an admin):
-//!   GET  /api/cross-seed?limit=        {enabled, stats {injected, searched, waiting}, recent [outcome]}
+//!   GET  /api/cross-seed?limit=        {enabled, match_mode, problems [cross-seed's settings messages], api_port,
+//!                                       stats {injected, searched, waiting}, recent [outcome]}
 //!   POST /api/cross-seed/run           search the grabs whose turn has come, now, in the background
 //!   POST /api/cross-seed/grabs/{id}    search one finished grab now: {candidates, injected, failed, message}
 //! ```
@@ -26,7 +27,15 @@ pub fn router() -> Router<AppState> {
 
 async fn overview(State(st): State<AppState>, _: SignedIn, Query(q): Query<HashMap<String, String>>) -> Result<Json<Value>> {
     let limit = q.get("limit").and_then(|l| l.parse().ok()).unwrap_or(50);
-    Ok(Json(json!({ "enabled": st.cross_seed.enabled(), "stats": st.cross_seed.stats()?, "recent": st.cross_seed.recent(limit)? })))
+    let (cfg, problems) = st.cross_seed.config();
+    Ok(Json(json!({
+        "enabled": st.cross_seed.enabled(),
+        "match_mode": cfg.match_mode.as_str(),
+        "problems": problems,
+        "api_port": cfg.port,
+        "stats": st.cross_seed.stats()?,
+        "recent": st.cross_seed.recent(limit)?,
+    })))
 }
 
 async fn run(State(st): State<AppState>, _: Admin) -> Result<Json<Value>> {
@@ -48,7 +57,10 @@ async fn run(State(st): State<AppState>, _: Admin) -> Result<Json<Value>> {
 /// The words for one grab's search.
 pub fn outcome_words(o: &super::Outcome) -> String {
     let base = match (o.candidates, o.injected) {
+        _ if o.filtered.is_some() => format!("Not searched: {}", o.filtered.as_deref().unwrap_or_default()),
         (0, _) => "No other indexer has this release".to_string(),
+        (_, 0) if o.matches == 1 => "1 matching copy found and kept, to be added once its files can be linked".to_string(),
+        (_, 0) if o.matches > 1 => format!("{} matching copies found and kept, to be added once their files can be linked", o.matches),
         (c, 0) => format!("{c} other cop{} found, but none has the same files", if c == 1 { "y" } else { "ies" }),
         (_, 1) => "Seeding on 1 more site now, from the same files".to_string(),
         (_, i) => format!("Seeding on {i} more sites now, from the same files"),
@@ -74,11 +86,10 @@ mod tests {
     #[test]
     fn says_how_a_search_went() {
         assert_eq!(outcome_words(&Outcome::default()), "No other indexer has this release");
-        assert_eq!(
-            outcome_words(&Outcome { candidates: 2, injected: 0, failed: vec![] }),
-            "2 other copies found, but none has the same files"
-        );
-        let o = Outcome { candidates: 2, injected: 1, failed: vec![("Site".into(), "is down".into())] };
+        assert_eq!(outcome_words(&Outcome { candidates: 2, ..Outcome::default() }), "2 other copies found, but none has the same files");
+        let o = Outcome { candidates: 2, injected: 1, failed: vec![("Site".into(), "is down".into())], ..Outcome::default() };
         assert_eq!(outcome_words(&o), "Seeding on 1 more site now, from the same files (Site couldn't be searched: is down)");
+        let f = Outcome { filtered: Some("it is a single episode".into()), ..Outcome::default() };
+        assert_eq!(outcome_words(&f), "Not searched: it is a single episode");
     }
 }
