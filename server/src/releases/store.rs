@@ -334,18 +334,18 @@ impl Releases {
 
     /// A release source as autobrr's `Indexer`.
     fn indexer_json(&self, id: i64) -> Value {
-        match self.source(id) {
-            Ok(s) => json!({
-                "id": s.id,
-                "name": s.name,
-                "identifier": if s.definition.is_empty() { s.name.to_lowercase() } else { s.definition.clone() },
-                "identifier_external": s.name,
-                "enabled": s.enabled,
-                "implementation": if s.kind == "irc" { "irc" } else { "rss" },
-                "use_proxy": false,
+        match self.autobrr_indexer(id) {
+            Ok(i) => json!({
+                "id": i.id,
+                "name": i.name,
+                "identifier": i.identifier,
+                "identifier_external": i.identifier_external,
+                "enabled": i.enabled,
+                "implementation": i.implementation,
+                "use_proxy": i.use_proxy,
                 "proxy": null,
-                "proxy_id": 0,
-                "archived": false,
+                "proxy_id": i.proxy_id,
+                "archived": i.archived,
             }),
             Err(_) => json!({ "id": id }),
         }
@@ -587,10 +587,31 @@ impl Releases {
         Ok(())
     }
 
-    /// Removes filters' links to archived indexers (autobrr's `PruneDeprecatedIndexers`); Lantern's release
-    /// sources are never archived, so none.
-    pub fn prune_deprecated_indexers(&self, _identifiers: &[String]) -> i64 {
-        0
+    /// Removes filters' links to archived indexers (only those with one of `identifiers`, when given); how many
+    /// links were removed (autobrr's `PruneDeprecatedIndexers`).
+    pub fn prune_deprecated_indexers(&self, identifiers: &[String]) -> i64 {
+        let archived: Vec<i64> = self
+            .autobrr_indexers()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|i| i.archived && (identifiers.is_empty() || identifiers.contains(&i.identifier)))
+            .map(|i| i.id)
+            .collect();
+        if archived.is_empty() {
+            return 0;
+        }
+        let mut removed = 0;
+        for mut f in self.filters().unwrap_or_default() {
+            let before = f.indexers.len();
+            f.indexers.retain(|i| !archived.contains(i));
+            if f.indexers.len() != before {
+                removed += (before - f.indexers.len()) as i64;
+                let _ = self
+                    .db
+                    .execute("UPDATE release_filters SET body=? WHERE id=?", p![serde_json::to_string(&f).unwrap_or_default(), f.id]);
+            }
+        }
+        removed
     }
 
     /// The external filters of `f`, as stored on it.

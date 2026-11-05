@@ -1,0 +1,81 @@
+---
+version: 2
+#id: tracker68
+name: BIT-HDTV
+identifier: bithdtv
+description: Bit-HDTV (BHDTV) is a specialized HD tracker in movies and TV with so many daily uploads.
+language: en-us
+urls:
+  - https://www.bit-hdtv.com/
+privacy: private
+protocol: torrent
+supports:
+  - irc
+  - rss
+# source: custom
+settings:
+  - name: passkey
+    type: secret
+    required: true
+    label: Pass key
+    help: "Your passkey"
+    regex: /([\da-z]{32})
+
+irc:
+  network: P2P-Network
+  server: irc.p2p-network.net
+  port: 6697
+  tls: true
+  settings:
+    - name: nick
+      type: text
+      required: true
+      label: Nick
+      help: Bot nick. Eg. user_bot
+
+    - name: auth.account
+      type: text
+      required: false
+      label: NickServ Account
+      help: NickServ account. Make sure to group your user and bot.
+
+    - name: auth.password
+      type: secret
+      required: false
+      label: NickServ Password
+      help: NickServ password
+
+    - name: channels.password
+      type: secret
+      required: true
+      label: Channel Password
+      help: "Channel password for #bit-hdtv"
+
+  channels:
+    - name: "#bit-hdtv"
+      announcers:
+        - BHD-bot
+      parse:
+        type: single
+        lines:
+          - pattern: 'New torrent: (?P<releaseName>.*) \|\s*Cat.: (?P<category>[^\|]*) \| .* Uploader: (?P<uploader>.*) \| (?P<baseUrl>https?\:\/\/[^\/]+\/).*id=(?P<torrentId>\d+)'
+            tests:
+              - line: 'New torrent: Fear.the.walking.bee.s01e01.720p.WEB.h264-lemoncakes | Cat.: TV | WEB-DL | 720p | Uploader: ze0s | https://www.bit-hdtv.com/details.php?id=448412837123'
+                expect:
+                  releaseName: Fear.the.walking.bee.s01e01.720p.WEB.h264-lemoncakes
+                  category: TV
+                  uploader: ze0s
+                  baseUrl: https://www.bit-hdtv.com/
+                  torrentId: "448412837123"
+
+              - line: 'New torrent: Y.r.u.there.2022.1080p.BluRay.DDP5.1.x264-egg | Cat.: Movies | Encode x264 | 1080p | Uploader: Anonymous | https://www.bit-hdtv.com/details.php?id=69'
+                expect:
+                  releaseName: Y.r.u.there.2022.1080p.BluRay.DDP5.1.x264-egg
+                  category: Movies
+                  uploader: Anonymous
+                  baseUrl: https://www.bit-hdtv.com/
+                  torrentId: "69"
+
+        match:
+          infourl: "/details.php?id={{ .torrentId }}"
+          downloadurl: "/rssdownload.php?id={{ .torrentId }}&passkey={{ .passkey }}"

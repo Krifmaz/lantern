@@ -1162,7 +1162,7 @@ fn call(name: &str, a: &[Tv]) -> Result<Tv, String> {
         }
         "html" => Str(html_escape::encode_safe(&sprint(a)).into_owned()),
         "js" => Str(sprint(a).replace('\\', "\\\\").replace('\'', "\\'").replace('"', "\\\"")),
-        "urlquery" => Str(url::form_urlencoded::byte_serialize(sprint(a).as_bytes()).collect()),
+        "urlquery" => Str(super::definition::query_escape(&sprint(a))),
         "upper" => Str(s(0)?.to_uppercase()),
         "lower" => Str(s(0)?.to_lowercase()),
         "title" => Str(s(0)?

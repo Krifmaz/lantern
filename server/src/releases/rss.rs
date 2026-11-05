@@ -13,7 +13,10 @@ pub fn spawn(releases: Releases) {
         loop {
             if let Ok(list) = releases.sources() {
                 let now = crate::auth::now();
-                for s in list.into_iter().filter(|s| s.enabled && s.kind != "irc" && s.last_at + s.interval_min as f64 * 60.0 <= now) {
+                for s in list
+                    .into_iter()
+                    .filter(|s| s.enabled && (s.kind == "rss" || s.kind == "indexer") && s.last_at + s.interval_min as f64 * 60.0 <= now)
+                {
                     // noted at once, so a slow feed isn't looked at twice
                     releases.source_result(s.id, &s.last_error);
                     let r = releases.clone();

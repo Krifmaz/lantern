@@ -1,6 +1,6 @@
-// Ported from autobrr v1.90.0 (internal/http/filter.go, action.go, downloader.go, encoder.go, params.go),
-// GPL-2.0-or-later.
-//! autobrr's API for filters, actions and download clients, with autobrr's paths, JSON and status codes. The
+// Ported from autobrr v1.90.0 (internal/http/filter.go, action.go, downloader.go, irc.go, indexer.go, encoder.go,
+// params.go), GPL-2.0-or-later.
+//! autobrr's API for filters, actions, download clients, IRC networks and indexers, with autobrr's paths, JSON and status codes. The
 //! paths here are relative to autobrr's `/api`; Lantern serves them under `/autobrr/api` (the forked autobrr
 //! web app's base), so they never meet Lantern's own `/api/...`.
 //!
@@ -29,6 +29,28 @@
 //! GET    /downloaders/{id}                   one
 //! DELETE /downloaders/{id}                   remove (204)
 //! GET    /downloaders/{id}/arr/tags          an *arr's tags
+//! GET    /irc                                the networks with their health
+//! POST   /irc                                add a network (or its channels to the same server, port and nick) (204)
+//! GET    /irc/events?stream=irc              the live stream: PRIVMSG, STATE and HEALTH events (also /events)
+//! GET    /irc/network/{id}                   one network with its channels
+//! PUT    /irc/network/{id}                   change (redacted secrets keep the saved ones) (204)
+//! DELETE /irc/network/{id}                   remove (204)
+//! POST   /irc/network/{id}/cmd               {channel, msg}: say it on the network (204)
+//! POST   /irc/network/{id}/channel           add a channel (204)
+//! GET    /irc/network/{id}/restart           reconnect (204)
+//! GET    /irc/network/{id}/channel/{c}/history          the channel's last 1000 lines
+//! POST   /irc/network/{id}/channel/{c}/announce/process {msg}: read it as an announce (204)
+//! GET    /indexer/schema                     every definition
+//! GET    /indexer                            every indexer's mapped definition
+//! POST   /indexer                            add (201, the indexer)
+//! GET    /indexer/options                    every indexer (secrets redacted)
+//! GET    /indexer/deprecations               the removed definitions and the filters still using them
+//! DELETE /indexer/deprecations/{id}          remove an archived indexer (204)
+//! GET    /indexer/{id}                       one
+//! PUT    /indexer/{id}                       change (200, the indexer)
+//! DELETE /indexer/{id}                       remove (204)
+//! POST   /indexer/{id}/api/test              test the site API
+//! PATCH  /indexer/{id}/enabled               {enabled} (204)
 //! ```
 //!
 //! Errors answer autobrr's `{code, message}` (`RECORD_NOT_FOUND` 404, `BAD_REQUEST_PARAMS` 400,
@@ -37,13 +59,15 @@
 use super::action::Action;
 use super::downloader::{ArrTag, Downloader};
 use super::external::FilterExternal;
+use super::indexer::Indexer;
+use super::irc::{IrcChannel, IrcError, IrcNetwork, SendCmd};
 use super::store::{parse_sort, ApiError, ApiResult, FilterNotification};
 use crate::AppState;
 use axum::body::Bytes;
 use axum::extract::{Path, RawQuery, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, patch, post, put};
+use axum::routing::{delete, get, patch, post, put};
 use axum::{Json, Router};
 use kit_server_core::{Admin, SignedIn};
 use serde::de::DeserializeOwned;
@@ -67,6 +91,27 @@ pub fn router() -> Router<AppState> {
         .route("/downloaders/test", post(test_downloader))
         .route("/downloaders/{id}", get(downloader).delete(delete_downloader))
         .route("/downloaders/{id}/arr/tags", get(arr_tags))
+        .route("/irc", get(irc_networks).post(store_network))
+        .route("/irc/", get(irc_networks).post(store_network))
+        .route("/irc/events", get(irc_events))
+        .route("/events", get(irc_events))
+        .route("/irc/network/{id}", get(irc_network).put(update_network).delete(delete_network))
+        .route("/irc/network/{id}/", get(irc_network).put(update_network).delete(delete_network))
+        .route("/irc/network/{id}/cmd", post(send_cmd))
+        .route("/irc/network/{id}/channel", post(store_channel))
+        .route("/irc/network/{id}/restart", get(restart_network))
+        .route("/irc/network/{id}/channel/{channel}/history", get(channel_history))
+        .route("/irc/network/{id}/channel/{channel}/announce/process", post(announce_process))
+        .route("/indexer/schema", get(indexer_schema))
+        .route("/indexer", get(indexers_mapped).post(store_indexer))
+        .route("/indexer/", get(indexers_mapped).post(store_indexer))
+        .route("/indexer/options", get(indexer_options))
+        .route("/indexer/deprecations", get(indexer_deprecations))
+        .route("/indexer/deprecations/{id}", delete(delete_archived_indexer))
+        .route("/indexer/{id}", get(indexer).put(update_indexer).delete(delete_indexer))
+        .route("/indexer/{id}/", get(indexer).put(update_indexer).delete(delete_indexer))
+        .route("/indexer/{id}/api/test", post(test_indexer_api))
+        .route("/indexer/{id}/enabled", patch(toggle_indexer))
 }
 
 /// An answer: autobrr's error shape for a failure.
@@ -295,4 +340,221 @@ async fn arr_tags(State(st): State<AppState>, _: SignedIn, Path(id): Path<String
         None => Vec::new(),
     };
     send(StatusCode::OK, tags)
+}
+
+// ---- IRC ----
+
+/// A not-found answer in autobrr's words.
+fn not_found(m: String) -> Fail {
+    Fail(ApiError::NotFound(m))
+}
+
+/// A record-not-found from the store, as `m`; other failures as they are.
+fn or_not_found(e: ApiError, m: impl FnOnce() -> String) -> Fail {
+    match e {
+        ApiError::NotFound(_) => not_found(m()),
+        e => Fail(e),
+    }
+}
+
+/// A channel path parameter with its `#`.
+fn channel_param(c: &str) -> String {
+    if c.starts_with('#') {
+        c.to_string()
+    } else {
+        format!("#{c}")
+    }
+}
+
+async fn irc_networks(State(st): State<AppState>, _: SignedIn) -> Answer {
+    send(StatusCode::OK, st.releases.irc_networks_with_health()?)
+}
+
+async fn irc_network(State(st): State<AppState>, _: SignedIn, Path(id): Path<String>) -> Answer {
+    let id = id_of(&id, "networkID")?;
+    let n = st.releases.irc_network(id).map_err(|e| or_not_found(e, || format!("network with id {id} not found")))?;
+    send(StatusCode::OK, n.public())
+}
+
+async fn store_network(State(st): State<AppState>, _: Admin, body: Bytes) -> Answer {
+    let n: IrcNetwork = decode(&body)?;
+    n.auth.validate().map_err(ApiError::BadRequest)?;
+    st.releases.store_irc_network(n)?;
+    no_content()
+}
+
+async fn update_network(State(st): State<AppState>, _: Admin, Path(_id): Path<String>, body: Bytes) -> Answer {
+    let n: IrcNetwork = decode(&body)?;
+    n.auth.validate().map_err(ApiError::BadRequest)?;
+    let id = n.id;
+    st.releases.update_irc_network(n).map_err(|e| or_not_found(e, || format!("network with id {id} not found")))?;
+    no_content()
+}
+
+async fn delete_network(State(st): State<AppState>, _: Admin, Path(id): Path<String>) -> Answer {
+    let id = id_of(&id, "networkID")?;
+    st.releases.delete_irc_network(id).map_err(|e| or_not_found(e, || format!("network with id {id} does not exist")))?;
+    no_content()
+}
+
+async fn send_cmd(State(st): State<AppState>, _: Admin, Path(id): Path<String>, body: Bytes) -> Answer {
+    let id = id_of(&id, "networkID")?;
+    let mut req: SendCmd = decode(&body)?;
+    req.network_id = id;
+    match st.releases.send_irc_cmd(&req) {
+        Ok(()) => no_content(),
+        Err(IrcError::NotFound) => Err(not_found(format!("network with id {id} not found"))),
+        Err(e) => Err(Fail(ApiError::Internal(irc_error_text(&e)))),
+    }
+}
+
+async fn store_channel(State(st): State<AppState>, _: Admin, Path(id): Path<String>, body: Bytes) -> Answer {
+    let id = id_of(&id, "networkID")?;
+    let c: IrcChannel = decode(&body)?;
+    st.releases.store_irc_channel(id, c).map_err(|e| or_not_found(e, || format!("network with id {id} not found")))?;
+    no_content()
+}
+
+async fn restart_network(State(st): State<AppState>, _: Admin, Path(id): Path<String>) -> Answer {
+    let id = id_of(&id, "networkID")?;
+    st.releases.restart_irc_network(id).map_err(|e| or_not_found(e, || format!("network with id {id} not found")))?;
+    no_content()
+}
+
+async fn channel_history(State(st): State<AppState>, _: SignedIn, Path((id, channel)): Path<(String, String)>) -> Answer {
+    let id = id_of(&id, "networkID")?;
+    match st.releases.irc_history(id, &channel_param(&channel)) {
+        Ok(list) => send(StatusCode::OK, list),
+        Err(IrcError::NotFound) => send(StatusCode::OK, Vec::<Value>::new()),
+        Err(e) => Err(Fail(ApiError::Internal(irc_error_text(&e)))),
+    }
+}
+
+/// The body of a hand-sent announce (autobrr's `IRCManualProcessRequest`).
+#[derive(serde::Deserialize, Default)]
+#[serde(default)]
+struct ManualAnnounce {
+    /// The line.
+    msg: String,
+}
+
+async fn announce_process(State(st): State<AppState>, _: Admin, Path((id, channel)): Path<(String, String)>, body: Bytes) -> Answer {
+    let id = id_of(&id, "networkID")?;
+    let req: ManualAnnounce = decode(&body)?;
+    let channel = channel_param(&channel);
+    match st.releases.manual_process_announce(id, &channel, &req.msg).await {
+        Ok(()) => no_content(),
+        Err(IrcError::ChannelNotFound) => Err(not_found(format!("channel {channel} not found on network with id {id}"))),
+        Err(IrcError::NotFound) => Err(not_found(format!("network with id {id} not found"))),
+        Err(IrcError::NoAnnounceProcessor) => {
+            Err(Fail(ApiError::BadRequest(format!("channel {channel} is not an indexer announce channel on network with id {id}"))))
+        }
+        Err(e) => Err(Fail(ApiError::Internal(irc_error_text(&e)))),
+    }
+}
+
+/// An IRC failure in autobrr's words.
+fn irc_error_text(e: &IrcError) -> String {
+    match e {
+        IrcError::NotFound => "record not found".into(),
+        IrcError::ChannelNotFound => "irc channel not found".into(),
+        IrcError::NoAnnounceProcessor => "irc channel has no announce processor".into(),
+        IrcError::Other(m) => m.clone(),
+    }
+}
+
+/// The live stream (r3labs/sse as autobrr serves it): `?stream=irc` gets every PRIVMSG, STATE and HEALTH
+/// event from now on; no stream, or another one, is refused as r3labs refuses it.
+async fn irc_events(State(st): State<AppState>, _: SignedIn, RawQuery(q): RawQuery) -> Response {
+    use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
+    let stream = url::form_urlencoded::parse(q.unwrap_or_default().as_bytes()).find(|(k, _)| k == "stream").map(|(_, v)| v.into_owned());
+    match stream.as_deref() {
+        None | Some("") => (StatusCode::INTERNAL_SERVER_ERROR, "Please specify a stream!\n").into_response(),
+        Some("irc") => {
+            let rx = st.releases.irc.subscribe();
+            let events = futures_util::stream::unfold(rx, |mut rx| async move {
+                loop {
+                    match rx.recv().await {
+                        Ok(e) => return Some((Ok::<_, std::convert::Infallible>(SseEvent::default().event(e.event).data(e.data)), rx)),
+                        Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                        Err(tokio::sync::broadcast::error::RecvError::Closed) => return None,
+                    }
+                }
+            });
+            let mut r = Sse::new(events).keep_alive(KeepAlive::default()).into_response();
+            r.headers_mut().insert("x-accel-buffering", axum::http::HeaderValue::from_static("no"));
+            r
+        }
+        Some(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Stream not found!\n").into_response(),
+    }
+}
+
+// ---- indexers ----
+
+async fn indexer_schema(State(st): State<AppState>, _: SignedIn) -> Answer {
+    let list: Vec<Value> = st.releases.indexer_templates().iter().map(|d| serde_json::to_value(&**d).unwrap_or_default()).collect();
+    send(StatusCode::OK, list)
+}
+
+async fn indexers_mapped(State(st): State<AppState>, _: SignedIn) -> Answer {
+    send(StatusCode::OK, st.releases.mapped_definitions()?)
+}
+
+async fn indexer_options(State(st): State<AppState>, _: SignedIn) -> Answer {
+    send(StatusCode::OK, st.releases.autobrr_indexers()?)
+}
+
+async fn indexer_deprecations(State(st): State<AppState>, _: SignedIn) -> Answer {
+    send(StatusCode::OK, st.releases.indexer_deprecations()?)
+}
+
+async fn delete_archived_indexer(State(st): State<AppState>, _: Admin, Path(id): Path<String>) -> Answer {
+    let id = id_of(&id, "indexerID")?;
+    st.releases.delete_archived_indexer(id).map_err(|e| or_not_found(e, || format!("archived indexer with id {id} not found")))?;
+    no_content()
+}
+
+async fn indexer(State(st): State<AppState>, _: SignedIn, Path(id): Path<String>) -> Answer {
+    let id = id_of(&id, "indexerID")?;
+    send(StatusCode::OK, st.releases.autobrr_indexer(id).map_err(|e| or_not_found(e, || format!("indexer with id {id} not found")))?)
+}
+
+async fn store_indexer(State(st): State<AppState>, _: Admin, body: Bytes) -> Answer {
+    let i: Indexer = decode(&body)?;
+    send(StatusCode::CREATED, st.releases.store_indexer(i)?)
+}
+
+async fn update_indexer(State(st): State<AppState>, _: Admin, Path(_id): Path<String>, body: Bytes) -> Answer {
+    let i: Indexer = decode(&body)?;
+    let id = i.id;
+    send(StatusCode::OK, st.releases.update_indexer(i).map_err(|e| or_not_found(e, || format!("indexer with id {id} not found")))?)
+}
+
+async fn delete_indexer(State(st): State<AppState>, _: Admin, Path(id): Path<String>) -> Answer {
+    let id = id_of(&id, "indexerID")?;
+    st.releases.delete_indexer(id).map_err(|e| or_not_found(e, || format!("indexer with id {id} not found")))?;
+    no_content()
+}
+
+async fn test_indexer_api(State(st): State<AppState>, _: Admin, Path(id): Path<String>, body: Bytes) -> Answer {
+    let id = id_of(&id, "indexerID")?;
+    let req: Value = decode(&body)?;
+    let target = req.get("id").and_then(Value::as_i64).filter(|i| *i != 0).unwrap_or(id);
+    st.releases.test_indexer_api(target).map_err(|e| or_not_found(e, || format!("indexer with id {id} not found")))?;
+    send(StatusCode::OK, json!({ "message": "Indexer api test OK" }))
+}
+
+/// The body of `PATCH /indexer/{id}/enabled`.
+#[derive(serde::Deserialize, Default)]
+#[serde(default)]
+struct Enabled {
+    /// On or off.
+    enabled: bool,
+}
+
+async fn toggle_indexer(State(st): State<AppState>, _: Admin, Path(id): Path<String>, body: Bytes) -> Answer {
+    let id = id_of(&id, "indexerID")?;
+    let e: Enabled = decode(&body)?;
+    st.releases.toggle_indexer(id, e.enabled).map_err(|e| or_not_found(e, || format!("indexer with id {id} not found")))?;
+    no_content()
 }

@@ -1,0 +1,91 @@
+---
+version: 2
+#id: iptorrents
+name: IPTorrents
+identifier: ipt
+description: IPTorrents (IPT) is a private torrent tracker for 0DAY / GENERAL.
+language: en-us
+urls:
+  - https://iptorrents.com/
+  - https://iptorrents.me/
+  - https://nemo.iptorrents.com/
+  - https://ipt.getcrazy.me/
+  - https://ipt.findnemo.net/
+  - https://ipt.beelyrics.net/
+  - https://ipt.venom.global/
+  - https://ipt.workisboring.net/
+  - https://ipt.lol/
+  - https://ipt.cool/
+  - https://ipt.world/
+privacy: private
+protocol: torrent
+supports:
+  - irc
+  - rss
+# source: unknown
+settings:
+  - name: passkey
+    type: secret
+    required: true
+    label: Passkey
+    help: "Copy the passkey from your details page."
+
+irc:
+  network: IPTorrents
+  server: irc.iptorrents.com
+  port: 6697
+  tls: true
+  settings:
+    - name: nick
+      type: text
+      required: true
+      label: Nick
+      help: Bot nick. Eg. user_autodl
+
+    - name: auth.account
+      type: text
+      required: false
+      label: NickServ Account
+      help: NickServ account. Make sure to group your user and bot.
+
+    - name: auth.password
+      type: secret
+      required: false
+      label: NickServ Password
+      help: NickServ password
+
+  channels:
+    - name: "#ipt.announce"
+      announcers:
+        - IPT
+        - IPT_Announce
+        - FunTimes
+      parse:
+        type: single
+        sizeunits: binary
+        lines:
+          - pattern: '\[(?P<category>.+?)] (?P<releaseName>.*?)\s*(?:(?P<freeleech>FREELEECH))? - (?P<baseUrl>https?\:\/\/.+\/).+id=(?P<torrentId>\d+) - (?P<torrentSize>.*)'
+            tests:
+              - line: '[Movies/XviD] The Movie 2010 DVDRip XviD-GROUP FREELEECH - http://www.iptorrents.com/details.php?id=000000 - 7.63 GB'
+                expect:
+                  category: Movies/XviD
+                  releaseName: The Movie 2010 DVDRip XviD-GROUP
+                  freeleech: FREELEECH
+                  baseUrl: http://www.iptorrents.com/
+                  torrentId: "000000"
+                  torrentSize: 7.63 GB
+
+              - line: '[Movies/XviD] The Movie 2010 DVDRip XviD-GROUP - http://www.iptorrents.com/details.php?id=000000 - 7.63 GB'
+                expect:
+                  category: Movies/XviD
+                  releaseName: The Movie 2010 DVDRip XviD-GROUP
+                  freeleech: ""
+                  baseUrl: http://www.iptorrents.com/
+                  torrentId: "000000"
+                  torrentSize: 7.63 GB
+
+        match:
+          infourl: "/details.php?id={{ .torrentId }}"
+          downloadurl: "/download.php/{{ .torrentId }}/{{ .releaseName }}.torrent?torrent_pass={{ .passkey }}"
+          encode:
+            - releaseName

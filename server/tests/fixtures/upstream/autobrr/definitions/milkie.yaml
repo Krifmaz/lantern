@@ -1,0 +1,71 @@
+---
+version: 2
+#id: Milkie
+name: Milkie
+identifier: milkie
+description: Milkie is a private torrent tracker for GENERAL.
+language: en-us
+urls:
+  - https://milkie.cc/
+privacy: private
+protocol: torrent
+supports:
+  - irc
+  - rss
+# source: custom
+settings:
+  - name: apikey
+    type: secret
+    required: true
+    label: Api key
+    help: "Go to your profile and copy your Api key from settings"
+    regex: /([a-zA-Z0-9\+])
+
+irc:
+  network: P2P-Network
+  server: irc.p2p-network.net
+  port: 6697
+  tls: true
+  settings:
+    - name: nick
+      type: text
+      required: true
+      label: Nick
+      help: Bot nick. Eg. user_bot
+
+    - name: auth.account
+      type: text
+      required: false
+      label: NickServ Account
+      help: NickServ account. Make sure to group your user and bot.
+
+    - name: auth.password
+      type: secret
+      required: false
+      label: NickServ Password
+      help: NickServ password
+
+  channels:
+    - name: "#milkie-announce"
+      announcers:
+        - the_cow
+        - the_cow1
+        - the_cow2
+      parse:
+        type: single
+        lines:
+          - pattern: '{(?P<category>.*)}\s::\s(?P<releaseName>.*)\s::\s\[(?P<releaseTags>.*)\]\s::\s(?P<baseUrl>https?\:\/\/[^\/]+\/)browse\/(?P<torrentId>.*)'
+            tests:
+              - line: '{tv} :: The.Great.Xmas.Show.S00E00.1080p.WEB.H264-TEST :: [1080p, web] :: https://milkie.cc/browse/xxxxxxxxxxxx'
+                expect:
+                  category: tv
+                  releaseName: The.Great.Xmas.Show.S00E00.1080p.WEB.H264-TEST
+                  releaseTags: 1080p, web
+                  baseUrl: https://milkie.cc/
+                  torrentId: xxxxxxxxxxxx
+
+        match:
+          infourl: "/browse/{{ .torrentId }}"
+          downloadurl: "/api/v1/torrents/{{ .torrentId }}/torrent?key={{ .apikey }}"
+          encode:
+            - apikey
