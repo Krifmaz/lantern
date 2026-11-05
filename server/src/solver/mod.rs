@@ -204,12 +204,13 @@ pub const PROGRAMS: [&str; 7] = [
 ];
 
 /// Whether `p` is a program that can be run as the browser itself: a file that isn't a launcher script (a
-/// script may start a sandboxed copy, such as Ubuntu's snap, which can't run here).
+/// script, or Ubuntu's snap, starts a sandboxed copy that can't run here).
 fn runnable(p: &Path) -> bool {
     let Ok(mut f) = std::fs::File::open(p) else { return false };
     let mut head = [0u8; 2];
     use std::io::Read;
-    p.is_file() && f.read_exact(&mut head).is_ok() && &head != b"#!"
+    let snap = std::fs::canonicalize(p).is_ok_and(|real| real.starts_with("/snap") || real.ends_with("snap"));
+    p.is_file() && !snap && f.read_exact(&mut head).is_ok() && &head != b"#!"
 }
 
 /// The browser program: `named` when it is a file, otherwise the first of [`PROGRAMS`] that is a program
