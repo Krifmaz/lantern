@@ -11,7 +11,8 @@
 //!   GET    /api/indexers/definitions?q=      the definitions to add from
 //!   GET    /api/indexers/definitions/{id}    one definition's settings, links and categories
 //!   POST   /api/indexers/definitions/update  download the newest definitions now
-//!   GET    /api/indexers/presets             the Usenet indexers with a known address
+//!   GET    /api/indexers/catalog?q=&protocol=&privacy=&language=  torrent sites and Usenet indexers to add, with counts
+//!   GET    /api/indexers/presets             the Usenet indexers with a known address, API path and categories
 //!   GET    /api/indexers/stats?days=         queries, grabs, failures, answer time per indexer
 //!   GET    /api/indexers/history?id=&limit=  the latest queries and grabs
 //!   GET    /api/search?q=&type=&cat=&ids=    search: {results, failed}
@@ -43,6 +44,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/indexers/definitions", get(definitions))
         .route("/api/indexers/definitions/update", post(update_definitions))
         .route("/api/indexers/definitions/{def}", get(definition))
+        .route("/api/indexers/catalog", get(catalog))
         .route("/api/indexers/presets", get(presets))
         .route("/api/indexers/stats", get(stats))
         .route("/api/indexers/history", get(history))
@@ -141,8 +143,25 @@ async fn update_definitions(State(st): State<AppState>, _: Admin) -> Result<Json
 }
 
 async fn presets(_: SignedIn) -> Json<Value> {
-    let list: Vec<Value> = newznab::PRESETS.iter().map(|(id, name, url)| json!({ "id": id, "name": name, "url": url })).collect();
+    let list: Vec<Value> = newznab::PRESETS
+        .iter()
+        .map(|p| {
+            json!({
+                "id": p.id, "name": p.name, "url": p.url, "api_path": p.api_path, "categories": p.categories,
+                "privacy": p.privacy, "language": p.language, "description": p.description,
+            })
+        })
+        .collect();
     Json(json!({ "presets": list }))
+}
+
+/// Everything that can be added, narrowed by `q`, `protocol`, `privacy` and `language`; the counts are of all.
+async fn catalog(State(st): State<AppState>, _: SignedIn, Q(q): Q<HashMap<String, String>>) -> Json<Value> {
+    let all = super::catalog::sites(&st.indexers.library.all());
+    let get = |k: &str| q.get(k).cloned().unwrap_or_default();
+    let f = super::catalog::Filter { words: get("q"), protocol: get("protocol"), privacy: get("privacy"), language: get("language") };
+    let shown: Vec<Value> = all.iter().filter(|s| f.wants(s)).map(super::catalog::Site::json).collect();
+    Json(json!({ "sites": shown, "counts": super::catalog::counts(&all), "errors": st.indexers.library.errors().len() }))
 }
 
 async fn stats(State(st): State<AppState>, _: SignedIn, Q(q): Q<HashMap<String, String>>) -> Result<Json<Value>> {
