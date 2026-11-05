@@ -675,7 +675,7 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `GET /api/downloaders/{clientID}/arr/tags` | A-api | partial | server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported; served at `/autobrr/api`; only the empty answer for a torrent client is proven |
 | `GET /api/filters` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
 | `POST /api/filters` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
-| `POST /api/filters/indexers/prune-deprecated` | A-api | partial | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | answers autobrr's shape; always removes 0, since release sources stand in for indexers |
+| `POST /api/filters/indexers/prune-deprecated` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules, server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
 | `POST /api/filters/external/test` | A-api | done | server/tests/autobrr_api.rs::external_filter_test_route, server/src/releases/external.rs::tests::test_external_reports | ported; served at `/autobrr/api` |
 | `GET /api/filters/{filterID}` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
 | `PUT /api/filters/{filterID}` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
@@ -697,27 +697,27 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `GET /api/feeds/{feedID}/latest` | A-api | todo | |  |
 | `POST /api/feeds/{feedID}/forcerun` | A-api | todo | |  |
 | `GET /api/feeds/{feedID}/caps` | A-api | todo | |  |
-| `GET /api/irc` | A-api | todo | |  |
-| `POST /api/irc` | A-api | todo | |  |
-| `GET /api/irc/network/{networkID}` | A-api | todo | |  |
-| `PUT /api/irc/network/{networkID}` | A-api | todo | |  |
-| `DELETE /api/irc/network/{networkID}` | A-api | todo | |  |
-| `POST /api/irc/network/{networkID}/cmd` | A-api | todo | |  |
-| `POST /api/irc/network/{networkID}/channel` | A-api | todo | |  |
-| `GET /api/irc/network/{networkID}/restart` | A-api | todo | |  |
-| `GET /api/irc/network/{networkID}/channel/{channel}/history` | A-api | todo | |  |
-| `POST /api/irc/network/{networkID}/channel/{channel}/announce/process` | A-api | todo | |  |
-| `GET /api/indexer/schema` | A-api | todo | |  |
-| `POST /api/indexer` | A-api | todo | |  |
-| `GET /api/indexer` | A-api | todo | |  |
-| `GET /api/indexer/options` | A-api | todo | |  |
-| `GET /api/indexer/deprecations` | A-api | todo | |  |
-| `DELETE /api/indexer/deprecations/{indexerID}` | A-api | todo | |  |
-| `GET /api/indexer/{indexerID}` | A-api | todo | |  |
-| `PUT /api/indexer/{indexerID}` | A-api | todo | |  |
-| `DELETE /api/indexer/{indexerID}` | A-api | todo | |  |
-| `POST /api/indexer/{indexerID}/api/test` | A-api | todo | |  |
-| `PATCH /api/indexer/{indexerID}/enabled` | A-api | todo | |  |
+| `GET /api/irc` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
+| `POST /api/irc` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces, server/tests/autobrr_irc.rs::a_network_signs_in_with_sasl_and_joins_without_an_invite, server/tests/autobrr_irc.rs::a_ban_stops_the_network_with_the_reason | ported; served at `/autobrr/api` |
+| `GET /api/irc/network/{networkID}` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
+| `PUT /api/irc/network/{networkID}` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
+| `DELETE /api/irc/network/{networkID}` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
+| `POST /api/irc/network/{networkID}/cmd` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
+| `POST /api/irc/network/{networkID}/channel` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
+| `GET /api/irc/network/{networkID}/restart` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
+| `GET /api/irc/network/{networkID}/channel/{channel}/history` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
+| `POST /api/irc/network/{networkID}/channel/{channel}/announce/process` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
+| `GET /api/indexer/schema` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
+| `POST /api/indexer` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
+| `GET /api/indexer` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
+| `GET /api/indexer/options` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
+| `GET /api/indexer/deprecations` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
+| `DELETE /api/indexer/deprecations/{indexerID}` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
+| `GET /api/indexer/{indexerID}` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
+| `PUT /api/indexer/{indexerID}` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
+| `DELETE /api/indexer/{indexerID}` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
+| `POST /api/indexer/{indexerID}/api/test` | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api`; the per-site API clients aren't ported yet, so a site with an API answers autobrr's "could not init api client" |
+| `PATCH /api/indexer/{indexerID}/enabled` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
 | `GET /api/lists` | A-api | todo | |  |
 | `POST /api/lists` | A-api | todo | |  |
 | `POST /api/lists/refresh` | A-api | todo | |  |
@@ -781,7 +781,7 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `POST /api/webhook/lists/trigger/{listID}` | A-api | todo | |  |
 | `GET /api/auth/oidc/config` | A-api | todo | |  |
 | `GET /api/auth/oidc/callback` | A-api | todo | |  |
-| GET /api/events (server-sent events: IRC, logs) | A-api | todo | |  |
+| GET /api/events (server-sent events: IRC, logs) | A-api | partial | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | the `irc` stream (also at `/irc/events`); the `logs` stream comes with the logs slice |
 | GET /metrics (metrics port, basic auth users) | A-api | todo | |  |
 
 ### Settings (`config.toml` and environment `AUTOBRR__*`)
@@ -1056,22 +1056,22 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Networks: server, port, TLS, nick, NickServ/SASL auth, invite command, bouncer, proxy, bot mode | A-api | partial | | fresh version |
-| Channels with password, per indexer definition | A-api | partial | | fresh version |
-| Announce parsing with every definition in `internal/indexer/definitions` (line patterns, multiline, vars, mappings) | A-api | partial | | fresh version |
-| Health monitor and reconnect back-off | A-api | todo | |  |
-| Message history per channel | A-api | todo | |  |
-| Send raw command | A-api | todo | |  |
-| Manual announce (process a pasted line) | A-api | todo | |  |
-| Pre/after-connect commands, invite flow | A-api | todo | |  |
+| Networks: server, port, TLS, nick, NickServ/SASL auth, invite command, bouncer, proxy, bot mode | A-api | partial | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces, server/tests/autobrr_irc.rs::a_network_signs_in_with_sasl_and_joins_without_an_invite, server/src/releases/irc.rs::tests::test_irc_auth_validate_and_nickserv_enabled | ported; proxies aren't ported (a network using one refuses to connect); TLS and bot mode not run against a stand-in server |
+| Channels with password, per indexer definition | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported |
+| Announce parsing with every definition in `internal/indexer/definitions` (line patterns, multiline, vars, mappings) | A-api | done | server/tests/autobrr_irc.rs::every_bundled_definition_reads_its_own_test_lines, server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces, server/src/releases/definition.rs::tests::test_indexer_ircv2_parse_match_parse_urls, server/src/releases/definition.rs::tests::test_irc_parser_gazelle_games_parse | ported (every bundled definition's test lines) |
+| Health monitor and reconnect back-off | A-api | partial | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces, server/tests/autobrr_irc.rs::a_ban_stops_the_network_with_the_reason, server/src/releases/irc.rs::tests::invite_commands_and_bots | ported; health and stopping on a ban are proven, the back-off delays only as values |
+| Message history per channel | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported (1000 lines) |
+| Send raw command | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported |
+| Manual announce (process a pasted line) | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported |
+| Pre/after-connect commands, invite flow | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported (autobrr's only connect commands are NickServ and the invite) |
 
 ### Indexers
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Every indexer definition (IRC, torznab, newznab, RSS), settings, base URL override | A-api | partial | | fresh version |
-| Custom definitions folder (`CustomDefinitions`) | A-api | todo | |  |
-| Deprecated indexers list and prune | A-api | todo | |  |
+| Every indexer definition (IRC, torznab, newznab, RSS), settings, base URL override | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules, server/tests/autobrr_irc.rs::every_bundled_definition_reads_its_own_test_lines | IRC indexers ported; Torznab, Newznab and RSS come with the feeds slice |
+| Custom definitions folder (`CustomDefinitions`) | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | definitions are read from `APP_ANNOUNCE_DIR` and `<data>/announce`; the `customDefinitions` config key isn't read |
+| Deprecated indexers list and prune | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules, server/tests/autobrr_irc.rs::deprecated_indexers_have_no_live_definition | ported |
 | Indexer API test (per-site APIs for size and freeleech: BTN, PTP, RED, OPS, MAM, GGn, ...) | A-api | todo | |  |
 
 ### Releases
@@ -1243,7 +1243,7 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | Update check (every 2 h) | A-api | todo | |  |
 | Temp folder cleanup (daily 04:00) | A-api | todo | |  |
 | Notification inbox cleanup (every hour) | A-api | todo | |  |
-| IRC health monitor and reconnect | A-api | todo | |  |
+| IRC health monitor and reconnect | A-api | partial | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces, server/tests/autobrr_irc.rs::a_ban_stops_the_network_with_the_reason | each network reconnects on its own; no separate health job |
 | Max downloads per period counting | A-api | partial | | fresh version |
 
 ### CLI (`autobrrctl`)

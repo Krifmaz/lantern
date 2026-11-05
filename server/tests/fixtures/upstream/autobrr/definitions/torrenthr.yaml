@@ -1,0 +1,166 @@
+---
+version: 2
+#id: torrenthr
+name: TorrentHR
+identifier: thr
+description: TorrentHR (THR) is private Croatian tracker
+language: hr
+urls:
+  - https://www.torrenthr.org/
+privacy: private
+protocol: torrent
+supports:
+  - irc
+  - rss
+# source: UNIT3D
+settings:
+  - name: rsskey
+    type: secret
+    required: true
+    label: RSS key (RID)
+    help: "Go to your profile, General > RSS key, and copy the RSS Key (RID)"
+
+irc:
+  network: THR
+  server: irc.torrenthr.org
+  port: 6697
+  tls: true
+  settings:
+    - name: nick
+      type: text
+      required: true
+      label: Nick
+      help: Bot nick. Eg. user_autodl
+
+    - name: auth.account
+      type: text
+      required: false
+      label: NickServ Account
+      help: NickServ account.  Make sure to group your user and bot.
+
+    - name: auth.password
+      type: secret
+      required: false
+      label: NickServ Password
+      help: NickServ password
+
+    - name: invite_command
+      type: secret
+      default: "THR key IRCKEY"
+      required: true
+      label: Invite command
+      help: Invite auth with THR. Replace IRCKEY.
+
+  channels:
+    - name: "#announce"
+      announcers:
+        - THR
+      parse:
+        type: single
+        lines:
+          - pattern: '^\[Novi Torrent\] Ime: (?P<releaseName>.*?) \| KatID: (?P<categoryId>\d+) \((?P<category>.*?)\)(?: \| TMDb: (?P<tmdb>\d+))?(?: \| IMDb: (?P<imdb>\d+))? \| Veličina: (?P<torrentSize>.*?) \((?P<torrentSizeBytes>\d+)\)(?: \| HNR-Free: (?P<hnrFree>DA))?(?: \| Freeleech: (?P<freeleechPercent>\d+%))?(?: \| DoubleUpload: (?P<doubleUpload>DA))?(?: \| Internal: (?P<internal>DA))?(?: \| Personal: (?P<personal>DA))? \| Uploader: (?P<uploader>.*?) \| URL: (?P<baseUrl>https?://.+?/)torrents/(?P<torrentId>\d+)$'
+            tests:
+              - line: '[Novi Torrent] Ime: A.torrent.name.here.WEBRip.x264-THR | KatID: 17 (Filmovi/HD) | TMDb: 000000 | IMDb: 0000000 | Veličina: 2.07 GB (2221376123) | HNR-Free: DA | Freeleech: 100% | DoubleUpload: DA | Internal: DA | Personal: DA | Uploader: THR | URL: https://www.torrenthr.org/torrents/000000'
+                expect:
+                  releaseName: A.torrent.name.here.WEBRip.x264-THR
+                  categoryId: "17"
+                  category: Filmovi/HD
+                  tmdb: "000000"
+                  imdb: "0000000"
+                  torrentSize: 2.07 GB
+                  torrentSizeBytes: "2221376123"
+                  hnrFree: DA
+                  freeleechPercent: 100%
+                  doubleUpload: DA
+                  internal: DA
+                  personal: DA
+                  uploader: THR
+                  baseUrl: https://www.torrenthr.org/
+                  torrentId: "000000"
+
+              - line: '[Novi Torrent] Ime: A.torrent.name.here.WEBRip.x264-THR | KatID: 17 (Filmovi/HD) | TMDb: 000000 | IMDb: 0000000 | Veličina: 2.07 GB (2221376123) | Uploader: THR | URL: https://www.torrenthr.org/torrents/000000'
+                expect:
+                  releaseName: A.torrent.name.here.WEBRip.x264-THR
+                  categoryId: "17"
+                  category: Filmovi/HD
+                  tmdb: "000000"
+                  imdb: "0000000"
+                  torrentSize: 2.07 GB
+                  torrentSizeBytes: "2221376123"
+                  hnrFree:
+                  freeleechPercent:
+                  doubleUpload:
+                  internal:
+                  personal:
+                  uploader: THR
+                  baseUrl: https://www.torrenthr.org/
+                  torrentId: "000000"
+
+              - line: '[Novi Torrent] Ime: A.torrent.name.here.WEBRip.x264-THR | KatID: 17 (Filmovi/HD) | TMDb: 000000 | IMDb: 0000000 | Veličina: 2.07 GB (2221376123) | HNR-Free: DA | Freeleech: 50% | Uploader: THR | URL: https://www.torrenthr.org/torrents/000000'
+                expect:
+                  releaseName: A.torrent.name.here.WEBRip.x264-THR
+                  categoryId: "17"
+                  category: Filmovi/HD
+                  tmdb: "000000"
+                  imdb: "0000000"
+                  torrentSize: 2.07 GB
+                  torrentSizeBytes: "2221376123"
+                  hnrFree: DA
+                  freeleechPercent: 50%
+                  doubleUpload:
+                  internal:
+                  personal:
+                  uploader: THR
+                  baseUrl: https://www.torrenthr.org/
+                  torrentId: "000000"
+
+              - line: '[Novi Torrent] Ime: A.torrent.name.here.WEBRip.x264-THR | KatID: 3 (Glazba/MP3) | Veličina: 2.07 GB (2221376123) | Uploader: THR | URL: https://www.torrenthr.org/torrents/000000'
+                expect:
+                  releaseName: A.torrent.name.here.WEBRip.x264-THR
+                  categoryId: "3"
+                  category: Glazba/MP3
+                  tmdb:
+                  imdb:
+                  torrentSize: 2.07 GB
+                  torrentSizeBytes: "2221376123"
+                  hnrFree:
+                  freeleechPercent:
+                  doubleUpload:
+                  internal:
+                  personal:
+                  uploader: THR
+                  baseUrl: https://www.torrenthr.org/
+                  torrentId: "000000"
+
+              - line: '[Novi Torrent] Ime: A.torrent.name.here.WEBRip.x264-THR | KatID: 12 (Dokumentarni Filmovi) | IMDb: 0000000 | Veličina: 2.07 GB (2221376123) | Uploader: THR | URL: https://www.torrenthr.org/torrents/000000'
+                expect:
+                  releaseName: A.torrent.name.here.WEBRip.x264-THR
+                  categoryId: "12"
+                  category: "Dokumentarni Filmovi"
+                  tmdb:
+                  imdb: "0000000"
+                  torrentSize: 2.07 GB
+                  torrentSizeBytes: "2221376123"
+                  hnrFree:
+                  freeleechPercent:
+                  doubleUpload:
+                  internal:
+                  personal:
+                  uploader: THR
+                  baseUrl: https://www.torrenthr.org/
+                  torrentId: "000000"
+
+        mappings:
+          internal:
+            "DA":
+              origin: "INTERNAL"
+          personal:
+            "DA":
+              origin: "INTERNAL"
+          doubleUpload:
+            "DA":
+              uploadVolumeFactor: 2
+
+        match:
+          infourl: "/torrents/{{ .torrentId }}"
+          downloadurl: "/torrent/download/{{ .torrentId }}.{{ .rsskey }}"

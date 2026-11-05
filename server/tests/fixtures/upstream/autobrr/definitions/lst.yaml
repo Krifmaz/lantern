@@ -1,0 +1,80 @@
+---
+version: 2
+#id: lst
+name: LST
+identifier: lst
+description: LST is an English private tracker for MOVIES / TV / GENERAL
+language: en-us
+urls:
+  - https://lst.gg/
+privacy: private
+protocol: torrent
+supports:
+  - irc
+  - rss
+# source: UNIT3D
+settings:
+  - name: rsskey
+    type: secret
+    required: true
+    label: RSS key (RID)
+    help: "Go to your profile tab, Settings > Security, copy RSS Key (RID)"
+
+irc:
+  network: LST
+  server: irc.lst.gg
+  port: 6697
+  tls: true
+  settings:
+    - name: nick
+      type: text
+      required: true
+      label: Username
+      help: Must be your site username.
+
+    - name: pass
+      type: secret
+      required: false
+      label: IRC key
+      help: Generated IRC key can be found on your profile.
+
+  channels:
+    - name: "#announce"
+      announcers:
+        - LSTANNOUNCE
+      parse:
+        type: single
+        lines:
+          - pattern: 'Category \[(?P<category>.*)\] Type \[(?P<releaseTags>.*)\] Name \[(?P<releaseName>.*?)\] ?(?:Resolution \[(?P<resolution>.*)\])? Freeleech \[(?P<freeleechPercent>.*)\] Internal \[(?P<internal>.*)\] Double Upload \[(?P<tags>.*)\] Size \[(?P<torrentSize>.*)\] Uploader \[(?P<uploader>.*)\] Url \[(?P<baseUrl>https?://.+/).+/(?P<torrentId>\d+)\]'
+            tests:
+              - line: Category [Movies] Type [Remux] Name [Movie1995 1080p BluRay REMUX AVC DTS-HD MA 5.1-Ripper] Resolution [1080p] Freeleech [0%] Internal [No] Double Upload [No] Size [37.81 GiB] Uploader [GRiMM] Url [http://lst.gg/torrents/00000]
+                expect:
+                  category: Movies
+                  releaseTags: Remux
+                  releaseName: Movie1995 1080p BluRay REMUX AVC DTS-HD MA 5.1-Ripper
+                  resolution: 1080p
+                  freeleechPercent: 0%
+                  internal: "No"
+                  tags: "No"
+                  torrentSize: 37.81 GiB
+                  uploader: GRiMM
+                  baseUrl: http://lst.gg/
+                  torrentId: "00000"
+
+              - line: Category [Movies] Type [Remux] Name [Some Random Movie 1985 1080p BluRay REMUX VC-1 DTS-HD MA 5.1-Ripper] Freeleech [0%] Internal [No] Double Upload [No] Size [25.35 GiB] Uploader [GRiMM] Url [http://lst.gg/torrents/00000]
+                expect:
+                  category: Movies
+                  releaseTags: Remux
+                  releaseName: Some Random Movie 1985 1080p BluRay REMUX VC-1 DTS-HD MA 5.1-Ripper
+                  resolution: ""
+                  freeleechPercent: 0%
+                  internal: "No"
+                  tags: "No"
+                  torrentSize: 25.35 GiB
+                  uploader: GRiMM
+                  baseUrl: http://lst.gg/
+                  torrentId: "00000"
+
+        match:
+          infourl: "/torrents/{{ .torrentId }}"
+          downloadurl: "/torrent/download/{{ .torrentId }}.{{ .rsskey }}"

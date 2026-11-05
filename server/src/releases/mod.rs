@@ -4,8 +4,9 @@
 //!
 //! | Module | What |
 //! | --- | --- |
-//! | [`announce`] | the announce definitions (autobrr's files) and reading announce lines |
-//! | [`irc`] | the IRC connections, one per IRC source |
+//! | [`definition`], [`announce`] | the announce definitions (autobrr's files) and reading announce lines |
+//! | [`indexer`] | autobrr's indexers (the release sources, with their definitions' settings) |
+//! | [`irc`] | autobrr's IRC networks, one connection per enabled network |
 //! | [`rss`] | the RSS feeds and Lantern's own indexers, polled |
 //! | [`rls`], [`release`], [`releasetags`], [`humanize`] | reading a release (autobrr's release parsing, on a port of rls) |
 //! | [`filter`], [`rejections`], [`wildcard`], [`sanitize`], [`torrent`] | deciding whether to take it (autobrr's filters) |
@@ -21,11 +22,13 @@ pub mod announce;
 pub mod api;
 pub mod autobrr_api;
 pub mod clients;
+pub mod definition;
 pub mod downloader;
 pub mod external;
 pub mod filter;
 pub mod gotemplate;
 pub mod humanize;
+pub mod indexer;
 pub mod irc;
 pub mod macros;
 pub mod push;
@@ -104,7 +107,9 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
         );",
     )
     .map_err(|e| anyhow::anyhow!("The release tables can't be made: {}", e.detail))?;
-    store::migrate(db)
+    store::migrate(db)?;
+    indexer::migrate(db)?;
+    irc::migrate(db)
 }
 
 /// A release a source just announced, before the filters see it.
@@ -142,12 +147,17 @@ pub struct Found {
     pub vars: BTreeMap<String, String>,
     /// IRC: the unit of a size announced without one (the definition's `forcesizeunit`).
     pub force_size_unit: String,
+    /// IRC: the release as the indexer's definition already read it (autobrr's announce processor); used as is.
+    pub prepared: Option<Box<Release>>,
 }
 
 impl Found {
     /// The release as autobrr's filters see it: an announce's values read as autobrr's `MapVars` reads them (a
     /// feed item's as its feed reader does), then the name read by [`Release::parse_string`].
     pub fn release(&self) -> Release {
+        if let Some(r) = &self.prepared {
+            return (**r).clone();
+        }
         let mut r = Release::new(IndexerMinimal {
             id: self.source_id,
             name: self.source_name.clone(),
@@ -192,7 +202,8 @@ impl Found {
 pub struct Source {
     /// Its id.
     pub id: i64,
-    /// `irc`, `rss` (a feed address) or `indexer` (the newest releases of one of Lantern's indexers).
+    /// `irc`, `rss` (a feed address), `indexer` (the newest releases of one of Lantern's indexers) or `feed` (an
+    /// autobrr Torznab, Newznab or RSS indexer).
     pub kind: String,
     /// The name people see.
     pub name: String,
@@ -285,7 +296,7 @@ pub struct Releases {
     /// Fetches a release's torrent for autobrr's actions and external filters.
     downloads: Arc<dyn run::ReleaseDownloader>,
     /// The IRC connections.
-    pub irc: irc::Runner,
+    pub irc: irc::Irc,
 }
 
 impl Releases {
@@ -311,7 +322,7 @@ impl Releases {
             hub: Arc::new(RwLock::new(Arc::new(push::NoHub))),
             http,
             downloads: Arc::new(run::HttpDownloader::new()),
-            irc: irc::Runner::default(),
+            irc: irc::Irc::default(),
         }
     }
 
@@ -354,7 +365,12 @@ impl Releases {
     /// Whether setting `key` of `s` is a secret.
     fn secret(&self, s: &Source, key: &str) -> bool {
         match self.library.get(&s.definition) {
-            Some(d) => d.is_secret(key),
+            Some(d) => {
+                d.settings.iter().chain(d.irc.iter().flat_map(|i| i.settings.iter())).any(|x| x.name == key && x.kind == "secret")
+                    || definition::is_secret_indexer_setting(key)
+                    || key == "auth.password"
+                    || key == "pass"
+            }
             None => key.contains("password") || key.contains("key"),
         }
     }
@@ -416,7 +432,7 @@ impl Releases {
                 if s.name.is_empty() {
                     s.name = def.name.clone();
                 }
-                for set in def.all_settings() {
+                for set in def.settings.iter().chain(def.irc.iter().flat_map(|i| i.settings.iter())) {
                     if set.required && s.settings.get(&set.name).is_none_or(|v| v.is_empty()) {
                         return Err(err(
                             400,
@@ -473,7 +489,7 @@ impl Releases {
     /// Removes source `id` and what was seen from it.
     pub fn remove_source(&self, id: i64) -> Result<()> {
         self.source(id)?;
-        self.irc.stop(id);
+        let _ = self.db.execute("DELETE FROM autobrr_indexer_meta WHERE source_id=?", p![id]);
         self.db.execute("DELETE FROM release_sources WHERE id=?", p![id])?;
         self.db.execute("DELETE FROM release_seen WHERE source_id=?", p![id])?;
         Ok(())
@@ -497,7 +513,7 @@ impl Releases {
             "definition_name": def.as_ref().map(|d| d.name.clone()).unwrap_or_default(),
             "url": crate::indexers::http::strip_secrets(&s.url), "indexer_id": s.indexer_id, "settings": settings,
             "interval_min": s.interval_min, "enabled": s.enabled, "last_at": s.last_at, "last_error": s.last_error, "added": s.added,
-            "irc": (s.kind == "irc").then(|| self.irc.status(s.id)),
+            "irc": (s.kind == "irc").then(|| self.source_irc_status(s)),
         })
     }
 
@@ -863,22 +879,52 @@ impl Releases {
         let _ = self.db.execute("DELETE FROM release_seen WHERE at < ?", p![crate::auth::now() - 30.0 * 86400.0]);
     }
 
-    /// Starts watching: the IRC connections of the enabled IRC sources and the RSS loop.
+    /// Starts watching: the indexers' deprecations are applied, Lantern's own IRC sources get their networks,
+    /// every enabled IRC network connects, and the RSS loop starts.
     pub fn start(&self) {
+        if let Err(e) = self.reconcile_deprecations() {
+            tracing::warn!("indexers: the deprecated definitions couldn't be applied: {}", e.message());
+        }
         if let Ok(list) = self.sources() {
-            for s in list.into_iter().filter(|s| s.kind == "irc") {
-                self.irc.restart(self.clone(), s);
+            for s in list.iter().filter(|s| s.kind == "irc") {
+                self.sync_source_network(s, false);
             }
         }
+        self.start_irc();
         rss::spawn(self.clone());
     }
 
-    /// Starts, restarts or stops source `id`'s IRC connection after a change.
+    /// Brings source `id`'s IRC network up to date after a change made through Lantern's sources.
     pub fn changed(&self, id: i64) {
-        match self.source(id) {
-            Ok(s) if s.kind == "irc" => self.irc.restart(self.clone(), s),
-            _ => self.irc.stop(id),
+        if let Ok(s) = self.source(id) {
+            if s.kind == "irc" {
+                self.sync_source_network(&s, true);
+            }
         }
+    }
+
+    /// Reads release `r` (an announce the indexer's definition read) through the filters, as autobrr's release
+    /// service does.
+    pub async fn process_release(&self, r: Release) -> Outcome {
+        let f = Found {
+            title: r.torrent_name.clone(),
+            source_id: r.indexer.id,
+            source_name: r.indexer.name.clone(),
+            protocol: r.protocol.clone(),
+            download_url: if r.download_url.is_empty() { r.magnet_uri.clone() } else { r.download_url.clone() },
+            info_url: r.info_url.clone(),
+            size: (r.size > 0).then_some(r.size),
+            category: r.category.clone(),
+            freeleech: r.freeleech,
+            freeleech_percent: u32::try_from(r.freeleech_percent).ok().filter(|p| *p > 0),
+            uploader: r.uploader.clone(),
+            tags: r.tags.clone(),
+            year: u32::try_from(r.year).ok().filter(|y| *y > 0),
+            identifier: r.indexer.identifier.clone(),
+            prepared: Some(Box::new(r)),
+            ..Found::default()
+        };
+        self.handle(f).await
     }
 }
 

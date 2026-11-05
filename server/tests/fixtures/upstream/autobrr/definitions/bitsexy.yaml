@@ -1,0 +1,74 @@
+---
+version: 2
+#id: bitsexy
+name: BitSexy
+identifier: bitsexy
+description: BitSexy (BSEX) is a private torrent tracker for XXX
+language: en-us
+urls:
+  - https://bitsexy.org/
+privacy: private
+protocol: torrent
+supports:
+  - irc
+  - rss
+# source: custom
+settings:
+  - name: passkey
+    type: secret
+    required: true
+    label: Passkey
+    help: "Copy your passkey from the profile and paste it in the field below."
+
+irc:
+  network: BitSexy
+  server: irc.bitsexy.org
+  port: 6697
+  tls: true
+  settings:
+    - name: nick
+      type: text
+      required: true
+      label: Nick
+      help: Bot nick. Eg. user_dl
+
+    - name: auth.account
+      type: text
+      required: false
+      label: NickServ Account
+      help: NickServ account. Make sure to group your user and bot.
+
+    - name: auth.password
+      type: secret
+      required: false
+      label: NickServ Password
+      help: NickServ password
+
+  channels:
+    - name: "#announce"
+      announcers:
+        - Mmmmm
+      parse:
+        type: single
+        lines:
+          - pattern: '\[NEW\] (?P<releaseName>.*) \((?P<category>.*)\) (?P<baseUrl>https?\:\/\/.*\/).*id=(?P<torrentId>\d+).?(?:\[PRED (?P<preTime>.*) ago\])?'
+            tests:
+              - line: '[NEW] Best actress - Funny title 15 [720p]-SEX (Hardcore) https://bitsexy.org/details.php?id=00000 [PRED 90 seconds ago]'
+                expect:
+                  releaseName: Best actress - Funny title 15 [720p]-SEX
+                  category: Hardcore
+                  baseUrl: https://bitsexy.org/
+                  torrentId: "00000"
+                  preTime: 90 seconds
+
+              - line: '[NEW] Best actress - Funny title 15 [720p]-SEX (Hardcore) https://bitsexy.org/details.php?id=00000'
+                expect:
+                  releaseName: Best actress - Funny title 15 [720p]-SEX
+                  category: Hardcore
+                  baseUrl: https://bitsexy.org/
+                  torrentId: "00000"
+                  preTime: ""
+
+        match:
+          infourl: "/details.php?id={{ .torrentId }}"
+          downloadurl: "/download.php?torrent={{ .torrentId }}&torrent_pass={{ .passkey }}"
