@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "indexerId": 1,
+    "date": "2026-11-05T10:00:00Z",
+    "successful": true,
+    "eventType": "indexerQuery",
+    "data": {
+      "limit": "100",
+      "offset": "0",
+      "elapsedTime": "120",
+      "query": "Show",
+      "queryType": "search",
+      "categories": "5000",
+      "source": "Prowlarr",
+      "host": "lantern.test",
+      "queryResults": "1",
+      "url": "http://tracker.test/browse.php?search=Show",
+      "cached": "0"
+    }
+  }
+]

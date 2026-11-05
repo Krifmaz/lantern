@@ -1,0 +1,183 @@
+{
+  "added": "0001-01-01T00:00:00Z",
+  "appProfileId": 0,
+  "capabilities": {
+    "bookSearchParams": [],
+    "categories": [
+      {
+        "id": 1000,
+        "name": "Console",
+        "subCategories": []
+      },
+      {
+        "id": 2000,
+        "name": "Movies",
+        "subCategories": []
+      },
+      {
+        "id": 3000,
+        "name": "Audio",
+        "subCategories": []
+      },
+      {
+        "id": 4000,
+        "name": "PC",
+        "subCategories": []
+      },
+      {
+        "id": 5000,
+        "name": "TV",
+        "subCategories": []
+      },
+      {
+        "id": 6000,
+        "name": "XXX",
+        "subCategories": []
+      },
+      {
+        "id": 7000,
+        "name": "Books",
+        "subCategories": []
+      },
+      {
+        "id": 8000,
+        "name": "Other",
+        "subCategories": []
+      }
+    ],
+    "limitsDefault": 100,
+    "limitsMax": 100,
+    "movieSearchParams": [],
+    "musicSearchParams": [],
+    "searchParams": [
+      "q"
+    ],
+    "supportsRawSearch": false,
+    "tvSearchParams": []
+  },
+  "configContract": "NewznabSettings",
+  "definitionName": "Newznab",
+  "description": "Newznab is an API search specification for Usenet",
+  "downloadClientId": 0,
+  "enable": true,
+  "encoding": "Unicode (UTF-8)",
+  "fields": [
+    {
+      "advanced": false,
+      "isFloat": false,
+      "label": "Url",
+      "name": "baseUrl",
+      "order": 0,
+      "privacy": "normal",
+      "type": "textbox",
+      "value": "https://api.nzbgeek.info"
+    },
+    {
+      "advanced": true,
+      "helpText": "Path to the api, usually /api",
+      "isFloat": false,
+      "label": "API Path",
+      "name": "apiPath",
+      "order": 1,
+      "privacy": "normal",
+      "type": "textbox",
+      "value": "/api"
+    },
+    {
+      "advanced": false,
+      "helpText": "Site API Key",
+      "isFloat": false,
+      "label": "API Key",
+      "name": "apiKey",
+      "order": 2,
+      "privacy": "apiKey",
+      "type": "textbox"
+    },
+    {
+      "advanced": true,
+      "helpText": "Additional Newznab parameters",
+      "isFloat": false,
+      "label": "Additional Parameters",
+      "name": "additionalParameters",
+      "order": 3,
+      "privacy": "normal",
+      "type": "textbox"
+    },
+    {
+      "advanced": false,
+      "helpText": "Enter date (yyyy-mm-dd) for VIP Expiration or blank, Lantern will notify 1 week from expiration of VIP",
+      "isFloat": false,
+      "label": "VIP Expiration",
+      "name": "vipExpiration",
+      "order": 4,
+      "privacy": "normal",
+      "type": "textbox",
+      "value": ""
+    },
+    {
+      "advanced": true,
+      "helpText": "The number of max queries as specified by the respective unit that Lantern will allow to the site",
+      "isFloat": false,
+      "label": "Query Limit",
+      "name": "baseSettings.queryLimit",
+      "order": 5,
+      "privacy": "normal",
+      "type": "number"
+    },
+    {
+      "advanced": true,
+      "helpText": "The number of max grabs as specified by the respective unit that Lantern will allow to the site",
+      "isFloat": false,
+      "label": "Grab Limit",
+      "name": "baseSettings.grabLimit",
+      "order": 6,
+      "privacy": "normal",
+      "type": "number"
+    },
+    {
+      "advanced": true,
+      "helpText": "The unit of time for counting limits per indexer",
+      "isFloat": false,
+      "label": "Limits Unit",
+      "name": "baseSettings.limitsUnit",
+      "order": 7,
+      "privacy": "normal",
+      "selectOptions": [
+        {
+          "hint": "(0)",
+          "name": "Day",
+          "order": 0,
+          "value": 0
+        },
+        {
+          "hint": "(1)",
+          "name": "Hour",
+          "order": 1,
+          "value": 1
+        }
+      ],
+      "type": "select",
+      "value": 0
+    }
+  ],
+  "implementation": "Newznab",
+  "implementationName": "Newznab",
+  "indexerUrls": [
+    ""
+  ],
+  "infoLink": "https://wiki.servarr.com/prowlarr/supported-indexers#newznab",
+  "language": "en-US",
+  "legacyUrls": [],
+  "name": "NZBgeek",
+  "presets": [],
+  "priority": 25,
+  "privacy": "private",
+  "protocol": "usenet",
+  "redirect": true,
+  "sortName": "nzbgeek",
+  "supportsPagination": true,
+  "supportsRedirect": true,
+  "supportsRss": true,
+  "supportsSearch": true,
+  "tags": []
+}

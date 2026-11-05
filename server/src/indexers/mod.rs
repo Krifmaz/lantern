@@ -119,7 +119,7 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
 }
 
 /// A configured indexer, as stored.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Indexer {
     /// Its id.
     pub id: i64,
@@ -604,9 +604,12 @@ impl Indexers {
         let plan = self.plan_for(ix.id, &ix.tags);
         let proxy = plan.proxy.clone().unwrap_or_else(|| site_proxy.clone());
         let fp = format!("{}|{}|{:?}|{site_proxy}|{plan:?}", ix.base_url, ix.definition, ix.settings);
-        if let Some((f, c)) = self.clients.lock().unwrap_or_else(|e| e.into_inner()).get(&ix.id) {
-            if *f == fp {
-                return Ok(c.clone());
+        // an indexer that isn't saved yet (a test before it is added) gets a client of its own, never kept
+        if ix.id > 0 {
+            if let Some((f, c)) = self.clients.lock().unwrap_or_else(|e| e.into_inner()).get(&ix.id) {
+                if *f == fp {
+                    return Ok(c.clone());
+                }
             }
         }
         let c = match ix.kind.as_str() {
@@ -648,13 +651,21 @@ impl Indexers {
             }
         };
         let c = Arc::new(c);
-        self.clients.lock().unwrap_or_else(|e| e.into_inner()).insert(ix.id, (fp, c.clone()));
+        if ix.id > 0 {
+            self.clients.lock().unwrap_or_else(|e| e.into_inner()).insert(ix.id, (fp, c.clone()));
+        }
         Ok(c)
     }
 
     /// Signs in and runs a small search: `Ok` with how many results came back, or the problem in words.
     pub async fn test(&self, id: i64) -> Result<usize> {
         let ix = self.get(id)?;
+        self.test_indexer(&ix).await
+    }
+
+    /// [`Indexers::test`] for an indexer as given, saved or not (an unsaved one has id 0 and leaves no history).
+    pub async fn test_indexer(&self, ix: &Indexer) -> Result<usize> {
+        let ix = ix.clone();
         let started = Instant::now();
         let r = match &*self.client(&ix)? {
             Client::Site(site) => {
@@ -673,7 +684,9 @@ impl Indexers {
                 Err(e) => Err(e),
             },
         };
-        self.record(&ix, "test", "", &r.as_ref().map(|n| *n).map_err(Clone::clone), started, "", "", json!({}));
+        if ix.id > 0 {
+            self.record(&ix, "test", "", &r.as_ref().map(|n| *n).map_err(Clone::clone), started, "", "", json!({}));
+        }
         r.map_err(|e| err(422, e))
     }
 
@@ -866,10 +879,7 @@ impl Indexers {
             Client::Api(api) => api.search(q).await,
         };
         let words = if q.rss { "(newest)".to_string() } else { q.search_terms() };
-        let data = json!({
-            "Limit": (q.limit > 0).then_some(q.limit), "Offset": (q.offset > 0).then_some(q.offset), "QueryType": q.kind.torznab(),
-            "Categories": q.categories.iter().map(u32::to_string).collect::<Vec<_>>().join(","), "Source": source, "Host": host,
-        });
+        let data = query_data(q, source, host);
         self.record(
             ix,
             if q.rss { "rss" } else { "query" },
@@ -1271,6 +1281,69 @@ impl Indexers {
         let now = crate::auth::now();
         Ok(self.list()?.into_iter().filter(|i| i.enabled && i.status().is_disabled(now)).map(|i| (i.name, i.last_error)).collect())
     }
+}
+
+/// The history details of a search, as Prowlarr's `HistoryService` notes an `IndexerQueryEvent`: the ids and
+/// fields of its kind of search (only those given), the limit and offset when set, the words, the kind, the
+/// categories and who asked.
+pub fn query_data(q: &Query, source: &str, host: &str) -> Value {
+    let mut d = Map::new();
+    let mut put = |k: &str, v: String| {
+        if !v.trim().is_empty() {
+            d.insert(k.to_string(), json!(v));
+        }
+    };
+    match q.kind {
+        SearchKind::MovieSearch => {
+            put("ImdbId", q.imdb_full());
+            put("TmdbId", q.tmdbid.clone());
+            put("TraktId", q.traktid.clone());
+            put("Year", q.year.clone());
+            put("Genre", q.genre.clone());
+        }
+        SearchKind::TvSearch => {
+            put("ImdbId", q.imdb_full());
+            put("TvdbId", q.tvdbid.clone());
+            put("TmdbId", q.tmdbid.clone());
+            put("TraktId", q.traktid.clone());
+            put("RId", q.rid.clone());
+            put("TvMazeId", q.tvmazeid.clone());
+            put("Season", q.season.clone());
+            put("Episode", q.ep.clone());
+            put("Year", q.year.clone());
+            put("Genre", q.genre.clone());
+        }
+        SearchKind::MusicSearch => {
+            put("Artist", q.artist.clone());
+            put("Album", q.album.clone());
+            put("Track", q.track.clone());
+            put("Label", q.label.clone());
+            put("Year", q.year.clone());
+            put("Genre", q.genre.clone());
+        }
+        SearchKind::BookSearch => {
+            put("Author", q.author.clone());
+            put("Title", q.title.clone());
+            put("Publisher", q.publisher.clone());
+            put("Year", q.year.clone());
+            put("Genre", q.genre.clone());
+        }
+        SearchKind::Search => {}
+    }
+    if q.limit > 0 {
+        d.insert("Limit".into(), json!(q.limit.to_string()));
+    }
+    // Lantern doesn't keep whether an offset was given: one comes with every limit, as Prowlarr's web app and the
+    // apps send them together
+    if q.offset > 0 || q.limit > 0 {
+        d.insert("Offset".into(), json!(q.offset.to_string()));
+    }
+    d.insert("Query".into(), json!(q.keywords.trim()));
+    d.insert("QueryType".into(), json!(q.kind.torznab()));
+    d.insert("Categories".into(), json!(q.categories.iter().map(u32::to_string).collect::<Vec<_>>().join(",")));
+    d.insert("Source".into(), json!(source));
+    d.insert("Host".into(), json!(host));
+    Value::Object(d)
 }
 
 /// Whether a search uses only parameters `caps` takes for its kind of search (`HttpIndexerBase.Fetch`).

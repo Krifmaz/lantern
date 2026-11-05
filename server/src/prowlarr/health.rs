@@ -1,6 +1,8 @@
 // Ported from Prowlarr v2.7.0.5723 (src/Prowlarr.Api.V1/Health/HealthController.cs, HealthResource.cs,
 // src/NzbDrone.Core/HealthCheck/HealthCheck.cs, Checks/ApiKeyValidationCheck.cs, Checks/AllowedHostsCheck.cs,
-// Checks/IndexerCheck.cs, Checks/IndexerStatusCheck.cs), GPL-3.0.
+// Checks/IndexerCheck.cs, Checks/IndexerStatusCheck.cs, Checks/IndexerLongTermStatusCheck.cs,
+// Checks/IndexerNoDefinitionCheck.cs, Checks/IndexerVIPCheck.cs, Checks/IndexerVIPExpiredCheck.cs,
+// Checks/IndexerDownloadClientCheck.cs, Checks/IndexerProxyStatusCheck.cs), GPL-3.0.
 
 //! What needs attention (`GET /api/v1/health`): each of Prowlarr's health checks that applies to what Lantern
 //! has, with Prowlarr's texts in the UI language. Only checks that found something are listed, as in Prowlarr.
@@ -51,7 +53,7 @@ impl Finding {
 }
 
 /// Every check's finding, in the UI language.
-pub fn results(st: &AppState) -> kit_server_core::Result<Vec<Finding>> {
+pub async fn results(st: &AppState) -> kit_server_core::Result<Vec<Finding>> {
     let lang = config::ui_language(&st.db);
     let say = |phrase: &str, tokens: &[(&str, String)]| localization::localized(&lang, phrase, tokens).unwrap_or_default();
     let mut out = Vec::new();
@@ -82,17 +84,95 @@ pub fn results(st: &AppState) -> kit_server_core::Result<Vec<Finding>> {
         out.push(Finding::new("IndexerCheck", "error", say("IndexerHealthCheckNoIndexers", &[]), None));
     }
 
-    // IndexerStatusCheck: enabled indexers held back after failures
+    // IndexerStatusCheck and IndexerLongTermStatusCheck: enabled indexers held back after failures that began in
+    // the last 6 hours, and before that
     let now = crate::auth::now();
-    let held: Vec<_> = enabled.iter().filter(|i| i.disabled_until > now).collect();
-    if !held.is_empty() {
-        let fragment = Some("#indexers-are-unavailable-due-to-failures");
-        if held.len() == enabled.len() {
-            out.push(Finding::new("IndexerStatusCheck", "error", say("IndexerStatusAllUnavailableHealthCheckMessage", &[]), fragment));
+    let held: Vec<_> = enabled.iter().filter(|i| i.status().is_disabled(now) && i.initial_failure > 0.0).collect();
+    let fragment = Some("#indexers-are-unavailable-due-to-failures");
+    for (source, recent, all_key, some_key) in [
+        ("IndexerStatusCheck", true, "IndexerStatusAllUnavailableHealthCheckMessage", "IndexerStatusUnavailableHealthCheckMessage"),
+        (
+            "IndexerLongTermStatusCheck",
+            false,
+            "IndexerLongTermStatusAllUnavailableHealthCheckMessage",
+            "IndexerLongTermStatusUnavailableHealthCheckMessage",
+        ),
+    ] {
+        let list: Vec<_> = held.iter().filter(|i| (i.initial_failure > now - 6.0 * 3600.0) == recent).collect();
+        if list.is_empty() {
+            continue;
+        }
+        if list.len() == enabled.len() {
+            out.push(Finding::new(source, "error", say(all_key, &[]), fragment));
         } else {
-            let names = held.iter().map(|i| i.name.clone()).collect::<Vec<_>>().join(", ");
-            let msg = say("IndexerStatusUnavailableHealthCheckMessage", &[("indexerNames", names)]);
-            out.push(Finding::new("IndexerStatusCheck", "warning", msg, fragment));
+            let names = list.iter().map(|i| i.name.clone()).collect::<Vec<_>>().join(", ");
+            out.push(Finding::new(source, "warning", say(some_key, &[("indexerNames", names)]), fragment));
+        }
+    }
+
+    // IndexerNoDefinitionCheck: Cardigann indexers whose definition is gone
+    let no_definition: Vec<String> = indexers
+        .iter()
+        .filter(|i| i.kind == "cardigann" && st.indexers.library.get(&i.definition).is_none())
+        .map(|i| i.name.clone())
+        .collect();
+    if !no_definition.is_empty() {
+        let msg = say("IndexerNoDefinitionCheckHealthCheckMessage", &[("indexerNames", no_definition.join(", "))]);
+        out.push(Finding::new("IndexerNoDefinitionCheck", "error", msg, Some("#indexers-have-no-definition")));
+    }
+
+    // IndexerVIPCheck and IndexerVIPExpiredCheck: Newznab VIP benefits ending within 7 days, or ended
+    let vip = |i: &&&crate::indexers::Indexer| {
+        i.settings.get("vip_expiration").filter(|v| !v.trim().is_empty()).and_then(|v| super::indexers::query_time(v))
+    };
+    let local_now = now + chrono::Local::now().offset().local_minus_utc() as f64;
+    let expiring: Vec<String> = enabled
+        .iter()
+        .filter(|i| vip(i).is_some_and(|t| t >= local_now && t <= local_now + 7.0 * 86400.0))
+        .map(|i| i.name.clone())
+        .collect();
+    if !expiring.is_empty() {
+        let msg = say("IndexerVipExpiringHealthCheckMessage", &[("indexerNames", expiring.join(", "))]);
+        out.push(Finding::new("IndexerVIPCheck", "warning", msg, Some("#indexer-vip-expiring")));
+    }
+    let expired: Vec<String> = enabled.iter().filter(|i| vip(i).is_some_and(|t| t < local_now)).map(|i| i.name.clone()).collect();
+    if !expired.is_empty() {
+        let msg = say("IndexerVipExpiredHealthCheckMessage", &[("indexerNames", expired.join(", "))]);
+        out.push(Finding::new("IndexerVIPExpiredCheck", "error", msg, Some("#indexer-vip-expired")));
+    }
+
+    // IndexerDownloadClientCheck: enabled indexers sent to a download client that is gone or off
+    let clients: Vec<i64> = st.hub.clients()?.iter().filter(|c| c.enabled).map(|c| c.id).collect();
+    let bad_client: Vec<String> =
+        enabled.iter().filter(|i| i.download_client_id > 0 && !clients.contains(&i.download_client_id)).map(|i| i.name.clone()).collect();
+    if !bad_client.is_empty() {
+        let msg = say("IndexerDownloadClientHealthCheckMessage", &[("indexerNames", bad_client.join(", "))]);
+        out.push(Finding::new("IndexerDownloadClientCheck", "warning", msg, Some("#invalid-indexer-download-client-setting")));
+    }
+
+    // IndexerProxyStatusCheck: the proxies in use that fail their test
+    let proxies = st.indexers.available_proxies();
+    if !proxies.is_empty() {
+        let mut bad = Vec::new();
+        for p in &proxies {
+            if !crate::indexers::proxies::test(p, &st.indexers.proxy_ping_url(), st.indexers.solver.as_ref(), &st.indexers.site_proxy())
+                .await
+                .is_empty()
+            {
+                bad.push(p.name.clone());
+            }
+        }
+        let fragment = Some("#indexer-proxies-are-unavailable-due-to-failures");
+        if !bad.is_empty() && bad.len() == proxies.len() {
+            out.push(Finding::new(
+                "IndexerProxyStatusCheck",
+                "error",
+                say("IndexerProxyStatusAllUnavailableHealthCheckMessage", &[]),
+                fragment,
+            ));
+        } else if !bad.is_empty() {
+            let msg = say("IndexerProxyStatusUnavailableHealthCheckMessage", &[("indexerProxyNames", bad.join(", "))]);
+            out.push(Finding::new("IndexerProxyStatusCheck", "warning", msg, fragment));
         }
     }
 
@@ -103,7 +183,7 @@ pub fn results(st: &AppState) -> kit_server_core::Result<Vec<Finding>> {
 
 /// `GET /api/v1/health`.
 async fn health(State(st): State<AppState>, _: V1) -> ApiResult<Json<Value>> {
-    Ok(Json(Value::Array(results(&st)?.iter().map(Finding::json).collect())))
+    Ok(Json(Value::Array(results(&st).await?.iter().map(Finding::json).collect())))
 }
 
 #[cfg(test)]

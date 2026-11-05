@@ -46,7 +46,7 @@ pub struct Kind {
 }
 
 /// The commands Lantern runs, as Prowlarr defines them.
-pub const KINDS: [Kind; 9] = [
+pub const KINDS: [Kind; 11] = [
     Kind { name: "MessagingCleanup", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
     Kind { name: "CheckHealth", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
     Kind {
@@ -84,6 +84,8 @@ pub const KINDS: [Kind; 9] = [
         extra: &[],
         flags: &[("forceSync", false)],
     },
+    Kind { name: "CleanUpHistory", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
+    Kind { name: "ClearHistory", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
 ];
 
 /// Prowlarr's `CommandStatus`, by number.
@@ -216,6 +218,7 @@ pub fn pump(st: AppState) {
                 return;
             }
             let (name, body) = (next.s("name"), serde_json::from_str::<Value>(&next.s("body")).unwrap_or_default());
+            notify(&st, id);
             let st2 = st.clone();
             tokio::spawn(async move {
                 let result = execute(&st2, &name, &body, id).await;
@@ -231,10 +234,21 @@ pub fn pump(st: AppState) {
                 if body["updateScheduledTask"].as_bool().unwrap_or(false) {
                     system::task_ran(&st2.db, &name, now, ended);
                 }
+                notify(&st2, id);
                 pump(st2);
             });
         }
     });
+}
+
+/// Tells the connected web apps how command `id` stands, when it sends updates to them
+/// (`CommandController.Handle(CommandUpdatedEvent)`).
+fn notify(st: &AppState, id: i64) {
+    let Ok(Some(r)) = st.db.one("SELECT * FROM prowlarr_commands WHERE id=?", p![id]) else { return };
+    let v = resource(&r);
+    if v["sendUpdatesToClient"] == true {
+        super::signalr::broadcast(st, "command", "updated", Some(&v));
+    }
 }
 
 /// Saves a command's progress message (Prowlarr's `ProgressInfo`).
@@ -259,7 +273,7 @@ async fn execute(st: &AppState, name: &str, body: &Value, id: i64) -> Result<Opt
                 .map_err(|e| e.detail)?;
         }
         "CheckHealth" => {
-            super::health::results(st).map_err(|e| e.detail)?;
+            super::health::results(st).await.map_err(|e| e.detail)?;
         }
         "IndexerDefinitionUpdate" => {
             let source = st.settings.str("definitions_source");
@@ -291,6 +305,13 @@ async fn execute(st: &AppState, name: &str, body: &Value, id: i64) -> Result<Opt
         }
         "ApplicationIndexerSync" => {
             super::apps::sync::sync_all(st, body["forceSync"].as_bool().unwrap_or(false)).await;
+        }
+        "CleanUpHistory" => {
+            let days = super::config_get(&st.db, "historycleanupdays").and_then(|d| d.parse().ok()).unwrap_or(30);
+            super::history::clean_up(&st.db, days).map_err(|e| e.detail)?;
+        }
+        "ClearHistory" => {
+            super::history::clear(&st.db).map_err(|e| e.detail)?;
         }
         _ => {}
     }

@@ -375,3 +375,18 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — EXEC actions and exec external filters run the program with an argument list split the way
   go-shellquote splits autobrr's ExecArgs, never through a shell. Webhook headers are taken but not stored, as in
   autobrr; webhook type and method are stored but, as in autobrr, the webhook action always POSTs JSON.
+- 2026-11-05 — Prowlarr's v1 indexer resource (`prowlarr/indexers.rs`) maps Lantern's indexers both ways. Only
+  Cardigann, Newznab and Torznab indexers exist: Prowlarr's native C# indexers are not in the schema, and an
+  implementation Lantern doesn't have answers 400. A Cardigann site's secret settings are masked as `********` like
+  every other secret (Prowlarr sends them in the clear), and a masked value keeps the saved one. A PUT can't change
+  an indexer's kind or definition (add a new one instead). A Newznab/Torznab indexer that hasn't answered its caps
+  yet shows Lantern's fallback capabilities. A definition template has no encoding until saved, as in Prowlarr.
+- 2026-11-05 — The search page's grab (`POST /api/v1/search`) sends to Lantern's own download clients (the
+  indexer's client, else the first enabled one for the protocol); Prowlarr's download client API is a later slice.
+  Found releases are kept in memory for 30 minutes per data folder, as Prowlarr's cache is.
+- 2026-11-05 — v1 history leaves out Lantern's own indexer tests and keeps no download ids. Lantern's searches
+  don't keep whether an offset was given, so a query's history has an `offset` whenever it has a `limit` (the web
+  app and the apps always send both).
+- 2026-11-05 — SignalR (`/signalr/messages`) offers WebSockets only (no server-sent events or long polling); the
+  web app connects that way. One broadcast channel per data folder carries indexer and command updates;
+  the access token is the API key, or the signed-in session.

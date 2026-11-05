@@ -23,7 +23,6 @@
 //!   GET    /api/v2.0/indexers/{id}/results/torznab/api?…        the same, at Jackett's address
 //!   GET    /{id}/download?apikey=&link=&sig=&file=              a release's file through Lantern, or a redirect to it
 //!          (also /api/v1/indexer/{id}/download)
-//!   GET    /api/v1/…                                            the Prowlarr API's indexer routes (indexer, search, indexerstats; the rest is in `prowlarr`)
 //!   *      /api/v1/indexerproxy…                                the indexer proxies ([`proxies_api`](super::proxies_api))
 //! ```
 
@@ -31,7 +30,7 @@ use super::capabilities::Capabilities;
 use super::cardigann::Grabbed;
 use super::newznab_request::{self, NewznabRequest};
 use super::release::{Protocol, Query, Release, SearchKind};
-use super::{categories, nabxml, newznab, newznab_results, GrabError, Indexer};
+use super::{categories, nabxml, newznab, newznab_results, GrabError};
 use crate::AppState;
 use axum::extract::{Path, Query as Q, State};
 use axum::http::{header, HeaderMap, StatusCode};
@@ -62,10 +61,6 @@ pub fn router() -> Router<AppState> {
         .route("/api/v2.0/indexers/{id}/results/torznab/api", get(newznab_api))
         .route("/api/v1/indexer/{id}/newznab", get(newznab_api))
         .route("/api/v1/indexer/{id}/download", get(download))
-        .route("/api/v1/indexer", get(v1_indexers))
-        .route("/api/v1/indexer/{id}", get(v1_indexer))
-        .route("/api/v1/indexerstats", get(v1_stats))
-        .route("/api/v1/search", get(v1_search))
         .merge(super::proxies_api::router())
 }
 
@@ -248,17 +243,6 @@ pub fn query_of(q: &HashMap<String, String>) -> std::result::Result<Query, (u16,
     Ok(query)
 }
 
-/// Whether the request carries the API key (`?apikey=` or `X-Api-Key`).
-fn key_ok(st: &AppState, headers: &HeaderMap, q: &HashMap<String, String>) -> bool {
-    let want = st.settings.str("api_key");
-    if want.is_empty() {
-        return false;
-    }
-    let given =
-        q.get("apikey").cloned().or_else(|| headers.get("x-api-key").and_then(|v| v.to_str().ok()).map(str::to_string)).unwrap_or_default();
-    crate::auth::ct_eq(&given, &want)
-}
-
 /// The address apps reached Lantern at (`https://lantern.lan`), from the `public_url` setting or the request.
 pub fn public_base(st: &AppState, headers: &HeaderMap) -> String {
     let set = st.settings.str("public_url");
@@ -288,7 +272,7 @@ pub fn web_url_encode(s: &str) -> String {
 
 /// The address Lantern hands out for a release's file, magnet or not (`DownloadMappingService.ConvertToProxyLink`):
 /// `{base}/{id}/download?apikey=…&link=…&sig=…&file=…`. The link is signed rather than encrypted (`sig`).
-fn proxy_link(st: &AppState, base: &str, apikey: &str, indexer: i64, link: &str, title: &str) -> String {
+pub fn proxy_link(st: &AppState, base: &str, apikey: &str, indexer: i64, link: &str, title: &str) -> String {
     let (link, sig) = st.signer.sign(indexer, link);
     format!("{base}/{indexer}/download?apikey={apikey}&link={link}&sig={sig}&file={}", web_url_encode(title))
 }
@@ -349,13 +333,13 @@ fn prowlarr_key_ok(st: &AppState, headers: &HeaderMap, pairs: &[(String, String)
 }
 
 /// The app that asked (`Sonarr` …) from the request's headers (`GetSource`).
-fn source_from(headers: &HeaderMap) -> String {
+pub fn source_from(headers: &HeaderMap) -> String {
     newznab_request::source_of(headers.get(header::USER_AGENT).and_then(|v| v.to_str().ok()), headers.contains_key("x-prowlarr-client"))
 }
 
 /// The machine that asked: the first `X-Forwarded-For` hop, else `X-Real-IP` (`GetHostName`; Lantern doesn't look the
 /// address up in DNS).
-fn host_from(headers: &HeaderMap) -> String {
+pub fn host_from(headers: &HeaderMap) -> String {
     let h = |k: &str| headers.get(k).and_then(|v| v.to_str().ok()).map(str::to_string);
     h("x-forwarded-for").and_then(|v| v.split(',').next().map(|s| s.trim().to_string())).or_else(|| h("x-real-ip")).unwrap_or_default()
 }
@@ -624,142 +608,4 @@ async fn search(State(st): State<AppState>, _: SignedIn, headers: HeaderMap, Q(q
     let results: Vec<Value> = releases.iter().map(|r| release_json(&st, &base, &apikey, r)).collect();
     let failed: Vec<Value> = failed.iter().map(|(n, e)| json!({ "indexer": n, "error": e })).collect();
     Ok(Json(json!({ "results": results, "failed": failed })))
-}
-
-// ---- the Prowlarr API ----
-
-fn v1_auth(st: &AppState, headers: &HeaderMap, q: &HashMap<String, String>) -> Result<()> {
-    if key_ok(st, headers, q) {
-        Ok(())
-    } else {
-        Err(err(401, "The API key is missing or wrong"))
-    }
-}
-
-/// An indexer as the Prowlarr API describes it.
-fn v1_resource(st: &AppState, ix: &Indexer) -> Value {
-    let caps = st.indexers.capabilities(ix);
-    let p = st.indexers.public(ix);
-    let tops: Vec<Value> = caps
-        .categories
-        .tree(true)
-        .into_iter()
-        .filter(|c| c.id < 100000)
-        .map(|c| {
-            let subs: Vec<Value> = c.subs.iter().map(|s| json!({ "id": s.id, "name": s.name, "subCategories": [] })).collect();
-            json!({ "id": c.id, "name": c.name, "subCategories": subs })
-        })
-        .collect();
-    let params = |v: &Vec<&'static str>| v.iter().map(|x| x.to_string()).collect::<Vec<_>>();
-    json!({
-        "id": ix.id,
-        "name": ix.name,
-        "enable": ix.enabled,
-        "redirect": ix.redirect,
-        "priority": ix.priority,
-        "protocol": ix.protocol(),
-        "privacy": p["privacy"],
-        "language": p["language"],
-        "description": p["description"],
-        "implementation": if ix.kind == "cardigann" { "Cardigann" } else if ix.kind == "newznab" { "Newznab" } else { "Torznab" },
-        "implementationName": if ix.kind == "cardigann" { "Cardigann" } else if ix.kind == "newznab" { "Newznab" } else { "Torznab" },
-        "definitionName": ix.definition,
-        "indexerUrls": p["links"],
-        "fields": [{ "name": "baseUrl", "value": p["base_url"] }],
-        "tags": st.indexers.tag_ids(&ix.tags),
-        "appProfileId": ix.app_profile_id,
-        "downloadClientId": ix.download_client_id,
-        "added": chrono::DateTime::from_timestamp(ix.added as i64, 0).map(|d| d.to_rfc3339()),
-        "capabilities": {
-            "limitsMax": caps.limits_max,
-            "limitsDefault": caps.limits_default,
-            "categories": tops,
-            "supportsRawSearch": caps.supports_raw_search,
-            "searchParams": params(&caps.search_params),
-            "tvSearchParams": params(&caps.tv_params),
-            "movieSearchParams": params(&caps.movie_params),
-            "musicSearchParams": params(&caps.music_params),
-            "bookSearchParams": params(&caps.book_params),
-        },
-    })
-}
-
-async fn v1_indexers(State(st): State<AppState>, headers: HeaderMap, Q(q): Q<HashMap<String, String>>) -> Result<Json<Value>> {
-    v1_auth(&st, &headers, &q)?;
-    Ok(Json(Value::Array(st.indexers.list()?.iter().map(|i| v1_resource(&st, i)).collect())))
-}
-
-async fn v1_indexer(
-    State(st): State<AppState>,
-    headers: HeaderMap,
-    Path(id): Path<i64>,
-    Q(q): Q<HashMap<String, String>>,
-) -> Result<Json<Value>> {
-    v1_auth(&st, &headers, &q)?;
-    Ok(Json(v1_resource(&st, &st.indexers.get(id)?)))
-}
-
-async fn v1_stats(State(st): State<AppState>, headers: HeaderMap, Q(q): Q<HashMap<String, String>>) -> Result<Json<Value>> {
-    v1_auth(&st, &headers, &q)?;
-    let list: Vec<Value> = st
-        .indexers
-        .stats(30.0)?
-        .iter()
-        .map(|s| {
-            json!({
-                "indexerId": s["id"], "indexerName": s["name"], "averageResponseTime": s["avg_ms"], "numberOfQueries": s["queries"],
-                "numberOfGrabs": s["grabs"], "numberOfFailedQueries": s["failures"], "numberOfRssQueries": 0, "numberOfAuthQueries": 0,
-                "numberOfFailedGrabs": 0, "numberOfFailedRssQueries": 0, "numberOfFailedAuthQueries": 0,
-            })
-        })
-        .collect();
-    Ok(Json(json!({ "indexers": list, "userAgents": [], "hosts": [] })))
-}
-
-async fn v1_search(State(st): State<AppState>, headers: HeaderMap, raw: axum::extract::RawQuery) -> Result<Json<Value>> {
-    // indexerIds and categories may repeat (`categories=2000&categories=5000`)
-    let mut q: HashMap<String, String> = HashMap::new();
-    for (k, v) in url::form_urlencoded::parse(raw.0.unwrap_or_default().as_bytes()) {
-        let k = k.to_string();
-        let e = q.entry(k).or_default();
-        if !e.is_empty() {
-            e.push(',');
-        }
-        e.push_str(&v);
-    }
-    v1_auth(&st, &headers, &q)?;
-    if let Some(ids) = q.remove("indexerIds") {
-        q.insert("ids".into(), ids);
-    }
-    let query = query_of(&q).map_err(|(_, m)| err(400, m))?;
-    let ids: Vec<i64> =
-        q.get("ids").map(|s| s.split(',').filter_map(|x| x.trim().parse().ok()).filter(|x| *x > 0).collect()).unwrap_or_default();
-    let source = headers.get(header::USER_AGENT).and_then(|v| v.to_str().ok()).unwrap_or("").split('/').next().unwrap_or("").to_string();
-    let (releases, _) = st.indexers.search(&ids, &query, &source).await?;
-    let base = public_base(&st, &headers);
-    let apikey = st.settings.str("api_key");
-    Ok(Json(Value::Array(releases.iter().map(|r| release_json(&st, &base, &apikey, r)).collect())))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn reads_search_parameters() {
-        let q: HashMap<String, String> = [("t", "tvsearch"), ("q", "Show"), ("season", "1"), ("ep", "2"), ("cat", "5000,5040")]
-            .iter()
-            .map(|(a, b)| (a.to_string(), b.to_string()))
-            .collect();
-        let query = query_of(&q).unwrap();
-        assert_eq!(query.kind, SearchKind::TvSearch);
-        assert_eq!(query.categories, vec![5000, 5040]);
-        assert!(!query.rss);
-        let q: HashMap<String, String> =
-            [("query", "{ImdbId:tt0111161} extra")].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
-        let query = query_of(&q).unwrap();
-        assert_eq!((query.imdbid.as_str(), query.keywords.as_str()), ("tt0111161", "extra"));
-        let q: HashMap<String, String> = [("t", "nope")].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
-        assert!(query_of(&q).is_err());
-    }
 }

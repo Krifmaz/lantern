@@ -7,6 +7,11 @@
   or slow machine no longer fails a check before the browser is ready.
 
 ### Added
+- Prowlarr's indexer pages work against Lantern as against Prowlarr v2.7.0.5723: add, change, test and remove
+  indexers (one at a time or several), every Cardigann definition and Prowlarr's Newznab and Torznab presets to
+  pick from, the search page and its grab button, the history (all, since a date, by indexer), the stats and the
+  sites on hold. Tag details name the proxies and apps that use a tag, the health page has Prowlarr's indexer,
+  proxy, VIP and download client checks, and the web app gets live updates over SignalR.
 - Indexer proxies work as in Prowlarr v2.7.0.5723: HTTP, SOCKS4, SOCKS5 and FlareSolverr proxies under
   `/api/v1/indexerproxy` (add, change, remove, schema, test, test all), used by the indexers that share a tag with
   them. A FlareSolverr proxy is asked only when a site shows a Cloudflare check; pointed at Lantern, Lantern's own
