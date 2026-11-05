@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -28,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import dev.krifmaz.kit.compose.KitApp
 import dev.krifmaz.kit.compose.bugs.CrashLog
 import dev.krifmaz.kit.compose.settings.TextLink
+import dev.krifmaz.kit.compose.setup.SetupForm
+import dev.krifmaz.kit.compose.setup.setupNeeded
 import dev.krifmaz.kit.compose.theme.palette
 import dev.krifmaz.kit.compose.widgets.Gutter
 import dev.krifmaz.kit.compose.widgets.KitButton
@@ -42,7 +45,9 @@ import dev.krifmaz.kit.compose.R as KitR
  * Signing in to the connected server, with the kit's sign-in rules: Username and
  * Password, then the authenticator code when the account has two-step sign-in. The server's answer (for example
  * "Invalid username or password") shows in full with Copy. The app token it gives is kept ([ServerApi.login]);
- * the app comes back here whenever the server stops taking it.
+ * the app comes back here whenever the server stops taking it. A new server with no owner yet shows the kit's
+ * "Create your account" ([SetupForm], with the setup code from the server's log) instead of the form, and signs in
+ * with the new account once it is made.
  *
  * @param app the app (its server).
  * @param base the server's address, under the title.
@@ -58,6 +63,9 @@ fun SignInPage(app: App, base: String, onBack: () -> Unit) {
     var needsCode by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
+    // a new server with no owner: "Create your account" until it is made (false while asking, and on any error)
+    var setupDone by remember { mutableStateOf(false) }
+    val needsSetup by produceState(false, app.server.kit) { value = withContext(Dispatchers.IO) { setupNeeded(app.server.kit) } }
 
     fun submit() {
         if (busy || username.isBlank() || password.isEmpty() || (needsCode && code.length < 6)) return
@@ -99,6 +107,15 @@ fun SignInPage(app: App, base: String, onBack: () -> Unit) {
                 Text(SignInRules.title(KitApp.name), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
                 Text(base, style = MaterialTheme.typography.bodySmall, color = p.muted)
             }
+        }
+        if (needsSetup && !setupDone) {
+            SetupForm(app.server.kit, onDone = { user, pw ->
+                setupDone = true
+                username = user
+                password = pw
+                submit()
+            })
+            return@Column
         }
         KitField(username, { username = it }, modifier = Modifier.fillMaxWidth(), label = "Username", enabled = !needsCode, imeAction = ImeAction.Next)
         KitField(

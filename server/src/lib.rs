@@ -17,6 +17,7 @@
 //! | `/api/import/*` (Prowlarr and FlareSolverr, dry run first) | [`migrate`] |
 //! | `/api/releases/*` (IRC announces, RSS, filters) | [`releases`] |
 //! | `/api/cross-seed/*` | [`crossseed`] |
+//! | `GET`/`POST /api/setup` (first-run "Create your account" with the setup code from the log) | kit-server-setup |
 //!
 //! Everything the app adds of its own goes into [`app`] next to them.
 
@@ -113,6 +114,8 @@ pub struct AppState {
     pub releases: releases::Releases,
     /// Cross-seeding: finished torrents seeded on the other sites that have the same files.
     pub cross_seed: crossseed::CrossSeed,
+    /// First-run setup's one-time code: open while there is no owner ([`auth::ensure_owner`]), closed after.
+    pub setup: Arc<kit_server_setup::SetupCode>,
 }
 
 impl AppState {
@@ -191,6 +194,7 @@ impl AppState {
             indexers,
             signer,
             cross_seed: crossseed::CrossSeed::new(hub.clone()),
+            setup: Arc::new(kit_server_setup::SetupCode::closed()),
             hub,
             vault,
             releases,
@@ -219,6 +223,21 @@ impl AppState {
     /// The app's name as people see it (the `app_name` setting).
     pub fn app_name(&self) -> String {
         self.settings.str("app_name")
+    }
+}
+
+impl kit_server_setup::SetupHost for AppState {
+    fn setup_code(&self) -> &kit_server_setup::SetupCode {
+        &self.setup
+    }
+
+    async fn has_owner(&self) -> kit_server_core::Result<bool> {
+        use kit_server_core::Db;
+        Ok(self.db.one("SELECT id FROM users WHERE role='owner'", kit_server_core::p![])?.is_some())
+    }
+
+    async fn create_owner(&self, owner: kit_server_setup::NewOwner) -> kit_server_core::Result<()> {
+        auth::create_owner(&self.db, owner).await
     }
 }
 
@@ -307,6 +326,7 @@ pub fn app(st: AppState) -> Router {
         .merge(kit_server_bugreports::crash::router())
         .merge(kit_server_diagnostics::router())
         .merge(kit_server_settings::router())
+        .merge(kit_server_setup::router())
         .merge(auth::router())
         .merge(indexers::api::router())
         .merge(solver::api::router())

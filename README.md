@@ -4,7 +4,7 @@ One self-hosted Rust app that replaces Prowlarr, FlareSolverr, autobrr and cross
 Usenet account safe, and is the single download hub for the other apps. The goal and build order are in
 [docs/GOALS.md](docs/GOALS.md).
 
-Made from the [Krifmaz kit](https://github.com/Krifmaz/kit) template (v0.2.1): the kit's look and its
+Made from the [Krifmaz kit](https://github.com/Krifmaz/kit) template (v0.8.0): the kit's look and its
 ease-of-use features from the first commit.
 
 | Folder | What it is |
@@ -65,8 +65,11 @@ without downloading again. The Cross-seed page lists every copy found and what h
 1. Make the lock files and commit them (CI and the Docker build use `--locked`):
    `(cd server && cargo generate-lockfile) && (cd web && cargo generate-lockfile)`.
 2. Push to GitHub. Every pull request runs the checks; every merge to main is a release.
-3. The first start makes the owner account: set `APP_ADMIN_PASSWORD` (and `APP_ADMIN_USER`, default `admin`),
-   or read the password it prints (also in `initial_admin_password.txt` in the data folder).
+3. The first start asks for the owner: open Lantern (web, desktop or Android) and fill in "Create your account"
+   with the one-time setup code it prints in its log (`docker logs lantern`). The code stops working once your
+   account exists, and a restart before then prints a new one. For an unattended install, set
+   `APP_ADMIN_PASSWORD` (and `APP_ADMIN_USER`, default `admin`) instead: the owner is made at once, with no setup
+   screen.
 
 ## Run it
 
@@ -88,7 +91,7 @@ docker run --read-only -p 9696:9696 -p 8191:8191 -v lantern-data:/data lantern
 | `APP_DATA_DIR` | where the database and uploads live (the only folder it writes to) | `/data` |
 | `APP_STATIC_DIR` | the built web app | `/app/static` |
 | `APP_ANNOUNCE_DIR` | the IRC announce definitions (the data folder's `announce/` wins) | `/app/announce` |
-| `APP_ADMIN_USER`, `APP_ADMIN_PASSWORD` | the owner made at the first start | `admin`, a printed password |
+| `APP_ADMIN_USER`, `APP_ADMIN_PASSWORD` | the owner made at the first start (an unattended install) | `admin`; none: "Create your account" with the setup code from the log |
 | `APP_VAULT_PASSPHRASE` | locks the account vault with your passphrase instead of `vault.key` in the data folder (set it before the first start; Lantern won't open the vault without it) | not set: `vault.key` |
 | `APP_ALERT_NTFY_URL`, `APP_ALERT_DISCORD_WEBHOOK`, `APP_ALERT_EMAIL_TO`, `APP_SMTP_*` | where the account keeper sends warnings (also under Settings → Accounts → Alerts) | not set |
 | `APP_NAME`, `APP_SESSION_DAYS`, `APP_API_KEY` | settings (settings.toml); set here they are locked in Settings | |

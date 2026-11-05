@@ -1,5 +1,5 @@
 //! Signing in, cut down to what every app
-//! needs: accounts with bcrypt passwords, an owner made at the first start, a web session cookie, the
+//! needs: accounts with bcrypt passwords, an owner made at the first start (or on first-run setup), a web session cookie, the
 //! server's API key (`x-api-key`) and the CSRF rule (`X-Requested-With: <project name>`). The kit's words throughout.
 //!
 //! ```text
@@ -120,29 +120,40 @@ pub fn create_user(db: &SqliteDb, username: &str, password: &str, role: &str) ->
     )
 }
 
-/// First start: make sure there is an owner. `user` defaults to `admin`; without a `password` one is made,
-/// printed once and written to `<data>/initial_admin_password.txt` (readable by the server's user only).
+/// First start: make sure there is an owner, or a way to make one. With `password` (an unattended install:
+/// `APP_ADMIN_PASSWORD`, and `APP_ADMIN_USER`, default `admin`) the owner is made now. Without one, first-run setup
+/// opens: a one-time setup code is printed in the log, and the first person to open Lantern makes the owner on
+/// "Create your account" with it (kit-server-setup). The code stops working once the owner exists.
 pub fn ensure_owner(st: &AppState, user: Option<String>, password: Option<String>) -> anyhow::Result<()> {
     if st.db.one("SELECT id FROM users WHERE role='owner'", p![]).map_err(|e| anyhow::anyhow!(e.detail))?.is_some() {
+        st.setup.close();
         return Ok(());
     }
-    let username = user.filter(|u| !u.trim().is_empty()).unwrap_or_else(|| "admin".into());
-    let (password, generated) = match password {
-        Some(p) if !p.trim().is_empty() => (p, false),
-        _ => (random_token(12), true),
-    };
-    create_user(&st.db, &username, &password, "owner").map_err(|e| anyhow::anyhow!(e.detail))?;
-    if generated {
-        let f = st.data_dir.join("initial_admin_password.txt");
-        std::fs::write(&f, format!("{username}\n{password}\n"))?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            std::fs::set_permissions(&f, std::fs::Permissions::from_mode(0o600))?;
+    match password.filter(|p| !p.trim().is_empty()) {
+        Some(password) => {
+            let username = user.filter(|u| !u.trim().is_empty()).unwrap_or_else(|| "admin".into());
+            create_user(&st.db, &username, &password, "owner").map_err(|e| anyhow::anyhow!(e.detail))?;
+            st.setup.close();
+            tracing::info!("Created owner account '{username}'");
         }
-        println!("{}\nCreated owner account '{username}' with password: {password}\n{}", "=".repeat(70), "=".repeat(70));
+        None => st.setup.open(&st.settings.str("app_name")),
     }
-    tracing::info!("Created owner account '{username}'");
+    Ok(())
+}
+
+/// First-run setup's owner: checked like any account, then made with its email (empty when none was given).
+pub async fn create_owner(db: &SqliteDb, o: kit_server_setup::NewOwner) -> Result<()> {
+    validate_credentials(&o.username, &o.password)?;
+    if db.one("SELECT id FROM users WHERE username=? COLLATE NOCASE", p![o.username.as_str()])?.is_some() {
+        return Err(err(409, "Username already taken"));
+    }
+    let pw = o.password.clone();
+    let hash = tokio::task::spawn_blocking(move || hash_password(&pw)).await.unwrap_or_default();
+    let email = (!o.email.is_empty()).then_some(o.email);
+    db.execute(
+        "INSERT INTO users (username, email, password_hash, role, created_at) VALUES (?,?,?,'owner',?)",
+        p![o.username, email, hash, now()],
+    )?;
     Ok(())
 }
 

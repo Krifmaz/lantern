@@ -138,6 +138,8 @@ fn main() {
                 notice::mount();
                 whats_new::start(Rc::new(navigate));
             }
+            // a new server with no owner yet: "Create your account" with the setup code from its log
+            None if kit_leptos::setup::setup_needed().await => leptos::mount::mount_to(root, pages::FirstRun).forget(),
             None => leptos::mount::mount_to(root, pages::SignIn).forget(),
         }
     });

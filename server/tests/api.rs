@@ -42,6 +42,50 @@ fn admin(method: &str, path: &str, body: Option<Value>) -> Request<Body> {
 }
 
 #[tokio::test]
+async fn first_run_setup_makes_the_owner_once_with_the_logged_code() {
+    let dir = std::env::temp_dir().join(format!("app-test-setup-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let st = server::AppState::open(&dir.join("data"), dir.join("static"), |_| None).await.unwrap();
+    // no owner and no APP_ADMIN_PASSWORD: setup opens with a code, and nobody is made
+    server::auth::ensure_owner(&st, None, None).unwrap();
+    let code = st.setup.code().expect("a setup code");
+    let app = server::app(st.clone());
+    let post =
+        |v: Value| Request::post("/api/setup").header(header::CONTENT_TYPE, "application/json").body(Body::from(v.to_string())).unwrap();
+    let (s, v, _) = call(&app, Request::get("/api/setup").body(Body::empty()).unwrap()).await;
+    assert_eq!((s, v), (StatusCode::OK, json!({ "needed": true })));
+    // nobody can sign in yet, and a wrong code makes nobody
+    let (s, _, _) = call(&app, post(json!({ "code": "WRONG-CODE", "username": "ana", "password": PASSWORD }))).await;
+    assert_eq!(s, StatusCode::FORBIDDEN);
+    // Lantern's own rules: the code still works after a short password
+    let (s, v, _) = call(&app, post(json!({ "code": code, "username": "ana", "password": "short" }))).await;
+    assert_eq!((s, v["detail"].as_str()), (StatusCode::BAD_REQUEST, Some("Password must be at least 8 characters")));
+    let (s, v, _) =
+        call(&app, post(json!({ "code": code.to_lowercase(), "username": "ana", "password": PASSWORD, "email": "ana@example.com" }))).await;
+    assert_eq!((s, v), (StatusCode::OK, json!({ "ok": true, "username": "ana" })));
+    // ana is the owner and signs in; the screen and the code are gone
+    let login = Request::post("/api/auth/login")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(json!({ "username": "ana", "password": PASSWORD }).to_string()))
+        .unwrap();
+    let (s, v, _) = call(&app, login).await;
+    assert_eq!((s, v["role"].as_str(), v["email"].as_str()), (StatusCode::OK, Some("owner"), Some("ana@example.com")));
+    let (_, v, _) = call(&app, Request::get("/api/setup").body(Body::empty()).unwrap()).await;
+    assert_eq!(v, json!({ "needed": false }));
+    let (s, _, _) = call(&app, post(json!({ "code": code, "username": "eve", "password": PASSWORD }))).await;
+    assert_eq!(s, StatusCode::CONFLICT);
+    // a restart with an owner keeps setup closed
+    server::auth::ensure_owner(&st, None, None).unwrap();
+    assert!(!st.setup.is_open());
+    // an unattended install (APP_ADMIN_PASSWORD) makes the owner at once, never opens setup and writes no password file
+    let dir2 = dir.join("unattended");
+    let st2 = server::AppState::open(&dir2.join("data"), dir2.join("static"), |_| None).await.unwrap();
+    server::auth::ensure_owner(&st2, Some("boss".into()), Some(PASSWORD.into())).unwrap();
+    assert!(!st2.setup.is_open());
+    assert!(!dir2.join("data/initial_admin_password.txt").exists());
+}
+
+#[tokio::test]
 async fn health_names_the_version_and_the_web_build() {
     let (app, _, _) = server("health").await;
     let (s, v, _) = call(&app, Request::get("/api/health").body(Body::empty()).unwrap()).await;
