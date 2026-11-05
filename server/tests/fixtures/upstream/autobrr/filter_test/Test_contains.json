@@ -1,0 +1,83 @@
+[
+ {
+  "name": "test_1",
+  "args": {
+   "tag": "group1",
+   "filter": "group1,group2",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_2",
+  "args": {
+   "tag": "group1",
+   "filter": "group1,group2",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_3",
+  "args": {
+   "tag": "group1",
+   "filter": "group2,group3",
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "test_4",
+  "args": {
+   "tag": "something test something",
+   "filter": "*test*",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_5",
+  "args": {
+   "tag": "something.test.something",
+   "filter": "*test*",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_6",
+  "args": {
+   "tag": "that movie",
+   "filter": "that?movie",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_7",
+  "args": {
+   "tag": "that.movie",
+   "filter": "that?movie",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_8",
+  "args": {
+   "tag": "",
+   "filter": "that?movie,",
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "test_9",
+  "args": {
+   "tag": "",
+   "filter": "",
+   "__type": "args"
+  },
+  "want": false
+ }
+]

@@ -1,0 +1,83 @@
+[
+ {
+  "name": "test_1",
+  "args": {
+   "value": 2,
+   "filterList": "1,2,3",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_2",
+  "args": {
+   "value": 2,
+   "filterList": "1-3",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_3",
+  "args": {
+   "value": 2,
+   "filterList": "2",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_4",
+  "args": {
+   "value": 2,
+   "filterList": "2-5",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_5",
+  "args": {
+   "value": 2,
+   "filterList": "3-5",
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "test_6",
+  "args": {
+   "value": 2,
+   "filterList": "3-5",
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "test_7",
+  "args": {
+   "value": 0,
+   "filterList": "3-5",
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "test_8",
+  "args": {
+   "value": 0,
+   "filterList": "0",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_9",
+  "args": {
+   "value": 100,
+   "filterList": "1-1000",
+   "__type": "args"
+  },
+  "want": true
+ }
+]

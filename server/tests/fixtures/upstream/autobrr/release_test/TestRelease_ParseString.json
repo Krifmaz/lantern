@@ -1,0 +1,211 @@
+[
+ {
+  "name": "parse_1",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "Phenomena 1985 International Cut UHD BluRay 2160p DTS-HD MA 5.1 DV HEVC HYBRID REMUX-FraMeSToR",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_2",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "Justice League: Dark 2017 UHD BluRay 2160p DTS-HD MA 5.1 DV HEVC HYBRID REMUX-FraMeSToR",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_3",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "Outer.Range.S01E02.The.Land.1080p.AMZN.WEB-DL.DDP5.1.H.264-TOMMY",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_4",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "WeCrashed S01E07 The Power of We 2160p ATVP WEB-DL DDP 5.1 Atmos HDR H.265-NOSiViD",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_5",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "WeCrashed.S01E07.The.Power.of.We.DV.2160p.ATVP.WEB-DL.DDPA5.1.H.265-NOSiViD",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_6",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "WeCrashed.S01E07.The.Power.of.We.DV.2160p.ATVP.WEB-DL.DDPA5.1.H265-NOSiViD",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_7",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "WeCrashed.S01E07.The.Power.of.We.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_8",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "WeCrashed.S01E07.The.Power.of.We.HDR.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_9",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "WeCrashed.S01.HDR.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_10",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "WeCrashed.S01.DV.HDR+.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_11",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "WeCrashed.S01.DoVi.HDR10+.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_12",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "WeCrashed.S01.Dolby.Vision.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_13",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "WeCrashed.S01.Dolby.Vision.1080p.ATVP.WEB-DL.DDPA5.1.x264-NOSiViD",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_14",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "Without Remorse 2021 1080p Blu-ray AVC DTS-HD MA 5.1-MTeam",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_15",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "Annette 2021 2160p GER UHD Blu-ray SDR HEVC DTS-HD MA 5.1-UNTOUCHED",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_16",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "Sing 2 2021 MULTi COMPLETE UHD Blu-ray TrueHD Atmos 7.1-MMCLX",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_17",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "NBC.Nightly.News.2022.04.12.1080p.NBC.WEB-DL.AAC2.0.H.264-TEPES",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_18",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "[SubsPlease] Heroine Tarumono! Kiraware Heroine to Naisho no Oshigoto - 04 (1080p) [17083ED9]",
+   "__type": "args"
+  },
+  "wantErr": false
+ },
+ {
+  "name": "parse_19",
+  "fields": {
+   "__type": "fields"
+  },
+  "args": {
+   "title": "The World is Not Enough 1999 2160p WEB-DL HEVC DTS-HD MA 5.1 H.265-DEFLATE",
+   "__type": "args"
+  },
+  "wantErr": false
+ }
+]

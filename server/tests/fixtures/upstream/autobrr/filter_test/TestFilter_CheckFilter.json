@@ -1,0 +1,2309 @@
+[
+ {
+  "name": "movie_parse_1",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "TV*,Movies*",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2020",
+    "MatchReleaseGroups": "GROUP1",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_parse_1",
+  "fields": {
+   "TorrentName": "White Christmas 1954 2160p Remux DoVi HDR10 HEVC DTS-HD MA 5.1-VHS",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "Sources": [
+     "BluRay",
+     "UHD.BluRay"
+    ],
+    "MatchReleaseGroups": "VHS",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_parse_2",
+  "fields": {
+   "TorrentName": "That Movie 2025 2160p Blu-Ray DD5.1 x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Movies",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "1800-1980,2020-2025",
+    "MatchReleaseGroups": "GROUP1",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_parse_3",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p WEBDL DD5.1 x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Movies",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "2160p"
+    ],
+    "Sources": [
+     "WEB-DL"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2020",
+    "MatchReleaseGroups": "GROUP1",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_parse_shows",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Movies",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2020",
+    "MatchReleaseGroups": "GROUP1",
+    "Shows": "That Movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_parse_shows_1",
+  "fields": {
+   "TorrentName": "That.Movie.2020.2160p.BluRay.DD5.1.x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Movies",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2020",
+    "MatchReleaseGroups": "GROUP1",
+    "Shows": "That Movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_parse_multiple_shows",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Movies",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2020",
+    "MatchReleaseGroups": "GROUP1",
+    "Shows": "That Movie, good story, bad movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_parse_multiple_shows_1",
+  "fields": {
+   "TorrentName": "That.Movie.2020.2160p.BluRay.DD5.1.x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Movies",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2020",
+    "MatchReleaseGroups": "GROUP1",
+    "Shows": "That Movie, good story, bad movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_parse_wildcard_shows",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Movies, tv",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2015,2018-2022",
+    "MatchReleaseGroups": "GROUP1,BADGROUP",
+    "Shows": "*Movie*, good story, bad movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_except_category_1",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "ExceptCategories": "*movies*",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2015,2018-2022",
+    "MatchReleaseGroups": "GROUP1,BADGROUP",
+    "Shows": "*Movie*, good story, bad movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "except category",
+      "got": "Movies",
+      "want": "*movies*"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "movie_except_category_1",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "ExceptCategories": "*tv*",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2015,2018-2022",
+    "MatchReleaseGroups": "GROUP1,BADGROUP",
+    "Shows": "*Movie*, good story, bad movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_bad_category",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Category": "Movies",
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2015,2018-2022",
+    "MatchReleaseGroups": "GROUP1,BADGROUP",
+    "Shows": "*Movie*, good story, bad movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "match category",
+      "got": "Movies",
+      "want": "*tv*"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "movie_bad_category_2",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Categories": [
+    "Movies/HD",
+    "2040"
+   ],
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2015,2018-2022",
+    "MatchReleaseGroups": "GROUP1,BADGROUP",
+    "Shows": "*Movie*, good story, bad movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "match category",
+      "got": "Movies/HD,2040",
+      "want": "*tv*"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "movie_category_2",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Categories": [
+    "Movies/HD",
+    "2040"
+   ],
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*Movies*",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2015,2018-2022",
+    "MatchReleaseGroups": "GROUP1,BADGROUP",
+    "Shows": "*Movie*, good story, bad movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_category_3",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Categories": [
+    "Movies/HD",
+    "2040"
+   ],
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "2040",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2015,2018-2022",
+    "MatchReleaseGroups": "GROUP1,BADGROUP",
+    "Shows": "*Movie*, good story, bad movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "movie_category_4",
+  "fields": {
+   "TorrentName": "That Movie 2020 2160p BluRay DD5.1 x264-GROUP1",
+   "Categories": [
+    "Movies/HD",
+    "2040"
+   ],
+   "Freeleech": true,
+   "Size": 30000000001,
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*HD*",
+    "Freeleech": true,
+    "MinSize": "10 GB",
+    "MaxSize": "40GB",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "BluRay"
+    ],
+    "Codecs": [
+     "x264"
+    ],
+    "Years": "2015,2018-2022",
+    "MatchReleaseGroups": "GROUP1,BADGROUP",
+    "Shows": "*Movie*, good story, bad movie",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "tv_match_season_episode",
+  "fields": {
+   "TorrentName": "Good show S01E01 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "WEB-DL"
+    ],
+    "Codecs": [
+     "HEVC"
+    ],
+    "MatchReleaseGroups": "GROUP1,GROUP2",
+    "Seasons": "1,2",
+    "Episodes": "1",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "tv_match_season",
+  "fields": {
+   "TorrentName": "Good show S01 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "WEB-DL"
+    ],
+    "Codecs": [
+     "HEVC"
+    ],
+    "MatchReleaseGroups": "GROUP1,GROUP2",
+    "Seasons": "1,2",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "tv_bad_match_season",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "Resolutions": [
+     "1080p",
+     "2160p"
+    ],
+    "Sources": [
+     "WEB-DL"
+    ],
+    "Codecs": [
+     "HEVC"
+    ],
+    "MatchReleaseGroups": "GROUP1,GROUP2",
+    "Seasons": "1",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "season",
+      "got": 2,
+      "want": "1"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_uploader",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "except_uploader",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Anonymous",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "ExceptUploaders": "Anonymous",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "except uploaders",
+      "got": "Anonymous",
+      "want": "Anonymous"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_except_uploader",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_tags_empty",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "Tags": [
+    "tv"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "Tags": "tv",
+    "TagsMatchLogic": "",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_tags_any",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "Tags": [
+    "tv"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "Tags": "tv",
+    "TagsMatchLogic": "ANY",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_tags_all",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "Tags": [
+    "tv",
+    "foreign"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "Tags": "tv,foreign",
+    "TagsMatchLogic": "ALL",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_tags_any_bad",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "Tags": [
+    "foreign"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "Tags": "tv",
+    "TagsMatchLogic": "ANY",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "match tags: ANY",
+      "got": [
+       "foreign"
+      ],
+      "want": "tv"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_tags_all_bad",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "Tags": [
+    "foreign"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "Tags": "tv,foreign",
+    "TagsMatchLogic": "ALL",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "match tags: ALL",
+      "got": [
+       "foreign"
+      ],
+      "want": "tv,foreign"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_except_tags_any",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "Tags": [
+    "foreign"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "ExceptTags": "tv",
+    "TagsMatchLogic": "ANY",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_except_tags_all",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "Tags": [
+    "foreign"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "ExceptTags": "tv,foreign",
+    "TagsMatchLogic": "ALL",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "except tags: ANY",
+      "got": [
+       "foreign"
+      ],
+      "want": "tv,foreign"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_except_tags_any_2",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "Tags": [
+    "foreign"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "ExceptTags": "foreign",
+    "ExceptTagsMatchLogic": "ANY",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "except tags: ANY",
+      "got": [
+       "foreign"
+      ],
+      "want": "foreign"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_except_tags_all_2",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "Tags": [
+    "tv",
+    "foreign"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "ExceptTags": "foreign,tv",
+    "ExceptTagsMatchLogic": "ALL",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "except tags: ALL",
+      "got": [
+       "tv",
+       "foreign"
+      ],
+      "want": "foreign,tv"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_group_1",
+  "fields": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show",
+    "MatchReleaseGroups": "GROUP",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_group_potential_partial_1",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-ift",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "ift",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_group_potential_partial_2",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "ift",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "match release groups",
+      "got": "GROUP",
+      "want": "ift"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "except_release_1",
+  "fields": {
+   "TorrentName": "Good show shift S02 NORDiC 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "Good show shift",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "except releases",
+      "got": "Good show shift S02 NORDiC 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+      "want": "Good show shift"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "except_release_2",
+  "fields": {
+   "TorrentName": "Good show shift S02 NORDiC 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "except releases",
+      "got": "Good show shift S02 NORDiC 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+      "want": "NORDiC"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "except_release_3",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "except_release_4",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC,*shift*",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "except releases",
+      "got": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+      "want": "NORDiC,*shift*"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_hdr_1",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC",
+    "MatchHDR": [
+     "DV",
+     "HDR"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_hdr_2",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DoVi HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC",
+    "MatchHDR": [
+     "DV",
+     "HDR"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_hdr_3",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DoVi HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC",
+    "ExceptHDR": [
+     "DV",
+     "HDR",
+     "DoVi"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "except hdr",
+      "got": "DV",
+      "want": [
+       "DV",
+       "HDR",
+       "DoVi"
+      ]
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_hdr_4",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC",
+    "MatchHDR": [
+     "DV",
+     "HDR",
+     "DoVi"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "match hdr",
+      "got": "",
+      "want": [
+       "DV",
+       "HDR",
+       "DoVi"
+      ]
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_hdr_5",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC",
+    "ExceptHDR": [
+     "DV",
+     "HDR",
+     "DoVi"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_hdr_6",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos HDR HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC",
+    "ExceptHDR": [
+     "DV",
+     "DoVi"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_hdr_7",
+  "fields": {
+   "TorrentName": "Good show dvorak shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos HDR HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show dvorak shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC",
+    "ExceptHDR": [
+     "DV",
+     "DoVi"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_hdr_8",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos HDR10+ HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "MatchUploaders": "Uploader1,Uploader2",
+    "ExceptUploaders": "Anonymous",
+    "Shows": "Good show shift",
+    "MatchReleaseGroups": "GROUP",
+    "ExceptReleases": "NORDiC",
+    "MatchHDR": [
+     "DV",
+     "DoVi",
+     "HDR10+"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_hdr_9",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HDR HEVC-GROUP",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchHDR": [
+     "DV HDR"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_hdr_10",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HDR10 HEVC-GROUP",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchHDR": [
+     "DV HDR"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "match hdr",
+      "got": "DV HDR10",
+      "want": [
+       "DV HDR"
+      ]
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_hdr_11",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos HDR10 HEVC-GROUP",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchHDR": [
+     "DV",
+     "HDR"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "match hdr",
+      "got": "HDR10",
+      "want": [
+       "DV",
+       "HDR"
+      ]
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_hdr_12",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HDR HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "ExceptHDR": [
+     "DV"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_hdr_13",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HDR HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "ExceptHDR": [
+     "DV HDR"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "except hdr",
+      "got": "DV HDR",
+      "want": [
+       "DV HDR"
+      ]
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_hdr_14",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HDR HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchHDR": [
+     "DV"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "match hdr",
+      "got": "DV HDR",
+      "want": [
+       "DV"
+      ]
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_hdr_15",
+  "fields": {
+   "TorrentName": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchHDR": [
+     "DV HDR"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "match hdr",
+      "got": "DV",
+      "want": [
+       "DV HDR"
+      ]
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_music_1",
+  "fields": {
+   "TorrentName": "Artist - Albumname FLAC CD",
+   "ReleaseTags": "FLAC / 24bit Lossless / Log / 100% / Cue / CD",
+   "Category": "Album",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Album",
+    "Artists": "Artist",
+    "Media": [
+     "CD"
+    ],
+    "Formats": [
+     "FLAC"
+    ],
+    "Quality": [
+     "24bit Lossless"
+    ],
+    "Log": true,
+    "Cue": true,
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_music_2",
+  "fields": {
+   "TorrentName": "Artist-Albumname-SINGLE-WEB-2023-GROUP",
+   "ReleaseTags": "MP3 / 320 / WEB",
+   "Category": "Album",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Album",
+    "Artists": "Artist",
+    "PerfectFlac": true,
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "perfect flac",
+      "got": "SINGLE MP3 320 (log: false, score: 0)",
+      "want": "wanted Format FLAC, got MP3, wanted Bitrate Lossless / 24bit Lossless, got 320, wanted Source CD (100% log) or Vinyl/WEB/DVD/Soundboard/Cassette/SACD/Blu-ray/DAT, got SINGLE"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_music_3",
+  "fields": {
+   "TorrentName": "Artist - Albumname FLAC CD",
+   "ReleaseTags": "FLAC / Lossless / Log / 100% / CD",
+   "Category": "Album",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Album",
+    "Artists": "Artist",
+    "PerfectFlac": true,
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_music_4",
+  "fields": {
+   "TorrentName": "Artist - Albumname FLAC CD",
+   "ReleaseTags": "FLAC / Lossless / Log / 100% / CD",
+   "Category": "Album",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "Album",
+    "Artists": "Artist",
+    "Media": [
+     "CD"
+    ],
+    "Formats": [
+     "FLAC"
+    ],
+    "Quality": [
+     "24bit Lossless"
+    ],
+    "Log": true,
+    "LogScore": 100,
+    "Cue": true,
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "quality",
+      "got": [
+       "FLAC",
+       "Lossless",
+       "Log100",
+       "Log"
+      ],
+      "want": [
+       "24bit Lossless"
+      ]
+     },
+     {
+      "key": "cue",
+      "got": [
+       "FLAC",
+       "Lossless",
+       "Log100",
+       "Log"
+      ],
+      "want": "Cue"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_music_5",
+  "fields": {
+   "TorrentName": "Artist - Albumname [2022] [Album] (FLAC 24bit Lossless CD)",
+   "Year": 2022,
+   "ReleaseTags": "FLAC / 24bit Lossless / Log / 100% / Cue / CD",
+   "Category": "Album",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchReleaseTypes": [
+     "Album"
+    ],
+    "Years": "2020-2022",
+    "Artists": "Artist",
+    "Media": [
+     "CD"
+    ],
+    "Formats": [
+     "FLAC"
+    ],
+    "Quality": [
+     "24bit Lossless"
+    ],
+    "Cue": true,
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_music_6",
+  "fields": {
+   "TorrentName": "Artist - Albumname FLAC CD",
+   "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD",
+   "Category": "Album",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchReleaseTypes": [
+     "Single"
+    ],
+    "Artists": "Artist",
+    "Media": [
+     "CD"
+    ],
+    "Formats": [
+     "FLAC"
+    ],
+    "Quality": [
+     "24bit Lossless",
+     "Lossless"
+    ],
+    "PerfectFlac": true,
+    "Log": true,
+    "LogScore": 100,
+    "Cue": true,
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "release type",
+      "got": "Album",
+      "want": [
+       "Single"
+      ]
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_music_7",
+  "fields": {
+   "TorrentName": "Artist - Albumname FLAC CD",
+   "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD",
+   "Category": "Album",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchReleaseTypes": [
+     "Album"
+    ],
+    "Artists": "Artiiiist",
+    "Media": [
+     "CD"
+    ],
+    "Formats": [
+     "FLAC"
+    ],
+    "Quality": [
+     "24bit Lossless",
+     "Lossless"
+    ],
+    "PerfectFlac": true,
+    "Log": true,
+    "LogScore": 100,
+    "Cue": true,
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "artists",
+      "got": "Artist",
+      "want": "Artiiiist"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_music_8",
+  "fields": {
+   "TorrentName": "Artist - Albumname FLAC CD",
+   "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD",
+   "Category": "Album",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchReleaseTypes": [
+     "Album"
+    ],
+    "Artists": "Artist",
+    "Albums": "Albumname",
+    "Media": [
+     "CD"
+    ],
+    "Formats": [
+     "FLAC"
+    ],
+    "Quality": [
+     "24bit Lossless",
+     "Lossless"
+    ],
+    "PerfectFlac": true,
+    "Log": true,
+    "Cue": true,
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_music_9",
+  "fields": {
+   "TorrentName": "Artist - Albumname [2022] [Album] (FLAC 24bit Lossless CD)",
+   "Year": 2022,
+   "ReleaseTags": "FLAC / 24bit Lossless / Log / 100% / Cue / CD",
+   "Category": "Album",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchReleaseTypes": [
+     "Album"
+    ],
+    "Years": "2020-2022",
+    "Artists": "Artist",
+    "Media": [
+     "CD"
+    ],
+    "Formats": [
+     "FLAC"
+    ],
+    "Quality": [
+     "Lossless"
+    ],
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "quality",
+      "got": [
+       "24BIT Lossless",
+       "Cue",
+       "FLAC",
+       "Log100",
+       "Log"
+      ],
+      "want": [
+       "Lossless"
+      ]
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_anime_1",
+  "fields": {
+   "TorrentName": "Kaginado",
+   "ReleaseTags": "Web / MKV / h264 / 1080p / AAC 2.0 / Softsubs (SubsPlease) / Episode 22 / Freeleech",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "Freeleech": true,
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_anime_2",
+  "fields": {
+   "TorrentName": "Kaginado",
+   "ReleaseTags": "Web / MKV / h264 / 1080p / AAC 2.0 / Softsubs (SubsPlease) / Episode 22",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "Freeleech": true,
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "freeleech",
+      "got": false,
+      "want": true
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "match_light_novel_1",
+  "fields": {
+   "TorrentName": "[Group] -Name of a Novel Something Good-  [2012][Translated (Group)][EPUB]",
+   "Title": "-Name of a Novel Something Good-",
+   "Category": "Light Novel",
+   "Year": 2012,
+   "ReleaseTags": "Translated (Group) / EPUB",
+   "Group": "Group",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "MatchReleases": "(?:.*Something Good.*|.*Something Bad.*)",
+    "UseRegex": true,
+    "MatchReleaseGroups": "Group",
+    "MatchCategories": "Light Novel",
+    "MatchReleaseTags": "*EPUB*",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "match_daily",
+  "fields": {
+   "TorrentName": "Daily talk show 2022 04 20 Someone 1080p WEB-DL h264-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "Shows": "Daily talk show",
+    "Years": "2022",
+    "Months": "04",
+    "Days": "20",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "daily_dont_match",
+  "fields": {
+   "TorrentName": "Daily talk show 2022 04 20 Someone 1080p WEB-DL h264-GROUP",
+   "Category": "TV",
+   "Uploader": "Uploader1",
+   "__type": "Release"
+  },
+  "args": {
+   "filter": {
+    "Enabled": true,
+    "MatchCategories": "*tv*",
+    "Shows": "Daaaaaily talk show",
+    "Years": "2022",
+    "__type": "Filter"
+   },
+   "rejectionReasons": {
+    "data": [
+     {
+      "key": "shows",
+      "got": "Daily talk show",
+      "want": "Daaaaaily talk show"
+     }
+    ],
+    "__type": "RejectionReasons"
+   },
+   "__type": "args"
+  },
+  "want": false
+ }
+]
