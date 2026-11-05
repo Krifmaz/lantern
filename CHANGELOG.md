@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+- Cloudflare solving waits up to two minutes for its browser to start, and tries once more if it doesn't, so a busy
+  or slow machine no longer fails a check before the browser is ready.
+
 ### Added
 - autobrr's web frontend is part of the image and opens at `/autobrr/` after signing in to Lantern, in the kit's
   Encore look (dark mode) or light theme (light mode), with Lantern's name in the header and no links to autobrr's
