@@ -289,7 +289,12 @@ async fn indexer_proxy_api_answers_like_prowlarr() {
     assert_eq!(schema, fixture_json("indexerproxy_schema.json"));
 
     // without a tag a proxy is off: saved without checking or trying it
-    let body = proxy_body("Office proxy", "Http", &[("host", json!("proxy.lan")), ("port", json!(3128)), ("username", json!("me")), ("password", json!("secret"))], &[]);
+    let body = proxy_body(
+        "Office proxy",
+        "Http",
+        &[("host", json!("proxy.lan")), ("port", json!(3128)), ("username", json!("me")), ("password", json!("secret"))],
+        &[],
+    );
     let (s, saved, h) = call(&app, "POST", "/api/v1/indexerproxy", Some(body.clone())).await;
     assert_eq!(s, StatusCode::CREATED, "{saved}");
     assert_eq!(h.get(header::LOCATION).unwrap(), "/api/v1/indexerproxy/1");
@@ -320,16 +325,17 @@ async fn indexer_proxy_api_answers_like_prowlarr() {
     .await;
     assert_eq!(s, StatusCode::BAD_REQUEST, "{v}");
     let msg = v[0]["errorMessage"].as_str().unwrap();
-    assert!(msg.starts_with("Unable to connect to proxy: ") && msg.ends_with(". Check the log surrounding this error for details"), "{msg}");
+    assert!(
+        msg.starts_with("Unable to connect to proxy: ") && msg.ends_with(". Check the log surrounding this error for details"),
+        "{msg}"
+    );
     assert_eq!(v[0]["propertyName"], "Host");
-    let (s, v, _) = call(
-        &app,
-        "POST",
-        "/api/v1/indexerproxy",
-        Some(proxy_body("Flare", "FlareSolverr", &[("requestTimeout", json!(0))], &[t])),
-    )
-    .await;
-    assert_eq!((s, v[0]["errorMessage"].as_str()), (StatusCode::BAD_REQUEST, Some("'Request Timeout' must be between 1 and 180. You entered 0.")));
+    let (s, v, _) =
+        call(&app, "POST", "/api/v1/indexerproxy", Some(proxy_body("Flare", "FlareSolverr", &[("requestTimeout", json!(0))], &[t]))).await;
+    assert_eq!(
+        (s, v[0]["errorMessage"].as_str()),
+        (StatusCode::BAD_REQUEST, Some("'Request Timeout' must be between 1 and 180. You entered 0."))
+    );
 
     // a SOCKS5 proxy that works is tried through to the ping address, then saved
     let (socks, seen) = start_socks(site.clone()).await;
@@ -358,7 +364,13 @@ async fn indexer_proxy_api_answers_like_prowlarr() {
     let (s, v, _) = call(&app, "PUT", "/api/v1/indexerproxy/1", Some(office)).await;
     assert_eq!((s, v["name"].as_str()), (StatusCode::ACCEPTED, Some("Office")));
     assert_eq!(st.indexers.find_proxy(1).unwrap().unwrap().settings.password, "secret");
-    let (s, v, _) = call(&app, "PUT", "/api/v1/indexerproxy/0", Some(json!({ "name": "x", "implementation": "Http", "configContract": "HttpSettings" }))).await;
+    let (s, v, _) = call(
+        &app,
+        "PUT",
+        "/api/v1/indexerproxy/0",
+        Some(json!({ "name": "x", "implementation": "Http", "configContract": "HttpSettings" })),
+    )
+    .await;
     assert_eq!((s, v[0]["errorMessage"].as_str()), (StatusCode::BAD_REQUEST, Some("'Id' must be greater than '0'.")));
 
     // the list, by name; testall tries the ones in use; a missing one is a 404
@@ -404,7 +416,10 @@ async fn indexers_go_through_the_proxies_that_share_their_tags() {
         .indexers
         .add(&json!({ "kind": "torznab", "name": "Tagged", "base_url": "http://torznab.invalid", "tags": "proxied", "settings": { "apikey": "k" } }))
         .unwrap();
-    let plain = st.indexers.add(&json!({ "kind": "torznab", "name": "Plain", "base_url": "http://torznab.invalid", "settings": { "apikey": "k" } })).unwrap();
+    let plain = st
+        .indexers
+        .add(&json!({ "kind": "torznab", "name": "Plain", "base_url": "http://torznab.invalid", "settings": { "apikey": "k" } }))
+        .unwrap();
     let (found, failed) = st.indexers.search(&[tagged], &search(), "test").await.unwrap();
     assert_eq!((found.len(), failed.len()), (1, 0), "{failed:?}");
     assert!(proxy_hits.passed.load(Ordering::SeqCst) >= 2, "the caps and the search went through the proxy");
@@ -419,8 +434,12 @@ async fn indexers_go_through_the_proxies_that_share_their_tags() {
     let (_, sp) = socks.split_once(':').unwrap();
     let sp: i64 = sp.parse().unwrap();
     let t5 = tag(&app, "socks5").await;
-    let body =
-        proxy_body("S5", "Socks5", &[("host", json!("127.0.0.1")), ("port", json!(sp)), ("username", json!("u5")), ("password", json!("p5"))], &[t5]);
+    let body = proxy_body(
+        "S5",
+        "Socks5",
+        &[("host", json!("127.0.0.1")), ("port", json!(sp)), ("username", json!("u5")), ("password", json!("p5"))],
+        &[t5],
+    );
     assert_eq!(call(&app, "POST", "/api/v1/indexerproxy", Some(body)).await.0, StatusCode::CREATED);
     let s5 = st.indexers.add(&json!({ "kind": "torznab", "name": "S5", "base_url": "http://socks5.invalid", "tags": "socks5" })).unwrap();
     let (found, failed) = st.indexers.search(&[s5], &search(), "test").await.unwrap();
@@ -445,12 +464,19 @@ async fn flaresolverr_is_asked_only_for_a_cloudflare_check() {
     let (flare, f) = start_flaresolverr().await;
     st.indexers.set_proxy_ping_url(&format!("{site}/ping"));
     let t = tag(&app, "cf").await;
-    let (s, v, _) = call(&app, "POST", "/api/v1/indexerproxy", Some(proxy_body("FlareSolverr", "FlareSolverr", &[("host", json!(flare))], &[t]))).await;
+    let (s, v, _) =
+        call(&app, "POST", "/api/v1/indexerproxy", Some(proxy_body("FlareSolverr", "FlareSolverr", &[("host", json!(flare))], &[t]))).await;
     assert_eq!(s, StatusCode::CREATED, "{v}");
     // the proxy test asked it for the ping address with Prowlarr's command
-    assert_eq!(f.commands.lock().unwrap()[0], json!({ "cmd": "request.get", "url": format!("{site}/ping"), "maxTimeout": 60000, "proxy": {} }));
+    assert_eq!(
+        f.commands.lock().unwrap()[0],
+        json!({ "cmd": "request.get", "url": format!("{site}/ping"), "maxTimeout": 60000, "proxy": {} })
+    );
 
-    let id = st.indexers.add(&json!({ "kind": "torznab", "name": "Checked", "base_url": site, "tags": "cf", "settings": { "apikey": "k" } })).unwrap();
+    let id = st
+        .indexers
+        .add(&json!({ "kind": "torznab", "name": "Checked", "base_url": site, "tags": "cf", "settings": { "apikey": "k" } }))
+        .unwrap();
     let (found, failed) = st.indexers.search(&[id], &search(), "test").await.unwrap();
     assert_eq!((found.len(), failed.len()), (1, 0), "{failed:?}");
     // one check, one FlareSolverr command for it; the search after it used the cookies and the user agent
@@ -462,7 +488,10 @@ async fn flaresolverr_is_asked_only_for_a_cloudflare_check() {
 
     // no cookies from FlareSolverr: Prowlarr's words
     f.no_cookies.store(true, Ordering::SeqCst);
-    let id2 = st.indexers.add(&json!({ "kind": "torznab", "name": "Checked2", "base_url": site.replace("127.0.0.1", "localhost"), "tags": "cf" })).unwrap();
+    let id2 = st
+        .indexers
+        .add(&json!({ "kind": "torznab", "name": "Checked2", "base_url": site.replace("127.0.0.1", "localhost"), "tags": "cf" }))
+        .unwrap();
     let (_, failed) = st.indexers.search(&[id2], &search(), "test").await.unwrap();
     assert_eq!(failed.len(), 1);
     assert!(failed[0].1.ends_with("Empty cookies returned by FlareSolverr."), "{}", failed[0].1);
@@ -470,7 +499,8 @@ async fn flaresolverr_is_asked_only_for_a_cloudflare_check() {
     // a FlareSolverr at Lantern's own port is answered by Lantern's solver, not over the network (nothing listens
     // there in this test, so a network request could only fail to connect)
     let own = format!("http://localhost:{}/", server::solver_port());
-    let (s, v, _) = call(&app, "POST", "/api/v1/indexerproxy/test", Some(proxy_body("Own", "FlareSolverr", &[("host", json!(own))], &[t]))).await;
+    let (s, v, _) =
+        call(&app, "POST", "/api/v1/indexerproxy/test", Some(proxy_body("Own", "FlareSolverr", &[("host", json!(own))], &[t]))).await;
     if s != StatusCode::OK {
         let msg = v[0]["errorMessage"].as_str().unwrap_or("");
         assert!(!msg.starts_with("Unable to connect to proxy"), "{msg}");
@@ -537,7 +567,8 @@ async fn tags_app_profile_and_download_client_are_kept_in_prowlarrs_shape() {
 async fn requests_to_one_site_wait_for_the_request_delay() {
     let (_, st) = lantern("delay").await;
     let (site, hits) = start_torznab().await;
-    let id = st.indexers.add(&json!({ "kind": "torznab", "name": "Slow", "base_url": site, "settings": { "request_delay": "1" } })).unwrap();
+    let id =
+        st.indexers.add(&json!({ "kind": "torznab", "name": "Slow", "base_url": site, "settings": { "request_delay": "1" } })).unwrap();
     let started = std::time::Instant::now();
     st.indexers.search(&[id], &search(), "test").await.unwrap();
     st.indexers.search(&[id], &search(), "test").await.unwrap();

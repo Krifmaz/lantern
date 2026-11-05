@@ -112,9 +112,13 @@ impl Settings {
     /// The settings a new proxy of `kind` starts with.
     pub fn default_for(kind: Kind) -> Settings {
         match kind {
-            Kind::FlareSolverr => {
-                Settings { host: Some("http://localhost:8191/".into()), port: 0, username: String::new(), password: String::new(), request_timeout: 60 }
-            }
+            Kind::FlareSolverr => Settings {
+                host: Some("http://localhost:8191/".into()),
+                port: 0,
+                username: String::new(),
+                password: String::new(),
+                request_timeout: 60,
+            },
             _ => Settings { host: None, port: 0, username: String::new(), password: String::new(), request_timeout: 0 },
         }
     }
@@ -188,7 +192,11 @@ impl Settings {
         s.port = d.port;
         s.request_timeout = d.request_timeout;
         let list = fields.as_array().cloned().unwrap_or_default();
-        let find = |name: &str| list.iter().find(|f| f.get("name").and_then(Value::as_str) == Some(name)).map(|f| f.get("value").cloned().unwrap_or(Value::Null));
+        let find = |name: &str| {
+            list.iter()
+                .find(|f| f.get("name").and_then(Value::as_str) == Some(name))
+                .map(|f| f.get("value").cloned().unwrap_or(Value::Null))
+        };
         let text = |v: Value| -> Option<String> {
             match v {
                 Value::Null => None,
@@ -235,7 +243,8 @@ impl Settings {
 
 /// One of Prowlarr's schema fields (`Field`), null parts left out.
 fn field(order: i64, name: &str, label: &str, value: Option<Value>, kind: &str, privacy: &str, advanced: bool) -> Value {
-    let mut f = json!({ "order": order, "name": name, "label": label, "type": kind, "advanced": advanced, "privacy": privacy, "isFloat": false });
+    let mut f =
+        json!({ "order": order, "name": name, "label": label, "type": kind, "advanced": advanced, "privacy": privacy, "isFloat": false });
     if let Some(v) = value {
         f["value"] = v;
     }
@@ -362,7 +371,8 @@ impl Plan {
         for p in selected {
             match p.kind {
                 Kind::FlareSolverr => {
-                    plan.flaresolverr = Some(FlareTarget { host: p.settings.host.clone().unwrap_or_default(), timeout: p.settings.request_timeout })
+                    plan.flaresolverr =
+                        Some(FlareTarget { host: p.settings.host.clone().unwrap_or_default(), timeout: p.settings.request_timeout })
                 }
                 _ => plan.proxy = p.url(),
             }
@@ -526,7 +536,12 @@ pub fn flaresolverr_proxy(site_proxy: &str) -> Value {
 
 /// The command Prowlarr sends FlareSolverr for a request (`GenerateFlareSolverrRequest`): `post` is the POST's
 /// content type and body. A POST that isn't a form is refused in Prowlarr's words.
-pub fn flaresolverr_request(url: &str, post: Option<(&str, &str)>, timeout_secs: i64, site_proxy: &str) -> std::result::Result<Value, String> {
+pub fn flaresolverr_request(
+    url: &str,
+    post: Option<(&str, &str)>,
+    timeout_secs: i64,
+    site_proxy: &str,
+) -> std::result::Result<Value, String> {
     let max_timeout = timeout_secs * 1000;
     let proxy = flaresolverr_proxy(site_proxy);
     match post {
@@ -569,10 +584,8 @@ pub fn points_at_lantern(host: &str) -> bool {
     let Ok(u) = url::Url::parse(host.trim()) else { return false };
     let Some(name) = u.host_str() else { return false };
     let own = std::env::var("HOSTNAME").ok().filter(|h| !h.trim().is_empty());
-    let here = super::rate_limit::is_loopback(name)
-        || name == "0.0.0.0"
-        || name == "[::]"
-        || own.is_some_and(|h| h.eq_ignore_ascii_case(name));
+    let here =
+        super::rate_limit::is_loopback(name) || name == "0.0.0.0" || name == "[::]" || own.is_some_and(|h| h.eq_ignore_ascii_case(name));
     here && u.port_or_known_default() == Some(port)
 }
 
@@ -602,7 +615,10 @@ pub async fn ask_flaresolverr(
     }
     let api = format!("{}/v1", target.host.trim_end_matches('/'));
     let mut b = reqwest::Client::builder().timeout(Duration::from_secs((target.timeout.max(0) + 5) as u64));
-    let local = url::Url::parse(&api).ok().and_then(|u| u.host_str().map(|h| super::rate_limit::is_loopback(h) || !h.contains('.'))).unwrap_or(true);
+    let local = url::Url::parse(&api)
+        .ok()
+        .and_then(|u| u.host_str().map(|h| super::rate_limit::is_loopback(h) || !h.contains('.')))
+        .unwrap_or(true);
     if !local && !site_proxy.trim().is_empty() {
         if let Ok(px) = reqwest::Proxy::all(site_proxy.trim()) {
             b = b.proxy(px);
@@ -637,7 +653,9 @@ pub fn read_solution(answer: &FlareAnswer) -> std::result::Result<(Vec<(String, 
         .and_then(Value::as_array)
         .map(|a| {
             a.iter()
-                .filter_map(|c| Some((c.get("name")?.as_str()?.to_string(), c.get("value").and_then(Value::as_str).unwrap_or("").to_string())))
+                .filter_map(|c| {
+                    Some((c.get("name")?.as_str()?.to_string(), c.get("value").and_then(Value::as_str).unwrap_or("").to_string()))
+                })
                 .collect()
         })
         .unwrap_or_default();
@@ -832,15 +850,27 @@ mod tests {
             json!({ "cmd": "request.get", "url": "https://site.test/", "maxTimeout": 60000, "proxy": {} })
         );
         assert_eq!(
-            flaresolverr_request("https://site.test/login", Some(("application/x-www-form-urlencoded", "a=1")), 30, "socks5://me:pw@10.0.0.2:1080").unwrap(),
+            flaresolverr_request(
+                "https://site.test/login",
+                Some(("application/x-www-form-urlencoded", "a=1")),
+                30,
+                "socks5://me:pw@10.0.0.2:1080"
+            )
+            .unwrap(),
             json!({
                 "cmd": "request.post", "url": "https://site.test/login", "postData": "a=1",
                 "headers": { "contentType": "application/x-www-form-urlencoded" }, "maxTimeout": 30000,
                 "proxy": { "url": "socks5://10.0.0.2:1080", "username": "me", "password": "pw" },
             })
         );
-        assert_eq!(flaresolverr_request("u", Some(("application/json", "{}")), 60, "").unwrap_err(), "Unsupported POST Content-Type: application/json");
-        assert_eq!(flaresolverr_request("u", Some(("multipart/form-data", "")), 60, "").unwrap_err(), "Unimplemented POST Content-Type: multipart/form-data");
+        assert_eq!(
+            flaresolverr_request("u", Some(("application/json", "{}")), 60, "").unwrap_err(),
+            "Unsupported POST Content-Type: application/json"
+        );
+        assert_eq!(
+            flaresolverr_request("u", Some(("multipart/form-data", "")), 60, "").unwrap_err(),
+            "Unimplemented POST Content-Type: multipart/form-data"
+        );
         let empty = FlareAnswer { status: 500, body: json!({ "status": "error", "message": "Error: x" }).to_string() };
         assert_eq!(read_solution(&empty).unwrap_err(), "Empty cookies returned by FlareSolverr.");
         let odd = FlareAnswer { status: 403, body: String::new() };

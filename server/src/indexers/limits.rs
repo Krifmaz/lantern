@@ -64,10 +64,7 @@ impl SeedConfiguration {
     /// The seeding goals of torrent settings `t` (`SeedConfigProvider.GetSeedConfiguration`): the ratio as it is,
     /// the seed time from minutes.
     pub fn of(t: &TorrentBaseSettings) -> SeedConfiguration {
-        SeedConfiguration {
-            ratio: t.seed_ratio,
-            seed_time: t.seed_time.map(|m| std::time::Duration::from_secs((m.max(0) as u64) * 60)),
-        }
+        SeedConfiguration { ratio: t.seed_ratio, seed_time: t.seed_time.map(|m| std::time::Duration::from_secs((m.max(0) as u64) * 60)) }
     }
 }
 

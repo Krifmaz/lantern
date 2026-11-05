@@ -109,7 +109,8 @@ fn to_model(st: &AppState, body: &Value) -> ApiResult<(Proxy, Option<Proxy>)> {
         return Err(fail(400, format!("There are no indexer proxy settings called '{contract}'")).into());
     }
     let settings = Settings::read_fields(kind, body.get("fields").unwrap_or(&Value::Null), existing.as_ref().map(|e| &e.settings))?;
-    let tags: Vec<i64> = body.get("tags").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_i64).collect()).unwrap_or_default();
+    let tags: Vec<i64> =
+        body.get("tags").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_i64).collect()).unwrap_or_default();
     let mut tags_unique: Vec<i64> = Vec::new();
     for t in tags {
         if !tags_unique.contains(&t) {
@@ -202,7 +203,13 @@ async fn create(State(st): State<AppState>, _: V1, Query(q): Query<HashMap<Strin
 
 /// `PUT /api/v1/indexerproxy/{id}`: checks the proxy and, when it has a tag, its settings and (unless
 /// `forceSave`) that it works; 202 with it.
-async fn update(State(st): State<AppState>, _: V1, Path(path_id): Path<i64>, Query(q): Query<HashMap<String, String>>, bytes: Bytes) -> ApiResult<Response> {
+async fn update(
+    State(st): State<AppState>,
+    _: V1,
+    Path(path_id): Path<i64>,
+    Query(q): Query<HashMap<String, String>>,
+    bytes: Bytes,
+) -> ApiResult<Response> {
     let mut body = body_json(&bytes)?;
     if body.get("id").and_then(Value::as_i64).unwrap_or(0) == 0 {
         if let Some(o) = body.as_object_mut() {
@@ -252,7 +259,9 @@ async fn test_all(State(st): State<AppState>, _: V1) -> Response {
     for p in st.indexers.proxies().into_iter().filter(|p| p.valid() && p.enabled()) {
         let failures = proxies::test(&p, &st.indexers.proxy_ping_url(), st.indexers.solver.as_ref(), &st.indexers.site_proxy()).await;
         ok &= failures.is_empty();
-        list.push(json!({ "id": p.id, "isValid": failures.is_empty(), "validationFailures": failures.iter().map(bare).collect::<Vec<_>>() }));
+        list.push(
+            json!({ "id": p.id, "isValid": failures.is_empty(), "validationFailures": failures.iter().map(bare).collect::<Vec<_>>() }),
+        );
     }
     let status = if ok { StatusCode::OK } else { StatusCode::BAD_REQUEST };
     (status, Json(Value::Array(list))).into_response()

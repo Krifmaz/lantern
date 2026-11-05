@@ -127,7 +127,11 @@ fn parse_xml(text: &str) -> Result<Element, CapsError> {
 /// (`Enum.TryParse` of each).
 fn params(into: &mut Vec<&'static str>, list: &str, allowed: &[&'static str]) {
     for p in list.split(',').map(str::trim) {
-        let found = allowed.iter().find(|a| a.eq_ignore_ascii_case(p)).copied().or_else(|| p.parse::<usize>().ok().and_then(|i| allowed.get(i).copied()));
+        let found = allowed
+            .iter()
+            .find(|a| a.eq_ignore_ascii_case(p))
+            .copied()
+            .or_else(|| p.parse::<usize>().ok().and_then(|i| allowed.get(i).copied()));
         if let Some(f) = found {
             if !into.contains(&f) {
                 into.push(f);
@@ -315,7 +319,10 @@ mod tests {
         .unwrap();
         assert!(caps.supports_raw_search);
         assert_eq!(caps.tv_params, vec!["q", "season", "ep", "tvdbid", "tvmazeid"]);
-        assert_eq!(parse(r#"<error code="100" description="Incorrect user credentials"/>"#).unwrap_err(), CapsError::Api("Incorrect user credentials".into()));
+        assert_eq!(
+            parse(r#"<error code="100" description="Incorrect user credentials"/>"#).unwrap_err(),
+            CapsError::Api("Incorrect user credentials".into())
+        );
         assert!(matches!(parse("<rss><channel/></rss>"), Err(CapsError::Xml(_))));
     }
 
