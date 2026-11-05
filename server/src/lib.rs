@@ -164,7 +164,15 @@ impl AppState {
             .await
             .map_err(|e| anyhow::anyhow!("The settings can't be read: {}", e.detail))?;
         let changelog = Arc::new(Changelog::new(&settings.str("app_name"), VERSION, changelog_gen::NOTES));
-        let indexers = indexers::Indexers::new(db.clone(), library).with_settings(settings.clone()).with_solver(solver.clone());
+        let indexers = indexers::Indexers::new(db.clone(), library)
+            .with_settings(settings.clone())
+            .with_solver(solver.clone())
+            .with_vault(vault.clone());
+        match indexers.seal_saved() {
+            Ok(0) => {}
+            Ok(n) => tracing::info!("{n} indexers' logins and cookies sealed in the vault"),
+            Err(e) => tracing::warn!("The indexers' logins can't be sealed yet: {}", e.detail),
+        }
         let hub = hub::Hub::new(db.clone(), indexers.clone(), signer.clone(), settings.clone(), data);
         let announce_dir = PathBuf::from(env("APP_ANNOUNCE_DIR").unwrap_or_else(|| "/app/announce".into()));
         let announce = releases::announce::Library::new(vec![announce_dir, data.join("announce")]);

@@ -107,11 +107,21 @@ pub struct Indexer {
     pub last_error: String,
     /// When it was added.
     pub added: f64,
+    /// Why its saved settings or cookies can't be opened (the vault is locked), "" when they can.
+    pub locked: String,
 }
 
+/// The associated text an indexer's settings are sealed with (not its id: an import may change the id).
+const SETTINGS_AAD: &str = "lantern-indexer-settings";
+
+/// The associated text an indexer's session cookies are sealed with.
+const COOKIES_AAD: &str = "lantern-indexer-cookies";
+
 impl Indexer {
-    fn from_row(r: &Row) -> Indexer {
-        let settings: BTreeMap<String, String> = serde_json::from_str::<Map<String, Value>>(&r.s("settings"))
+    /// The indexer of row `r`, whose settings and cookies are already opened (`settings`, `cookies`) or could not
+    /// be (`locked` says why).
+    fn from_row(r: &Row, settings: &str, cookies: String, locked: String) -> Indexer {
+        let settings: BTreeMap<String, String> = serde_json::from_str::<Map<String, Value>>(settings)
             .unwrap_or_default()
             .into_iter()
             .map(|(k, v)| {
@@ -135,11 +145,12 @@ impl Indexer {
             enabled: r.b("enabled"),
             priority: r.i("priority"),
             tags: r.s("tags"),
-            cookies: r.s("cookies"),
+            cookies,
             failures: r.i("failures"),
             disabled_until: r.f("disabled_until"),
             last_error: r.s("last_error"),
             added: r.f("added"),
+            locked,
         }
     }
 
@@ -177,12 +188,14 @@ pub struct Indexers {
     pub settings: Option<kit_server_settings::Store>,
     /// The solver for Cloudflare checks, when there is one.
     pub solver: Option<crate::solver::Solver>,
+    /// The vault that seals the settings and cookies at rest, when there is one (always, outside unit tests).
+    pub vault: Option<crate::vault::Vault>,
 }
 
 impl Indexers {
     /// The indexers on `db` with `library`.
     pub fn new(db: SqliteDb, library: Library) -> Indexers {
-        Indexers { db, library, clients: Default::default(), settings: None, solver: None }
+        Indexers { db, library, clients: Default::default(), settings: None, solver: None, vault: None }
     }
 
     /// The same, reading the site proxy from `settings`.
@@ -197,16 +210,68 @@ impl Indexers {
         self
     }
 
+    /// With `vault` sealing the settings and cookies at rest.
+    pub fn with_vault(mut self, vault: crate::vault::Vault) -> Indexers {
+        self.vault = Some(vault);
+        self
+    }
+
+    /// `text` as kept in the table: sealed by the vault (a 503 in words when it is locked), plain without one.
+    fn seal(&self, aad: &str, text: &str) -> Result<String> {
+        match &self.vault {
+            Some(v) => v.seal_text(aad, text),
+            None => Ok(text.to_string()),
+        }
+    }
+
+    /// The indexer of row `r`, its settings and cookies opened.
+    fn read(&self, r: &Row) -> Indexer {
+        let open = |aad: &str, stored: String| match &self.vault {
+            Some(v) => v.open_text(aad, &stored),
+            None => Ok(stored),
+        };
+        match (open(SETTINGS_AAD, r.s("settings")), open(COOKIES_AAD, r.s("cookies"))) {
+            (Ok(settings), Ok(cookies)) => Indexer::from_row(r, &settings, cookies, String::new()),
+            (Err(why), _) | (_, Err(why)) => Indexer::from_row(r, "{}", String::new(), why),
+        }
+    }
+
+    /// Seals the settings and cookies that were saved before Lantern sealed them; how many indexers it sealed.
+    /// Does nothing while the vault is locked.
+    pub fn seal_saved(&self) -> Result<usize> {
+        let Some(v) = &self.vault else { return Ok(0) };
+        if v.seal_text(SETTINGS_AAD, "").is_err() {
+            return Ok(0);
+        }
+        let mut n = 0;
+        for r in self.db.query("SELECT id, settings, cookies FROM indexers", p![])? {
+            let (settings, cookies) = (r.s("settings"), r.s("cookies"));
+            let plain_settings = !crate::vault::Vault::is_sealed(&settings);
+            let plain_cookies = !cookies.is_empty() && !crate::vault::Vault::is_sealed(&cookies);
+            if plain_settings || plain_cookies {
+                let settings = if plain_settings { v.seal_text(SETTINGS_AAD, &settings)? } else { settings };
+                let cookies = if plain_cookies { v.seal_text(COOKIES_AAD, &cookies)? } else { cookies };
+                self.db.execute("UPDATE indexers SET settings=?, cookies=? WHERE id=?", p![settings, cookies, r.i("id")])?;
+                n += 1;
+            }
+        }
+        if n > 0 {
+            // the plain copies would stay in the database file's free pages (and its write-ahead log) otherwise
+            self.db.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); VACUUM; PRAGMA wal_checkpoint(TRUNCATE);")?;
+        }
+        Ok(n)
+    }
+
     /// Every indexer, by priority then name.
     pub fn list(&self) -> Result<Vec<Indexer>> {
-        Ok(self.db.query("SELECT * FROM indexers ORDER BY priority, name COLLATE NOCASE", p![])?.iter().map(Indexer::from_row).collect())
+        Ok(self.db.query("SELECT * FROM indexers ORDER BY priority, name COLLATE NOCASE", p![])?.iter().map(|r| self.read(r)).collect())
     }
 
     /// Indexer `id`; 404 when there is none.
     pub fn get(&self, id: i64) -> Result<Indexer> {
         self.db
             .one("SELECT * FROM indexers WHERE id=?", p![id])?
-            .map(|r| Indexer::from_row(&r))
+            .map(|r| self.read(&r))
             .ok_or_else(|| err(404, "There is no indexer with that id"))
     }
 
@@ -242,6 +307,7 @@ impl Indexers {
             return Err(err(400, "Enter a name for the indexer"));
         }
         let settings = clean_settings(body.get("settings"), &BTreeMap::new());
+        let settings = self.seal(SETTINGS_AAD, &serde_json::to_string(&settings).unwrap_or_default())?;
         let id = self.db.execute(
             "INSERT INTO indexers (kind, definition, name, base_url, settings, enabled, priority, tags, added) VALUES (?,?,?,?,?,?,?,?,?)",
             p![
@@ -249,7 +315,7 @@ impl Indexers {
                 definition,
                 name,
                 base_url,
-                serde_json::to_string(&settings).unwrap_or_default(),
+                settings,
                 body.get("enabled").and_then(Value::as_bool).unwrap_or(true),
                 body.get("priority").and_then(Value::as_i64).unwrap_or(25).clamp(1, 50),
                 body.get("tags").and_then(Value::as_str).unwrap_or(""),
@@ -262,6 +328,9 @@ impl Indexers {
     /// Changes indexer `id`: only the fields `body` has; a masked or empty secret keeps the saved one.
     pub fn update(&self, id: i64, body: &Value) -> Result<()> {
         let cur = self.get(id)?;
+        if !cur.locked.is_empty() {
+            return Err(err(503, format!("{}'s saved login can't be opened: {}", cur.name, cur.locked)));
+        }
         let settings = match body.get("settings") {
             Some(s) => clean_settings(Some(s), &cur.settings),
             None => cur.settings.clone(),
@@ -277,7 +346,7 @@ impl Indexers {
             p![
                 name,
                 text("base_url", &cur.base_url),
-                serde_json::to_string(&settings).unwrap_or_default(),
+                self.seal(SETTINGS_AAD, &serde_json::to_string(&settings).unwrap_or_default())?,
                 body.get("enabled").and_then(Value::as_bool).unwrap_or(cur.enabled),
                 body.get("priority").and_then(Value::as_i64).unwrap_or(cur.priority).clamp(1, 50),
                 text("tags", &cur.tags),
@@ -301,6 +370,9 @@ impl Indexers {
 
     /// The running client of `ix`, made (or made again after a change) when needed.
     fn client(&self, ix: &Indexer) -> Result<Arc<Client>> {
+        if !ix.locked.is_empty() {
+            return Err(err(503, format!("{}'s saved login can't be opened: {}", ix.name, ix.locked)));
+        }
         let proxy = self.settings.as_ref().map(|s| s.str("site_proxy")).unwrap_or_default();
         let fp = format!("{}|{}|{:?}|{proxy}", ix.base_url, ix.definition, ix.settings);
         if let Some((f, c)) = self.clients.lock().unwrap_or_else(|e| e.into_inner()).get(&ix.id) {
@@ -372,7 +444,10 @@ impl Indexers {
     fn keep_cookies(&self, ix: &Indexer, site: &Cardigann) {
         let c = site.http.cookies(&site.base);
         if c != ix.cookies && !c.is_empty() {
-            let _ = self.db.execute("UPDATE indexers SET cookies=? WHERE id=?", p![c, ix.id]);
+            // never kept in the clear: with the vault locked they are only kept in memory
+            if let Ok(sealed) = self.seal(COOKIES_AAD, &c) {
+                let _ = self.db.execute("UPDATE indexers SET cookies=? WHERE id=?", p![sealed, ix.id]);
+            }
         }
     }
 

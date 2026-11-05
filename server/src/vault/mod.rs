@@ -151,6 +151,9 @@ struct Inner {
     source: KeySource,
 }
 
+/// The start of a value [`Vault::seal_text`] sealed.
+pub const SEALED: &str = "sealed:v1:";
+
 /// The associated text the data key is sealed with.
 const KEY_AAD: &[u8] = b"lantern-vault-data-key";
 
@@ -316,6 +319,29 @@ impl Vault {
     /// The data key, or a 503 that says why the vault is locked.
     fn key(&self) -> Result<&Key> {
         self.inner.key.as_ref().map_err(|why| err(503, why.clone()))
+    }
+
+    /// `text` sealed with the vault's key for Lantern's own tables (an indexer's settings and cookies), bound to
+    /// `aad`: `sealed:v1:<base64>`. A 503 in words when the vault is locked, so nothing is saved in the clear.
+    pub fn seal_text(&self, aad: &str, text: &str) -> Result<String> {
+        let key = self.key()?;
+        Ok(format!("{SEALED}{}", b64(&crypto::seal(key, text.as_bytes(), aad.as_bytes()))))
+    }
+
+    /// What [`Vault::seal_text`] sealed with `aad`. Text saved before Lantern sealed it (no `sealed:v1:` prefix)
+    /// comes back as it is. Why not, in words, when the vault is locked or the value was changed.
+    pub fn open_text(&self, aad: &str, stored: &str) -> std::result::Result<String, String> {
+        let Some(body) = stored.strip_prefix(SEALED) else { return Ok(stored.to_string()) };
+        let key = self.inner.key.as_ref().map_err(Clone::clone)?;
+        let sealed = unb64(body).ok_or_else(|| "A saved value is damaged. Enter the login again.".to_string())?;
+        let plain = crypto::open(key, &sealed, aad.as_bytes())
+            .ok_or_else(|| "A saved value can't be opened with this vault's key. Enter the login again.".to_string())?;
+        String::from_utf8(plain.to_vec()).map_err(|_| "A saved value is damaged. Enter the login again.".to_string())
+    }
+
+    /// Whether `stored` is sealed by [`Vault::seal_text`].
+    pub fn is_sealed(stored: &str) -> bool {
+        stored.starts_with(SEALED)
     }
 
     /// Whether the vault is open, where its secret comes from, why it is locked, and how many items it has.
