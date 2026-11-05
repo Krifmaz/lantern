@@ -88,3 +88,10 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — Cross-seed copies go into `<app category>.cross-seed` at the app's folder, tagged `lantern-xs-<grab>`,
   so the app doesn't import them again and the hub's grab tracking never mistakes them for grabs. Each grab is
   searched when it finishes and again weekly, four times at most, 30 s apart by default.
+- 2026-11-05 — The keeper's account numbers (ratio, upload, download, bonus) are typed in or sent through
+  `PUT /api/keeper/{id}/stats`: tracker profile pages differ per site and the Cardigann definitions don't describe them.
+  Sign-ins and activity are automatic for accounts linked to an indexer (its search, test and grab history).
+- 2026-11-05 — ntfy, Discord and email alerts live in Lantern (`keeper/alerts.rs`, email through lettre) because the kit
+  v0.2.1 has no notifier; they are generic and can move to the kit later.
+- 2026-11-05 — Keep-alive signs in every `keeper_keepalive_days` (default 3), or every third of a site's sign-in rule
+  when that is sooner, and at most once per 6 hours per account, so a failing site isn't hammered.

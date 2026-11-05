@@ -13,6 +13,7 @@
 //! | `/api/solver`, `/api/solver/test`; the FlareSolverr API on its own port ([`solver_port`]) | [`solver`] |
 //! | `/api/hub/*` (download clients, apps, search and grab, live events) | [`hub`] |
 //! | `/api/vault`, `/api/vault/*` (the account vault) | [`vault`] |
+//! | `/api/keeper`, `/api/keeper/*` (the account keeper) | [`keeper`] |
 //! | `/api/import/*` (Prowlarr and FlareSolverr, dry run first) | [`migrate`] |
 //! | `/api/releases/*` (IRC announces, RSS, filters) | [`releases`] |
 //! | `/api/cross-seed/*` | [`crossseed`] |
@@ -24,6 +25,7 @@ pub mod checks;
 pub mod crossseed;
 pub mod hub;
 pub mod indexers;
+pub mod keeper;
 pub mod migrate;
 pub mod releases;
 pub mod solver;
@@ -142,6 +144,7 @@ impl AppState {
         auth::migrate(&db)?;
         indexers::migrate(&db)?;
         hub::migrate(&db)?;
+        keeper::migrate(&db)?;
         migrate::migrate(&db)?;
         releases::migrate(&db)?;
         solver::migrate(&db)?;
@@ -301,6 +304,7 @@ pub fn app(st: AppState) -> Router {
         .merge(solver::api::router())
         .merge(hub::api::router())
         .merge(vault::api::router())
+        .merge(keeper::api::router())
         .merge(migrate::api::router())
         .merge(releases::api::router())
         .merge(crossseed::api::router())
@@ -338,6 +342,16 @@ pub fn spawn_hub(st: AppState) {
         loop {
             st.hub.tick().await;
             tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+        }
+    });
+}
+
+/// The account keeper's rounds: every 30 minutes it keeps logins alive and sends new warnings.
+pub fn spawn_keeper(st: AppState) {
+    tokio::spawn(async move {
+        loop {
+            keeper::tick(&st).await;
+            tokio::time::sleep(std::time::Duration::from_secs(30 * 60)).await;
         }
     });
 }

@@ -22,6 +22,7 @@ async fn main() -> anyhow::Result<()> {
     let st = server::AppState::from_env().await?;
     server::spawn_definition_updates(st.clone());
     server::spawn_hub(st.clone());
+    server::spawn_keeper(st.clone());
     st.releases.start();
     server::crossseed::spawn(st.cross_seed.clone());
     let addr = SocketAddr::from(([0, 0, 0, 0], server::port()));

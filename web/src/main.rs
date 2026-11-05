@@ -7,6 +7,7 @@
 //! | `#/` | Home: the app's own start page (a bug report button to begin with) |
 //! | `#/indexers` | the indexers: add, edit, test and remove sites, update the definitions |
 //! | `#/search` | search every indexer at once |
+//! | `#/accounts` | the account keeper (admins): each account's risks, numbers and site rules, Sign in now, Test alerts |
 //! | `#/vault` | the account vault (admins): tracker and Usenet logins, Show with the password, Back up and Restore |
 //! | `#/import` | move from Prowlarr and FlareSolverr: look first, then import |
 //! | `#/releases?t=recent\|filters\|sources` | releases as they appear: what came and what happened, the filters, the IRC and RSS sources |
@@ -19,6 +20,7 @@
 mod crossseed;
 mod import;
 mod indexers;
+mod keeper;
 mod pages;
 mod releases;
 mod vault;
@@ -185,6 +187,7 @@ fn Shell(me: Value) -> impl IntoView {
         match r.path.as_str() {
             "/indexers" => view! { <indexers::Indexers admin=admin/> }.into_any(),
             "/search" => view! { <indexers::Search/> }.into_any(),
+            "/accounts" if admin => view! { <keeper::Accounts/> }.into_any(),
             "/vault" if admin => view! { <vault::Vault owner=owner/> }.into_any(),
             "/import" => view! { <import::Import admin=admin/> }.into_any(),
             "/releases" => view! { <releases::Releases admin=admin tab=r.param("t")/> }.into_any(),
@@ -202,6 +205,7 @@ fn Shell(me: Value) -> impl IntoView {
                     <NavLink href="/" label="Home" route=route/>
                     <NavLink href="/indexers" label="Indexers" route=route/>
                     <NavLink href="/search" label="Search" route=route/>
+                    {admin.then(|| view! { <NavLink href="/accounts" label="Accounts" route=route/> })}
                     {admin.then(|| view! { <NavLink href="/vault" label="Vault" route=route/> })}
                     {admin.then(|| view! { <NavLink href="/import" label="Import" route=route/> })}
                     <NavLink href="/releases" label="Releases" route=route/>

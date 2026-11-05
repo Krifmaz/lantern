@@ -118,6 +118,123 @@ type = "number"
 min = 1
 max = 20
 
+[sections.accounts]
+title = "Accounts"
+
+[groups.keeper]
+section = "accounts"
+title = "Account keeper"
+desc = "How Lantern keeps your tracker accounts alive and how early it warns you."
+
+[keys.keeper_warn_days]
+env = "APP_KEEPER_WARN_DAYS"
+default = 7
+group = "keeper"
+label = "Warn this many days ahead"
+help = "Lantern warns when an account will break a site's rule within this many days."
+type = "number"
+unit = "days"
+min = 1
+max = 60
+
+[keys.keeper_keepalive_days]
+env = "APP_KEEPER_KEEPALIVE_DAYS"
+default = 3
+group = "keeper"
+label = "Sign in to linked sites every"
+help = "For accounts linked to an indexer, Lantern signs in on its own when it hasn't in this many days."
+type = "number"
+unit = "days"
+min = 1
+max = 60
+
+[groups.alerts]
+section = "accounts"
+title = "Alerts"
+desc = "Where Lantern sends a warning when an account is at risk, besides the banner. Leave a channel empty to skip it."
+
+[keys.alert_ntfy_url]
+env = "APP_ALERT_NTFY_URL"
+default = ""
+group = "alerts"
+label = "ntfy topic"
+help = "The full address of your ntfy topic, for example https://ntfy.sh/my-lantern."
+type = "url"
+
+[keys.alert_ntfy_token]
+env = "APP_ALERT_NTFY_TOKEN"
+default = ""
+secret = true
+group = "alerts"
+label = "ntfy access token"
+help = "Only for a topic that needs one."
+type = "password"
+
+[keys.alert_discord_webhook]
+env = "APP_ALERT_DISCORD_WEBHOOK"
+default = ""
+secret = true
+group = "alerts"
+label = "Discord webhook"
+help = "Channel settings → Integrations → Webhooks → Copy webhook URL."
+type = "password"
+
+[keys.alert_email_to]
+env = "APP_ALERT_EMAIL_TO"
+default = ""
+group = "alerts"
+label = "Email to"
+help = "Where warning emails go. Needs the mail server below."
+type = "text"
+
+[keys.smtp_host]
+env = "APP_SMTP_HOST"
+default = ""
+group = "alerts"
+label = "Mail server"
+help = "For example smtp.fastmail.com."
+type = "text"
+
+[keys.smtp_security]
+env = "APP_SMTP_SECURITY"
+default = "starttls"
+group = "alerts"
+label = "Security"
+type = "select"
+options = [["starttls", "STARTTLS (port 587)"], ["tls", "TLS (port 465)"], ["none", "None (local relay only)"]]
+
+[keys.smtp_port]
+env = "APP_SMTP_PORT"
+default = 0
+group = "alerts"
+label = "Port"
+help = "Empty or 0: 587 for STARTTLS, 465 for TLS, 25 without."
+type = "number"
+min = 0
+max = 65535
+
+[keys.smtp_user]
+env = "APP_SMTP_USER"
+default = ""
+group = "alerts"
+label = "Mail user"
+type = "text"
+
+[keys.smtp_password]
+env = "APP_SMTP_PASSWORD"
+default = ""
+secret = true
+group = "alerts"
+label = "Mail password"
+type = "password"
+
+[keys.smtp_from]
+env = "APP_SMTP_FROM"
+default = ""
+group = "alerts"
+label = "From"
+help = "The sender, for example Lantern <lantern@example.com>. Empty: the mail user."
+type = "text"
 [groups.seeding]
 section = "downloads"
 title = "Seeding and cleanup"
