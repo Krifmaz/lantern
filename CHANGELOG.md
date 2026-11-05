@@ -11,6 +11,8 @@
   `cross-seed-link`. With "Own category for matches" turned on, it goes under `<category>.cross-seed` instead.
 
 ### Fixed
+- Restarting an IRC network always says goodbye (QUIT) to the server before it reconnects. Before, the goodbye
+  was sometimes lost.
 - Cloudflare solving waits up to two minutes for its browser to start, and tries once more if it doesn't, so a busy
   or slow machine no longer fails a check before the browser is ready.
 
