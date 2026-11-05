@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "label": "movies",
+    "notificationIds": [],
+    "indexerIds": [
+      3
+    ],
+    "indexerProxyIds": [],
+    "applicationIds": []
+  }
+]

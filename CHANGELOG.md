@@ -27,6 +27,10 @@
   daemon API (`/api/webhook`, `/api/announce`, `/api/job`, `/api/ping`, `/api/status`) answers on port 2468 with
   Lantern's API key, word for word as cross-seed does. "Search again after (days)" is replaced by cross-seed's
   "Search again after" and "Stop searching after".
+- Prowlarr's own API for its web app, ported from Prowlarr v2.7.0.5723: system status, general, UI and development
+  settings (with Prowlarr's defaults and checks), tags, custom filters, Prowlarr's translations, health, scheduled
+  tasks, the command queue (test, health check, new API key, clearing the log), the log, backups and updates,
+  under `/api/v1/…` with the API key or a signed-in session.
 - Release filters now decide exactly as autobrr v1.90.0 does: release names are read by a port of rls (the
   library autobrr uses), announces by autobrr's own rules, and every filter field autobrr checks is checked the
   same way, with autobrr's rejection reasons. Download limits count per minute, hour, day, week, month or ever, in

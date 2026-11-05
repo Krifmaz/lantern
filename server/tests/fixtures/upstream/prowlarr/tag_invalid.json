@@ -1,0 +1,15 @@
+[
+  {
+    "propertyName": "Label",
+    "errorMessage": "Allowed characters a-z, 0-9 and -",
+    "attemptedValue": "tv shows",
+    "severity": "error",
+    "errorCode": "RegularExpressionValidator",
+    "formattedMessageArguments": [],
+    "formattedMessagePlaceholderValues": {
+      "RegularExpression": "^[a-z0-9-]+$",
+      "PropertyName": "Label",
+      "PropertyValue": "tv shows"
+    }
+  }
+]
