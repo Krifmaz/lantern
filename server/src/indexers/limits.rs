@@ -50,6 +50,27 @@ pub struct TorrentBaseSettings {
     pub prefer_magnet_url: bool,
 }
 
+/// What a download client is told about seeding a torrent from an indexer (`TorrentSeedConfiguration`, made by
+/// `SeedConfigProvider` from the indexer's torrent settings).
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct SeedConfiguration {
+    /// The ratio to seed to (none: the client's own).
+    pub ratio: Option<f64>,
+    /// How long to seed (none: the client's own).
+    pub seed_time: Option<std::time::Duration>,
+}
+
+impl SeedConfiguration {
+    /// The seeding goals of torrent settings `t` (`SeedConfigProvider.GetSeedConfiguration`): the ratio as it is,
+    /// the seed time from minutes.
+    pub fn of(t: &TorrentBaseSettings) -> SeedConfiguration {
+        SeedConfiguration {
+            ratio: t.seed_ratio,
+            seed_time: t.seed_time.map(|m| std::time::Duration::from_secs((m.max(0) as u64) * 60)),
+        }
+    }
+}
+
 /// A number setting: none when missing or empty.
 fn num<T: std::str::FromStr>(s: &BTreeMap<String, String>, k: &str) -> Option<T> {
     s.get(k).map(|v| v.trim()).filter(|v| !v.is_empty() && *v != "null").and_then(|v| v.parse().ok())
@@ -156,6 +177,15 @@ mod tests {
         let (errors, warnings) = validate(&settings(&[(QUERY_LIMIT, "0"), (SEED_TIME, "-1")]));
         assert_eq!(errors, vec![(QUERY_LIMIT, "Should be greater than zero")]);
         assert_eq!(warnings, vec![(SEED_TIME, "Should be greater than zero")]);
+    }
+
+    #[test]
+    fn seed_goals_follow_seed_config_provider() {
+        let t = TorrentBaseSettings::of(&settings(&[(SEED_RATIO, "1.5"), (SEED_TIME, "90"), (PACK_SEED_TIME, "300")]));
+        let c = SeedConfiguration::of(&t);
+        assert_eq!(c.ratio, Some(1.5));
+        assert_eq!(c.seed_time, Some(std::time::Duration::from_secs(90 * 60)));
+        assert_eq!(SeedConfiguration::of(&TorrentBaseSettings::default()), SeedConfiguration { ratio: None, seed_time: None });
     }
 
     #[test]

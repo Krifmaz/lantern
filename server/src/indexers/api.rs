@@ -24,6 +24,7 @@
 //!   GET    /{id}/download?apikey=&link=&sig=&file=              a release's file through Lantern, or a redirect to it
 //!          (also /api/v1/indexer/{id}/download)
 //!   GET    /api/v1/…                                            the Prowlarr API's indexer routes (indexer, search, indexerstats; the rest is in `prowlarr`)
+//!   *      /api/v1/indexerproxy…                                the indexer proxies ([`proxies_api`](super::proxies_api))
 //! ```
 
 use super::capabilities::Capabilities;
@@ -65,6 +66,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/v1/indexer/{id}", get(v1_indexer))
         .route("/api/v1/indexerstats", get(v1_stats))
         .route("/api/v1/search", get(v1_search))
+        .merge(super::proxies_api::router())
 }
 
 async fn list(State(st): State<AppState>, _: SignedIn) -> Result<Json<Value>> {
@@ -74,6 +76,11 @@ async fn list(State(st): State<AppState>, _: SignedIn) -> Result<Json<Value>> {
 
 async fn add(State(st): State<AppState>, _: Admin, Json(body): Json<Value>) -> Result<Json<Value>> {
     let id = st.indexers.add(&body)?;
+    let ix = st.indexers.get(id)?;
+    // a Newznab/Torznab API is asked for its capabilities when it is saved turned on (`IndexerFactory.Create`)
+    if ix.enabled {
+        st.indexers.refresh_caps_of(std::slice::from_ref(&ix)).await;
+    }
     Ok(Json(st.indexers.public(&st.indexers.get(id)?)))
 }
 
@@ -83,6 +90,11 @@ async fn one(State(st): State<AppState>, _: SignedIn, Path(id): Path<i64>) -> Re
 
 async fn change(State(st): State<AppState>, _: Admin, Path(id): Path<i64>, Json(body): Json<Value>) -> Result<Json<Value>> {
     st.indexers.update(id, &body)?;
+    let ix = st.indexers.get(id)?;
+    // asked again when it is saved turned on (`IndexerFactory.Update`)
+    if ix.enabled {
+        st.indexers.refresh_caps_of(std::slice::from_ref(&ix)).await;
+    }
     Ok(Json(st.indexers.public(&st.indexers.get(id)?)))
 }
 
@@ -438,7 +450,10 @@ async fn newznab_api(State(st): State<AppState>, headers: HeaderMap, Path(id): P
         return with_retry_after(r, st.indexers.retry_after_query_limit(&ix));
     }
     match t.as_str() {
-        "caps" => xml(StatusCode::OK, st.indexers.capabilities(&ix).to_xml(&title)),
+        "caps" => {
+            st.indexers.refresh_caps_of(std::slice::from_ref(&ix)).await;
+            xml(StatusCode::OK, st.indexers.capabilities(&ix).to_xml(&title))
+        }
         t if searches.contains(&t) => {
             let found = match st.indexers.dispatch(&[ix.id], &request.to_query(), &source, &host, false).await {
                 Ok(f) => f,
@@ -651,7 +666,9 @@ fn v1_resource(st: &AppState, ix: &Indexer) -> Value {
         "definitionName": ix.definition,
         "indexerUrls": p["links"],
         "fields": [{ "name": "baseUrl", "value": p["base_url"] }],
-        "tags": [],
+        "tags": st.indexers.tag_ids(&ix.tags),
+        "appProfileId": ix.app_profile_id,
+        "downloadClientId": ix.download_client_id,
         "added": chrono::DateTime::from_timestamp(ix.added as i64, 0).map(|d| d.to_rfc3339()),
         "capabilities": {
             "limitsMax": caps.limits_max,
