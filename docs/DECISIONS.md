@@ -20,3 +20,11 @@ Non-obvious calls, one line each, newest last.
   networks); Readarr is pinned to `0.4.18-develop`, the last amd64 build after Readarr was retired.
 - 2026-11-05 — A site whose login needs a captcha asks for a browser cookie instead; Cloudflare challenges say so in
   words until the Cloudflare solving stage lands.
+- 2026-11-05 — Cloudflare solving drives Debian's Chromium headless shell over the DevTools protocol (chromiumoxide),
+  copied with the files of the packages it needs into the distroless image, so the image stays distroless and
+  read-only (the browser's profile and scratch files live in `/data/browser`). It sends a person's Chrome user agent
+  ("HeadlessChrome" said as "Chrome"), and indexers send that same agent with the kept cookies, as cf_clearance asks.
+- 2026-11-05 — The FlareSolverr API listens on its own port 8191 without sign-in, as FlareSolverr does, so apps
+  switch by address only; `APP_SOLVER_PORT=0` turns it off for anyone who doesn't need it.
+- 2026-11-05 — When a site checks every plain request even with the cookies, a GET is read through the browser
+  instead (pages only; files still go through Lantern's own client).

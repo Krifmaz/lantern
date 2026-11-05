@@ -23,7 +23,26 @@ async fn main() -> anyhow::Result<()> {
     server::spawn_definition_updates(st.clone());
     let addr = SocketAddr::from(([0, 0, 0, 0], server::port()));
     tracing::info!("{name} {} listening on {addr}", server::VERSION);
+    let solver_port = server::solver_port();
+    if solver_port != 0 {
+        // the FlareSolverr API on its own port, as apps expect it
+        let solver_addr = SocketAddr::from(([0, 0, 0, 0], solver_port));
+        let solver_app = server::solver::api::flaresolverr(st.solver.clone());
+        match tokio::net::TcpListener::bind(solver_addr).await {
+            Ok(l) => {
+                tracing::info!("FlareSolverr API listening on {solver_addr}");
+                tokio::spawn(async move {
+                    let _ = axum::serve(l, solver_app).with_graceful_shutdown(server::shutdown_signal()).await;
+                });
+            }
+            Err(e) => tracing::warn!(
+                "The FlareSolverr API can't use port {solver_port}: {e}. Set APP_SOLVER_PORT to a free port, or 0 to turn it off."
+            ),
+        }
+    }
     let listener = tokio::net::TcpListener::bind(addr).await?;
+    let solver = st.solver.clone();
     axum::serve(listener, server::app(st)).with_graceful_shutdown(server::shutdown_signal()).await?;
+    solver.shutdown().await;
     Ok(())
 }

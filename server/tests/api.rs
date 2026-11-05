@@ -166,8 +166,11 @@ async fn diagnostics_check_the_data_folder_and_the_database() {
     let (s, v, _) = call(&app, admin("GET", "/api/diagnostics", None)).await;
     assert_eq!(s, StatusCode::OK);
     let names: Vec<&str> = v["checks"].as_array().unwrap().iter().filter_map(|c| c["name"].as_str()).collect();
-    assert_eq!(names, ["Data folder", "Database", "Indexers"]);
-    assert!(v["checks"].as_array().unwrap().iter().all(|c| c["ok"] == true), "{v}");
+    assert_eq!(names, ["Data folder", "Database", "Browser for Cloudflare checks", "Indexers"]);
+    assert!(
+        v["checks"].as_array().unwrap().iter().filter(|c| c["name"] != "Browser for Cloudflare checks").all(|c| c["ok"] == true),
+        "{v}"
+    );
     let (s, v, _) = call(&app, admin("POST", "/api/diagnostics/nothing/test", None)).await;
     assert_eq!((s, v["detail"].as_str()), (StatusCode::NOT_FOUND, Some("Unknown check")));
 }

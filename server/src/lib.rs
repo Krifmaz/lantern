@@ -10,12 +10,14 @@
 //! | `/api/settings`, `/api/settings/schema`, `/api/settings/secret/{key}` | kit-server-settings |
 //! | `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` | [`auth`] |
 //! | `/api/indexers/*`, `/api/search`, `/{id}/api` (Torznab/Newznab), `/{id}/download`, `/api/v1/*` (Prowlarr API) | [`indexers`] |
+//! | `/api/solver`, `/api/solver/test`; the FlareSolverr API on its own port ([`solver_port`]) | [`solver`] |
 //!
 //! Everything the app adds of its own goes into [`app`] next to them.
 
 pub mod auth;
 pub mod checks;
 pub mod indexers;
+pub mod solver;
 
 use axum::http::{header, HeaderValue};
 use axum::Router;
@@ -59,6 +61,11 @@ pub fn port() -> u16 {
     std::env::var("APP_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(9696)
 }
 
+/// The FlareSolverr API's port from `APP_SOLVER_PORT`: 8191 (FlareSolverr's) when not set, 0 to serve none.
+pub fn solver_port() -> u16 {
+    std::env::var("APP_SOLVER_PORT").ok().and_then(|p| p.trim().parse().ok()).unwrap_or(8191)
+}
+
 /// The app's state, handed to every route; clones share everything.
 #[derive(Clone)]
 pub struct AppState {
@@ -84,6 +91,8 @@ pub struct AppState {
     pub indexers: indexers::Indexers,
     /// Signs the download links handed to apps.
     pub signer: indexers::LinkSigner,
+    /// Gets past Cloudflare checks with a headless browser (also the FlareSolverr API).
+    pub solver: solver::Solver,
 }
 
 impl AppState {
@@ -114,6 +123,8 @@ impl AppState {
         let db = SqliteDb::open(&data.join("app.db")).map_err(|e| anyhow::anyhow!("The database can't be opened: {}", e.detail))?;
         auth::migrate(&db)?;
         indexers::migrate(&db)?;
+        solver::migrate(&db)?;
+        let solver = solver::Solver::new(solver::find_program(env("APP_CHROMIUM").as_deref()), data, Some(db.clone()));
         let bundled = PathBuf::from(env("APP_DEFINITIONS_DIR").unwrap_or_else(|| "/app/definitions".into()));
         let library = indexers::library::Library::new(Some(bundled), data);
         let signer = indexers::LinkSigner::open(data)?;
@@ -139,8 +150,9 @@ impl AppState {
             changelog,
             notices,
             limits: Arc::new(auth::Limits::default()),
-            indexers: indexers::Indexers::new(db_for_indexers, library).with_settings(settings_for_indexers),
+            indexers: indexers::Indexers::new(db_for_indexers, library).with_settings(settings_for_indexers).with_solver(solver.clone()),
             signer,
+            solver,
         })
     }
 
@@ -255,6 +267,7 @@ pub fn app(st: AppState) -> Router {
         .merge(kit_server_settings::router())
         .merge(auth::router())
         .merge(indexers::api::router())
+        .merge(solver::api::router())
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))
