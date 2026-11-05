@@ -198,7 +198,7 @@ async fn qbittorrent_as_cross_seed_talks_to_it() {
     assert_eq!(client.is_torrent_in_client(&"f".repeat(40)).await, Ok(false));
     let log = shared.lock().unwrap().log.clone();
     let mut want = expected("qbittorrent", &a, &b, &c);
-    want.push(json!(format!("POST /qbit/api/v2/torrents/info ")));
+    want.push(json!("POST /qbit/api/v2/torrents/info "));
     assert_eq!(log, want);
     assert_eq!(client.is_torrent_complete(&b.info_hash).await, Some(true));
     assert_eq!(client.is_torrent_checking(&b.info_hash).await, Some(false));
