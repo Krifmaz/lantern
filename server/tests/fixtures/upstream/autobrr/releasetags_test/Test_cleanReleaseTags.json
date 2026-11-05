@@ -1,0 +1,26 @@
+[
+ {
+  "name": "1",
+  "args": {
+   "tagString": "FLAC / Lossless / Log / 100% / Cue / CD",
+   "__type": "args"
+  },
+  "want": "FLAC Lossless Log 100% Cue CD"
+ },
+ {
+  "name": "2",
+  "args": {
+   "tagString": "FLAC/Lossless/Log 100%/Cue/CD",
+   "__type": "args"
+  },
+  "want": "FLAC Lossless Log 100% Cue CD"
+ },
+ {
+  "name": "3",
+  "args": {
+   "tagString": "FLAC | Lossless | Log | 100% | Cue | CD",
+   "__type": "args"
+  },
+  "want": "FLAC Lossless Log 100% Cue CD"
+ }
+]

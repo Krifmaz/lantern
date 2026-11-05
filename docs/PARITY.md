@@ -830,80 +830,80 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `Name` | A-api | todo | |  |
-| `Enabled` | A-api | todo | |  |
-| `MinSize` | A-api | partial | | fresh version |
-| `MaxSize` | A-api | partial | | fresh version |
-| `Delay` | A-api | partial | | fresh version |
-| `Priority` | A-api | partial | | fresh version |
-| `MaxDownloads` | A-api | todo | |  |
-| `MaxDownloadsUnit` | A-api | todo | |  |
-| `MaxDownloadsPeriod` | A-api | todo | |  |
-| `MaxDownloadsWindowType` | A-api | todo | |  |
-| `MatchReleases` | A-api | partial | | fresh version |
-| `ExceptReleases` | A-api | partial | | fresh version |
-| `UseRegex` | A-api | todo | |  |
-| `MatchReleaseGroups` | A-api | partial | | fresh version |
-| `ExceptReleaseGroups` | A-api | todo | |  |
-| `AnnounceTypes` | A-api | todo | |  |
-| `Scene` | A-api | todo | |  |
-| `Origins` | A-api | todo | |  |
-| `ExceptOrigins` | A-api | todo | |  |
-| `Bonus` | A-api | todo | |  |
-| `Freeleech` | A-api | partial | | fresh version |
-| `FreeleechPercent` | A-api | todo | |  |
-| `SmartEpisode` | A-api | todo | |  |
-| `Shows` | A-api | todo | |  |
-| `Seasons` | A-api | todo | |  |
-| `Episodes` | A-api | todo | |  |
-| `Resolutions` | A-api | partial | | fresh version |
-| `Codecs` | A-api | todo | |  |
-| `Sources` | A-api | todo | |  |
-| `Containers` | A-api | todo | |  |
-| `MatchHDR` | A-api | todo | |  |
-| `ExceptHDR` | A-api | todo | |  |
-| `MatchOther` | A-api | todo | |  |
-| `ExceptOther` | A-api | todo | |  |
-| `Years` | A-api | partial | | fresh version |
-| `Months` | A-api | todo | |  |
-| `Days` | A-api | todo | |  |
-| `Artists` | A-api | todo | |  |
-| `Albums` | A-api | todo | |  |
-| `MatchReleaseTypes` | A-api | todo | |  |
-| `ExceptReleaseTypes` | A-api | todo | |  |
-| `Formats` | A-api | todo | |  |
-| `Quality` | A-api | todo | |  |
-| `Media` | A-api | todo | |  |
-| `PerfectFlac` | A-api | todo | |  |
-| `Cue` | A-api | todo | |  |
-| `Log` | A-api | todo | |  |
-| `LogScore` | A-api | todo | |  |
-| `MatchCategories` | A-api | todo | |  |
-| `ExceptCategories` | A-api | todo | |  |
-| `MatchUploaders` | A-api | todo | |  |
-| `ExceptUploaders` | A-api | todo | |  |
-| `MatchRecordLabels` | A-api | todo | |  |
-| `ExceptRecordLabels` | A-api | todo | |  |
-| `MatchLanguage` | A-api | todo | |  |
-| `ExceptLanguage` | A-api | todo | |  |
-| `Tags` | A-api | partial | | fresh version |
-| `ExceptTags` | A-api | todo | |  |
-| `TagsAny` | A-api | todo | |  |
-| `ExceptTagsAny` | A-api | todo | |  |
-| `TagsMatchLogic` | A-api | todo | |  |
-| `ExceptTagsMatchLogic` | A-api | todo | |  |
-| `MatchReleaseTags` | A-api | todo | |  |
-| `ExceptReleaseTags` | A-api | todo | |  |
-| `UseRegexReleaseTags` | A-api | todo | |  |
-| `MatchDescription` | A-api | todo | |  |
-| `ExceptDescription` | A-api | todo | |  |
-| `UseRegexDescription` | A-api | todo | |  |
-| `MinSeeders` | A-api | todo | |  |
-| `MaxSeeders` | A-api | todo | |  |
-| `MinLeechers` | A-api | todo | |  |
-| `MaxLeechers` | A-api | todo | |  |
-| `IsAutoUpdated` | A-api | todo | |  |
-| `ReleaseProfileDuplicateID` | A-api | todo | |  |
+| `Name` | A-api | done | server/tests/upstream_autobrr.rs::filter_validation | ported (autobrr `Validate`) |
+| `Enabled` | A-api | partial | | stored; only enabled filters are checked (no upstream test) |
+| `MinSize` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter, server/tests/upstream_autobrr.rs::filter_check_size | ported (go-humanize sizes; read from the torrent when not announced) |
+| `MaxSize` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter, server/tests/upstream_autobrr.rs::filter_check_size | ported |
+| `Delay` | A-api | partial | | stored; waits before the actions (no upstream test) |
+| `Priority` | A-api | partial | | stored; filters are checked highest first (no upstream test) |
+| `MaxDownloads` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1, server/tests/upstream_autobrr.rs::filter_validate_max_downloads | ported; counted from the release log |
+| `MaxDownloadsUnit` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1, server/tests/upstream_autobrr.rs::filter_download_period | ported |
+| `MaxDownloadsPeriod` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1, server/tests/upstream_autobrr.rs::filter_download_period | ported |
+| `MaxDownloadsWindowType` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1, server/tests/releases_filter_fields.rs::download_windows | ported (SQLite window starts) |
+| `MatchReleases` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `ExceptReleases` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `UseRegex` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter, server/tests/upstream_autobrr.rs::filter_list_helpers | ported (go-andiamo splitter, Go regex syntax) |
+| `MatchReleaseGroups` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `ExceptReleaseGroups` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1 | ported |
+| `AnnounceTypes` | A-api | done | server/tests/releases_filter_fields.rs::announce_types_bonus_and_freeleech_percent | ported |
+| `Scene` | A-api | partial | | stored and sent back; autobrr's check doesn't read it either (origins do) |
+| `Origins` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1 | ported |
+| `ExceptOrigins` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1 | ported |
+| `Bonus` | A-api | done | server/tests/releases_filter_fields.rs::announce_types_bonus_and_freeleech_percent | ported |
+| `Freeleech` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `FreeleechPercent` | A-api | done | server/tests/releases_filter_fields.rs::announce_types_bonus_and_freeleech_percent | ported |
+| `SmartEpisode` | A-api | partial | | stored; the newer-episode check needs the release history (next slice) |
+| `Shows` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Seasons` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Episodes` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Resolutions` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Codecs` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Sources` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Containers` | A-api | done | server/tests/releases_filter_fields.rs::containers_and_languages | ported |
+| `MatchHDR` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `ExceptHDR` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `MatchOther` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1 | ported |
+| `ExceptOther` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1 | ported |
+| `Years` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Months` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Days` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Artists` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Albums` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `MatchReleaseTypes` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `ExceptReleaseTypes` | A-api | partial | | stored; autobrr's check doesn't read it either |
+| `Formats` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Quality` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Media` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `PerfectFlac` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter, server/tests/upstream_autobrr.rs::filter_is_perfect_flac | ported |
+| `Cue` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `Log` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `LogScore` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `MatchCategories` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `ExceptCategories` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `MatchUploaders` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported; RED/OPS lookup of a missing uploader not yet (rejected with a reason) |
+| `ExceptUploaders` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `MatchRecordLabels` | A-api | done | server/tests/releases_filter_fields.rs::record_labels | ported; RED/OPS lookup of a missing label not yet |
+| `ExceptRecordLabels` | A-api | done | server/tests/releases_filter_fields.rs::record_labels | ported |
+| `MatchLanguage` | A-api | done | server/tests/releases_filter_fields.rs::containers_and_languages | ported |
+| `ExceptLanguage` | A-api | done | server/tests/releases_filter_fields.rs::containers_and_languages | ported |
+| `Tags` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `ExceptTags` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `TagsAny` | A-api | partial | | stored and tidied; autobrr's check doesn't read it either |
+| `ExceptTagsAny` | A-api | partial | | stored; autobrr's check doesn't read it either |
+| `TagsMatchLogic` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `ExceptTagsMatchLogic` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `MatchReleaseTags` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
+| `ExceptReleaseTags` | A-api | done | server/tests/releases_filter_fields.rs::release_tags_and_descriptions | ported |
+| `UseRegexReleaseTags` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1 | ported |
+| `MatchDescription` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter1 | ported |
+| `ExceptDescription` | A-api | done | server/tests/releases_filter_fields.rs::release_tags_and_descriptions | ported |
+| `UseRegexDescription` | A-api | done | server/tests/releases_filter_fields.rs::release_tags_and_descriptions | ported |
+| `MinSeeders` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
+| `MaxSeeders` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
+| `MinLeechers` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
+| `MaxLeechers` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
+| `IsAutoUpdated` | A-api | partial | | stored; set by lists (lists slice) |
+| `ReleaseProfileDuplicateID` | A-api | partial | | stored; duplicate profiles come with the releases slice |
 | `DuplicateHandling` | A-api | todo | |  |
 | External filters (exec, webhook) with expected status | A-api | todo | |  |
 | Filter notifications per event | A-api | todo | |  |
@@ -974,16 +974,16 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `{{ .Artists }}` `{{ .Audio }}` `{{ .AudioChannels }}` `{{ .AudioFormat }}` `{{ .Bitrate }}` `{{ .Bonus }}` `{{ .Categories }}` `{{ .Category }}` | A-api | todo | |  |
-| `{{ .Codec }}` `{{ .Container }}` `{{ .Cookie }}` `{{ .CurrentDay }}` `{{ .CurrentHour }}` `{{ .CurrentMinute }}` `{{ .CurrentMonth }}` `{{ .CurrentSecond }}` | A-api | todo | |  |
-| `{{ .CurrentYear }}` `{{ .CurrentTimeUnixMS }}` `{{ .CurrentUnixTimeMS }}` `{{ .Description }}` `{{ .DownloadUrl }}` `{{ .Episode }}` `{{ .FilterID }}` `{{ .FilterName }}` | A-api | todo | |  |
-| `{{ .Freeleech }}` `{{ .FreeleechPercent }}` `{{ .Group }}` `{{ .GroupID }}` `{{ .HDR }}` `{{ .HasCue }}` `{{ .HasLog }}` `{{ .Implementation }}` | A-api | todo | |  |
-| `{{ .Indexer }}` `{{ .IndexerIdentifier }}` `{{ .IndexerIdentifierExternal }}` `{{ .IndexerName }}` `{{ .InfoUrl }}` `{{ .IsDuplicate }}` `{{ .Language }}` `{{ .Leechers }}` | A-api | todo | |  |
-| `{{ .LogScore }}` `{{ .MagnetURI }}` `{{ .MetaIMDB }}` `{{ .MetaTMDB }}` `{{ .MetaTVDB }}` `{{ .MetaIGDB }}` `{{ .Origin }}` `{{ .Other }}` | A-api | todo | |  |
-| `{{ .PreTime }}` `{{ .Protocol }}` `{{ .Proper }}` `{{ .Region }}` `{{ .ReleaseTags }}` `{{ .Repack }}` `{{ .Resolution }}` `{{ .Season }}` | A-api | todo | |  |
-| `{{ .Seeders }}` `{{ .Size }}` `{{ .SizeString }}` `{{ .SkipDuplicateProfileID }}` `{{ .SkipDuplicateProfileName }}` `{{ .Source }}` `{{ .Tags }}` `{{ .Title }}` | A-api | todo | |  |
-| `{{ .TorrentDataRawBytes }}` `{{ .TorrentHash }}` `{{ .TorrentID }}` `{{ .TorrentName }}` `{{ .TorrentPathName }}` `{{ .TorrentUrl }}` `{{ .TorrentTmpFile }}` `{{ .Type }}` | A-api | todo | |  |
-| `{{ .Uploader }}` `{{ .RecordLabel }}` `{{ .RawVars }}` `{{ .Website }}` `{{ .Year }}` `{{ .Month }}` `{{ .Day }}` | A-api | todo | |  |
+| `{{ .Artists }}` `{{ .Audio }}` `{{ .AudioChannels }}` `{{ .AudioFormat }}` `{{ .Bitrate }}` `{{ .Bonus }}` `{{ .Categories }}` `{{ .Category }}` | A-api | done | server/tests/upstream_autobrr.rs::macros_parse, server/tests/releases_filter_fields.rs::every_macro_variable | ported (Go text/template subset with sprig functions) |
+| `{{ .Codec }}` `{{ .Container }}` `{{ .Cookie }}` `{{ .CurrentDay }}` `{{ .CurrentHour }}` `{{ .CurrentMinute }}` `{{ .CurrentMonth }}` `{{ .CurrentSecond }}` | A-api | done | server/tests/upstream_autobrr.rs::macros_parse, server/tests/releases_filter_fields.rs::every_macro_variable | ported (Go text/template subset with sprig functions) |
+| `{{ .CurrentYear }}` `{{ .CurrentTimeUnixMS }}` `{{ .CurrentUnixTimeMS }}` `{{ .Description }}` `{{ .DownloadUrl }}` `{{ .Episode }}` `{{ .FilterID }}` `{{ .FilterName }}` | A-api | done | server/tests/upstream_autobrr.rs::macros_parse, server/tests/releases_filter_fields.rs::every_macro_variable | ported (Go text/template subset with sprig functions) |
+| `{{ .Freeleech }}` `{{ .FreeleechPercent }}` `{{ .Group }}` `{{ .GroupID }}` `{{ .HDR }}` `{{ .HasCue }}` `{{ .HasLog }}` `{{ .Implementation }}` | A-api | done | server/tests/upstream_autobrr.rs::macros_parse, server/tests/releases_filter_fields.rs::every_macro_variable | ported (Go text/template subset with sprig functions) |
+| `{{ .Indexer }}` `{{ .IndexerIdentifier }}` `{{ .IndexerIdentifierExternal }}` `{{ .IndexerName }}` `{{ .InfoUrl }}` `{{ .IsDuplicate }}` `{{ .Language }}` `{{ .Leechers }}` | A-api | done | server/tests/upstream_autobrr.rs::macros_parse, server/tests/releases_filter_fields.rs::every_macro_variable | ported (Go text/template subset with sprig functions) |
+| `{{ .LogScore }}` `{{ .MagnetURI }}` `{{ .MetaIMDB }}` `{{ .MetaTMDB }}` `{{ .MetaTVDB }}` `{{ .MetaIGDB }}` `{{ .Origin }}` `{{ .Other }}` | A-api | done | server/tests/upstream_autobrr.rs::macros_parse, server/tests/releases_filter_fields.rs::every_macro_variable | ported (Go text/template subset with sprig functions) |
+| `{{ .PreTime }}` `{{ .Protocol }}` `{{ .Proper }}` `{{ .Region }}` `{{ .ReleaseTags }}` `{{ .Repack }}` `{{ .Resolution }}` `{{ .Season }}` | A-api | done | server/tests/upstream_autobrr.rs::macros_parse, server/tests/releases_filter_fields.rs::every_macro_variable | ported (Go text/template subset with sprig functions) |
+| `{{ .Seeders }}` `{{ .Size }}` `{{ .SizeString }}` `{{ .SkipDuplicateProfileID }}` `{{ .SkipDuplicateProfileName }}` `{{ .Source }}` `{{ .Tags }}` `{{ .Title }}` | A-api | done | server/tests/upstream_autobrr.rs::macros_parse, server/tests/releases_filter_fields.rs::every_macro_variable | ported (Go text/template subset with sprig functions) |
+| `{{ .TorrentDataRawBytes }}` `{{ .TorrentHash }}` `{{ .TorrentID }}` `{{ .TorrentName }}` `{{ .TorrentPathName }}` `{{ .TorrentUrl }}` `{{ .TorrentTmpFile }}` `{{ .Type }}` | A-api | done | server/tests/upstream_autobrr.rs::macros_parse, server/tests/releases_filter_fields.rs::every_macro_variable | ported (Go text/template subset with sprig functions) |
+| `{{ .Uploader }}` `{{ .RecordLabel }}` `{{ .RawVars }}` `{{ .Website }}` `{{ .Year }}` `{{ .Month }}` `{{ .Day }}` | A-api | done | server/tests/upstream_autobrr.rs::macros_parse, server/tests/releases_filter_fields.rs::every_macro_variable | ported (Go text/template subset with sprig functions) |
 
 ### Download clients
 
@@ -1342,85 +1342,85 @@ cross-seed has no web UI in v6; its daemon, API and CLI are ported. Its settings
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `GET /` (version and user agent) | F | partial | | fresh version |
-| `GET /health` | F | partial | | fresh version |
-| `POST /v1` `request.get` | F | partial | | fresh version |
-| `POST /v1` `request.post` | F | partial | | fresh version |
-| `POST /v1` `sessions.create` | F | todo | |  |
-| `POST /v1` `sessions.list` | F | todo | |  |
-| `POST /v1` `sessions.destroy` | F | todo | |  |
+| `GET /` (version and user agent) | F | done | server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_answers_that_need_no_page | ported (`api.rs`) |
+| `GET /health` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
+| `POST /v1` `request.get` | F | done | server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_challenges | ported (`_evil_logic` in `mod.rs`) |
+| `POST /v1` `request.post` | F | done | server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_challenges, server/src/solver/mod.rs::the_flaresolverr_post_form_is_built_like_post_request | ported (`_post_request`) |
+| `POST /v1` `sessions.create` | F | done | server/tests/solver.rs::tests_py_sessions | ported (a browser context per session) |
+| `POST /v1` `sessions.list` | F | done | server/tests/solver.rs::tests_py_sessions, server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
+| `POST /v1` `sessions.destroy` | F | done | server/tests/solver.rs::tests_py_sessions, server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
 
 ### Request fields
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `cmd` | F | todo | |  |
-| `url` | F | todo | |  |
-| `session` | F | todo | |  |
-| `session_ttl_minutes` | F | todo | |  |
-| `maxTimeout` | F | todo | |  |
-| `cookies` | F | todo | |  |
-| `proxy (url, username, password)` | F | todo | |  |
-| `headers` | F | todo | |  |
-| `userAgent` | F | todo | |  |
-| `postData` | F | todo | |  |
-| `returnOnlyCookies` | F | todo | |  |
-| `returnScreenshot` | F | todo | |  |
-| `returnRawHtml` | F | todo | |  |
-| `download` | F | todo | |  |
-| `waitInSeconds` | F | todo | |  |
-| `disableMedia` | F | todo | |  |
-| `tabs_till_verify` | F | todo | |  |
+| `cmd` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
+| `url` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page, server/tests/solver.rs::tests_py_requests | ported |
+| `session` | F | done | server/tests/solver.rs::tests_py_sessions | ported |
+| `session_ttl_minutes` | F | done | server/tests/solver.rs::tests_py_sessions, server/src/solver/api.rs::a_request_becomes_a_job | ported |
+| `maxTimeout` | F | done | server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_answers_that_need_no_page, server/src/solver/api.rs::python_reading_of_values | ported |
+| `cookies` | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/api.rs::a_request_becomes_a_job | ported |
+| `proxy (url, username, password)` | F | done | server/tests/solver.rs::tests_py_proxies, server/src/solver/api.rs::the_environment_proxy_fills_in | ported |
+| `headers` | F | done | server/tests/solver.rs::tests_py_requests | ported (ignored with a warning, as upstream) |
+| `userAgent` | F | done | server/tests/solver.rs::tests_py_requests | ported (ignored with a warning, as upstream) |
+| `postData` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page, server/tests/solver.rs::tests_py_requests | ported |
+| `returnOnlyCookies` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `returnScreenshot` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `returnRawHtml` | F | done | server/tests/solver.rs::tests_py_requests | ported (ignored with a warning, as upstream) |
+| `download` | F | done | server/tests/solver.rs::tests_py_requests | ported (ignored with a warning, as upstream) |
+| `waitInSeconds` | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/api.rs::a_request_becomes_a_job | ported |
+| `disableMedia` | F | done | server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_proxies | ported |
+| `tabs_till_verify` | F | done | server/tests/solver.rs::tests_py_challenges | ported |
 
 ### Answer fields
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `status` | F | todo | |  |
-| `message` | F | todo | |  |
-| `startTimestamp` | F | todo | |  |
-| `endTimestamp` | F | todo | |  |
-| `version` | F | todo | |  |
-| `solution.url` | F | todo | |  |
-| `solution.status` | F | todo | |  |
-| `solution.headers` | F | todo | |  |
-| `solution.response` | F | todo | |  |
-| `solution.cookies` | F | todo | |  |
-| `solution.userAgent` | F | todo | |  |
-| `solution.screenshot` | F | todo | |  |
-| `solution.turnstile_token` | F | todo | |  |
-| `session` | F | todo | |  |
-| `sessions` | F | todo | |  |
+| `status` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page, server/tests/solver.rs::tests_py_requests | ported |
+| `message` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page, server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_challenges | ported, word for word |
+| `startTimestamp` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
+| `endTimestamp` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
+| `version` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page | ported (3.5.2) |
+| `solution.url` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `solution.status` | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/api.rs::the_solution_has_flaresolverrs_fields | ported (always 200, as upstream) |
+| `solution.headers` | F | done | server/tests/solver.rs::tests_py_requests | ported (`{}`, left out with returnOnlyCookies) |
+| `solution.response` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `solution.cookies` | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/api.rs::the_solution_has_flaresolverrs_fields | ported (chromedriver's cookie shape) |
+| `solution.userAgent` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `solution.screenshot` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `solution.turnstile_token` | F | done | server/tests/solver.rs::tests_py_challenges | ported |
+| `session` | F | done | server/tests/solver.rs::tests_py_sessions | ported |
+| `sessions` | F | done | server/tests/solver.rs::tests_py_sessions, server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
 
 ### Settings (environment)
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `HOST` | F | todo | |  |
-| `PORT` | F | todo | |  |
-| `LOG_LEVEL` | F | todo | |  |
-| `LOG_FILE` | F | todo | |  |
-| `LOG_HTML` | F | todo | |  |
-| `HEADLESS` | F | todo | |  |
-| `BROWSER_WAIT_TIMEOUT` | F | todo | |  |
-| `DISABLE_MEDIA` | F | todo | |  |
-| `LANG` | F | todo | |  |
-| `TZ` | F | todo | |  |
-| `PROXY_URL` | F | todo | |  |
-| `PROXY_USERNAME` | F | todo | |  |
-| `PROXY_PASSWORD` | F | todo | |  |
-| `PROMETHEUS_ENABLED` | F | todo | |  |
-| `PROMETHEUS_PORT` | F | todo | |  |
+| `HOST` | F | n/a |  | mapped: Lantern listens on all addresses (HOST's default 0.0.0.0); see DECISIONS.md |
+| `PORT` | F | n/a |  | mapped to `APP_SOLVER_PORT` (default 8191); see DECISIONS.md |
+| `LOG_LEVEL` | F | n/a |  | mapped to Lantern's log (`RUST_LOG`); see DECISIONS.md |
+| `LOG_FILE` | F | n/a |  | logs go to stdout and the kit's log (read-only root); see DECISIONS.md |
+| `LOG_HTML` | F | partial | server/src/solver/config.rs::only_true_turns_a_switch_on | read; the debug log line isn't asserted |
+| `HEADLESS` | F | partial | server/src/solver/config.rs::only_true_turns_a_switch_on | read; `false` shows a window, not tested (no screen in CI) |
+| `BROWSER_WAIT_TIMEOUT` | F | done | server/tests/solver.rs::tests_py_challenges, server/src/solver/config.rs::numbers_and_texts | ported |
+| `DISABLE_MEDIA` | F | done | server/tests/solver.rs::tests_py_proxies | ported |
+| `LANG` | F | done | server/tests/solver.rs::tests_py_requests | ported (`--accept-lang`) |
+| `TZ` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `PROXY_URL` | F | done | server/tests/solver.rs::tests_py_proxies, server/src/solver/api.rs::the_environment_proxy_fills_in | ported |
+| `PROXY_USERNAME` | F | done | server/tests/solver.rs::tests_py_proxies, server/src/solver/api.rs::the_environment_proxy_fills_in | ported |
+| `PROXY_PASSWORD` | F | done | server/tests/solver.rs::tests_py_proxies, server/src/solver/api.rs::the_environment_proxy_fills_in | ported |
+| `PROMETHEUS_ENABLED` | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/metrics.rs::answers_are_counted_by_site_and_result | ported |
+| `PROMETHEUS_PORT` | F | done | server/tests/solver.rs::tests_py_requests | ported (8192) |
 
 ### Challenges
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Cloudflare JS challenge | F | partial | | fresh version |
-| DDoS-Guard | F | partial | | fresh version |
-| Cloudflare Turnstile (click and token) | F | todo | |  |
-| Access denied / banned detection and messages | F | todo | |  |
-| Prometheus metrics | F | todo | |  |
+| Cloudflare JS challenge | F | done | server/tests/solver.rs::tests_py_challenges, server/tests/solver.rs::indexers_get_past_a_check_and_keep_the_cookies | ported |
+| DDoS-Guard | F | done | server/tests/solver.rs::tests_py_challenges | ported |
+| Cloudflare Turnstile (click and token) | F | done | server/tests/solver.rs::tests_py_challenges | ported (`click_verify`, `tabs_till_verify`) |
+| Access denied / banned detection and messages | F | done | server/tests/solver.rs::tests_py_challenges | ported |
+| Prometheus metrics | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/metrics.rs::answers_are_counted_by_site_and_result | ported |
 
 ## Lantern's own pages
 

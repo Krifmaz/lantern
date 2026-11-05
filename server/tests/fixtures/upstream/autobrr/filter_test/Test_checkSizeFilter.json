@@ -1,0 +1,91 @@
+[
+ {
+  "name": "test_1",
+  "filter": {
+   "MinSize": "1GB",
+   "MaxSize": "",
+   "__type": "Filter"
+  },
+  "releaseSize": 100,
+  "want": false
+ },
+ {
+  "name": "test_2",
+  "filter": {
+   "MinSize": "1GB",
+   "MaxSize": "",
+   "__type": "Filter"
+  },
+  "releaseSize": 2000000000,
+  "want": true
+ },
+ {
+  "name": "test_3",
+  "filter": {
+   "MinSize": "1GB",
+   "MaxSize": "2.2GB",
+   "__type": "Filter"
+  },
+  "releaseSize": 2000000000,
+  "want": true
+ },
+ {
+  "name": "test_4",
+  "filter": {
+   "MinSize": "1GB",
+   "MaxSize": "2GIB",
+   "__type": "Filter"
+  },
+  "releaseSize": 2000000000,
+  "want": true
+ },
+ {
+  "name": "test_5",
+  "filter": {
+   "MinSize": "1GB",
+   "MaxSize": "2GB",
+   "__type": "Filter"
+  },
+  "releaseSize": 2000000010,
+  "want": false
+ },
+ {
+  "name": "test_6",
+  "filter": {
+   "MinSize": "1GB",
+   "MaxSize": "2GB",
+   "__type": "Filter"
+  },
+  "releaseSize": 2000000000,
+  "want": false
+ },
+ {
+  "name": "test_7",
+  "filter": {
+   "MaxSize": "2GB",
+   "__type": "Filter"
+  },
+  "releaseSize": 2500000000,
+  "want": false
+ },
+ {
+  "name": "test_8",
+  "filter": {
+   "MaxSize": "20GB",
+   "__type": "Filter"
+  },
+  "releaseSize": 2500000000,
+  "want": true
+ },
+ {
+  "name": "test_9",
+  "filter": {
+   "MinSize": "unparseable",
+   "MaxSize": "20GB",
+   "__type": "Filter"
+  },
+  "releaseSize": 2500000000,
+  "want": false,
+  "wantErr": "could not parse filter min size: strconv.ParseFloat: parsing \"\": invalid syntax"
+ }
+]

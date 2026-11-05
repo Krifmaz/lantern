@@ -207,3 +207,44 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — File paths are sorted by an approximation of JavaScript's `localeCompare` (punctuation, then digits,
   then letters, case ignored first); full ICU collation differs only for accented names and changes only the order
   files are listed in, not a decision.
+- 2026-11-05 — autobrr reads release names with the Go library rls (autobrr/rls v0.10.0, MIT, © m. jo istari). Its
+  lexers, tag table and builder are ported line by line to `server/src/releases/rls/` (licence kept beside it) and
+  checked against all 456 names of rls's own tests. Go regular expressions are translated to Rust's syntax with
+  Go's ASCII meaning of `\b`, `\d`, `\s` and `\w`; Go's oddities that change results are kept on purpose (the
+  disc/source/year lexer skipping ahead twice, autobrr's release-tag log score never being set).
+- 2026-11-05 — autobrr walks its release-tag kinds in Go map order, which is random; every autobrr test gives the
+  same answer in any order, and Lantern walks them in the order autobrr declares them.
+- 2026-11-05 — Filters are stored with autobrr's field names (`match_release_groups`, `match_hdr`,
+  `max_downloads_unit` …). A filter saved by earlier Lantern versions, or sent by the current filter form, is read
+  with its earlier names (`release_sources`, `hdr`, `match_groups`, `max_downloads_per`; source ids in `sources`
+  become `indexers`), and filters are sent back with both, until the forked autobrr frontend replaces the form.
+  Lantern's own extras stay: which release sources a filter watches (`indexers`, ids), skipping a name already
+  taken, and its simple Sonarr/Radarr/download hub actions until autobrr's actions are ported.
+- 2026-11-05 — Filter validation answers with autobrr's own error texts (`validation: name can't be empty`) so the
+  autobrr frontend and API clients see what autobrr says; the forked frontend shows them as autobrr does.
+- 2026-11-05 — autobrr's macros run on Go's `text/template` with sprig's functions. Lantern implements the part of
+  `text/template` macros use (fields, maps, `if`/`else if`/`with`/`range`, pipelines, variables, trimming,
+  comments) and the common sprig functions (text, regex, numbers, lists, defaults, dates) in
+  `server/src/releases/gotemplate.rs`; a sprig function it doesn't have is an error, as an unknown one is in Go.
+- 2026-11-05 — A filter's download limit is counted from Lantern's release log (releases sent on). Fixed windows
+  start where autobrr's SQLite query starts them (`weekday 0, -7 days` for weeks); rolling windows go back the
+  period. RED and OPS announces without an uploader or record label are turned down with a reason when a filter
+  asks for one, because Lantern can't ask those sites' APIs yet (autobrr does; it comes with the indexer API slice).
+- 2026-11-05 — Track A-api builds in its own Cargo target folder, without incremental files: builds of the same crate
+  from several worktrees in one shared target folder overwrote each other's files, and the disk is shared.
+- 2026-11-05 — FlareSolverr is ported from v3.5.2 (`server/src/solver/`): its checks, waits, "Verify you are human"
+  click, Turnstile token, sessions, POST form, error texts and HTTP codes, word for word; Lantern answers as version
+  3.5.2. Two things stay Lantern's: one shared Chromium with a browser context per request and per session (instead
+  of one Chrome per request), and Lantern's own indexers keep their plain-word errors, their own POST form (which
+  keeps the indexer's encoding) and the page's real status (the API always says 200, as FlareSolverr does).
+- 2026-11-05 — FlareSolverr's settings are read under its own names (`LOG_HTML`, `HEADLESS`, `BROWSER_WAIT_TIMEOUT`,
+  `DISABLE_MEDIA`, `LANG`, `TZ`, `PROXY_URL`, `PROXY_USERNAME`, `PROXY_PASSWORD`, `PROMETHEUS_ENABLED`,
+  `PROMETHEUS_PORT`) so a FlareSolverr compose file moves over as it is. `HOST` and `PORT` would clash with the main
+  web server, so the API stays on `APP_SOLVER_PORT` (8191, all addresses, as FlareSolverr's defaults); `LOG_LEVEL`
+  and `LOG_FILE` are Lantern's own log (`RUST_LOG`, stdout; the root is read-only). `HEADLESS=true` (the default)
+  runs Chromium headless rather than in a hidden Xvfb window. The request log hides a proxy password, which
+  FlareSolverr prints. Only `flaresolverr_request` and `flaresolverr_request_duration` are served as metrics
+  (no Python process metrics).
+- 2026-11-05 — A session the request makes by itself (`request.*` with an unknown `session`, or one past its
+  `session_ttl_minutes`) has no proxy, as in FlareSolverr; a proxy with `username` and `password` signs in through the
+  browser's auth handling (FlareSolverr loads an extension for it).

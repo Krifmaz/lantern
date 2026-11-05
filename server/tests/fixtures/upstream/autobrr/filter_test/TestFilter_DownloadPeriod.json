@@ -1,0 +1,104 @@
+[
+ {
+  "name": "rolling_minute",
+  "filter": {
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsMinute"
+   },
+   "MaxDownloadsPeriod": 2,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "__type": "Filter"
+  },
+  "wantN": 2,
+  "wantUnit": "minutes"
+ },
+ {
+  "name": "rolling_hour",
+  "filter": {
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsHour"
+   },
+   "MaxDownloadsPeriod": 6,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "__type": "Filter"
+  },
+  "wantN": 6,
+  "wantUnit": "hours"
+ },
+ {
+  "name": "rolling_day",
+  "filter": {
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsDay"
+   },
+   "MaxDownloadsPeriod": 3,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "__type": "Filter"
+  },
+  "wantN": 3,
+  "wantUnit": "days"
+ },
+ {
+  "name": "rolling_week",
+  "filter": {
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsWeek"
+   },
+   "MaxDownloadsPeriod": 2,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "__type": "Filter"
+  },
+  "wantN": 14,
+  "wantUnit": "days"
+ },
+ {
+  "name": "rolling_month",
+  "filter": {
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsMonth"
+   },
+   "MaxDownloadsPeriod": 2,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "__type": "Filter"
+  },
+  "wantN": 2,
+  "wantUnit": "months"
+ },
+ {
+  "name": "rolling_zero_period",
+  "filter": {
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsHour"
+   },
+   "MaxDownloadsPeriod": 0,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "__type": "Filter"
+  },
+  "wantN": 1,
+  "wantUnit": "hours"
+ },
+ {
+  "name": "fixed_ignores_period",
+  "filter": {
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsDay"
+   },
+   "MaxDownloadsPeriod": 3,
+   "__type": "Filter"
+  },
+  "wantN": 1,
+  "wantUnit": "days"
+ }
+]
