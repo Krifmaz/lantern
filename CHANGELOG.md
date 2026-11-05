@@ -13,6 +13,9 @@
 - Lantern listens on port 9696 (Prowlarr's), and makes an API key at first start.
 - The Android app (`android/`, kit-compose v0.2.1, the kit's default theme): connect, sign in, What's new, updates,
   bug reports, crash logs, Server settings and Diagnostics; built and unit-tested on every pull request.
+- Account vault (Vault page): tracker and Usenet logins, passwords, cookies, passkeys, API keys, 2FA seeds and invite
+  notes, encrypted at rest (argon2id + XChaCha20-Poly1305). Secrets are never listed or logged; the owner sees them
+  only after typing their password again, with the 2FA code. Encrypted backups, and restore with a check first.
 - Android: Indexers (how every site is doing, what went wrong, the last week's numbers, Test) and Search (every
   indexer at once, by kind; open a result's page or copy its link), and the server's notices on the home page.
 - Download hub: qBittorrent and SABnzbd behind one download-client layer; apps register with their name, media type

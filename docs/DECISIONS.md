@@ -38,3 +38,13 @@ Non-obvious calls, one line each, newest last.
   app's folder. rTorrent's XML-RPC can't delete files, so removing a grab there leaves its files on disk.
 - 2026-11-05 — rTorrent is reached over its XML-RPC address (ruTorrent's `/RPC2` or an SCGI bridge), with a small
   XML-RPC reader of Lantern's own instead of another dependency.
+- 2026-11-05 — The vault's data key is sealed with a key argon2id makes from `APP_VAULT_PASSPHRASE`, else from a random
+  `<data>/vault.key` (0600). The key file is the default so Lantern can sign in to sites unattended after a restart;
+  the passphrase is for people who don't want a copy of the data folder alone to open anything. A vault whose key is
+  missing or wrong still starts, lists its accounts and says why it is locked; it never makes a new key over old items.
+- 2026-11-05 — Only the owner (the kit's "may see saved secrets" account) can show secrets or make and restore vault
+  backups, each time after typing their password (5 wrong tries per 5 minutes). Admins can add, change and remove.
+- 2026-11-05 — Vault restore merges and never removes: new accounts are added, the backup's copy replaces one here
+  unless it changed here after the backup.
+- 2026-11-05 — Indexer logins stay in the indexer's own settings for now; moving them into the vault (sealed with the
+  same key) is its own PR after Cloudflare solving merges, since that track edits the indexer code.
