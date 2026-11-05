@@ -9,3 +9,5 @@ data
 *.md
 !docs/releases
 !docs/releases/*.md
+ui/prowlarr/node_modules
+ui/prowlarr/_output

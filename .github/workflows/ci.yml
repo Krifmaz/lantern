@@ -1,6 +1,7 @@
 name: ci
 
-# Every pull request: the kit's checks (fmt, clippy -D warnings, tests of server/, desktop/ and web/), the Docker image
+# Every pull request: the kit's checks (fmt, clippy -D warnings, tests of server/, desktop/ and web/), Prowlarr's web
+# frontend (ui/prowlarr) linted and built, the Docker image
 # built (not pushed), the image's browser getting past a Cloudflare-style check, the Android app built and unit-tested,
 # and real Sonarr, Radarr, Lidarr and Readarr adding Lantern as an indexer. Required to pass before a merge.
 on:
@@ -23,6 +24,22 @@ jobs:
         server
         desktop
       wasm-dirs: web
+
+  # Prowlarr's web frontend (ui/prowlarr): Prowlarr's own lint, style lint and production build (with its type check)
+  prowlarr-ui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui/prowlarr
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+      - run: yarn install --frozen-lockfile --network-timeout 600000
+      - run: yarn lint
+      - run: yarn stylelint-linux
+      - run: yarn build --env production
 
   docker:
     needs: test

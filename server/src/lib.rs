@@ -18,6 +18,7 @@
 //! | `/api/releases/*` (IRC announces, RSS, filters) | [`releases`] |
 //! | `/api/cross-seed/*` | [`crossseed`] |
 //! | `GET`/`POST /api/setup` (first-run "Create your account" with the setup code from the log) | kit-server-setup |
+//! | `/prowlarr/*` (Prowlarr's web frontend, forked in `ui/prowlarr/`, and its `initialize.json`) | [`prowlarr_ui`] |
 //!
 //! Everything the app adds of its own goes into [`app`] next to them.
 
@@ -94,6 +95,9 @@ pub struct AppState {
     pub data_dir: PathBuf,
     /// The built web app (trunk's dist), served at `/`.
     pub static_dir: PathBuf,
+    /// Prowlarr's built web frontend (`ui/prowlarr`'s `_output/UI`), served at `/prowlarr/`:
+    /// `APP_PROWLARR_UI_DIR` (default /app/ui/prowlarr).
+    pub prowlarr_ui_dir: PathBuf,
     /// What's new: the release notes built into this server.
     pub changelog: Arc<Changelog>,
     /// The notices (kept: the data folder notice holds its last probe).
@@ -153,6 +157,7 @@ impl AppState {
         solver::migrate(&db)?;
         let solver = solver::Solver::new(solver::find_program(env("APP_CHROMIUM").as_deref()), data, Some(db.clone()));
         crossseed::migrate(&db)?;
+        let prowlarr_ui_dir = PathBuf::from(env("APP_PROWLARR_UI_DIR").unwrap_or_else(|| "/app/ui/prowlarr".into()));
         let bundled = PathBuf::from(env("APP_DEFINITIONS_DIR").unwrap_or_else(|| "/app/definitions".into()));
         let library = indexers::library::Library::new(Some(bundled), data);
         let signer = indexers::LinkSigner::open(data)?;
@@ -188,6 +193,7 @@ impl AppState {
             settings,
             data_dir: data.to_path_buf(),
             static_dir,
+            prowlarr_ui_dir,
             changelog,
             notices,
             limits: Arc::new(auth::Limits::default()),
@@ -336,10 +342,133 @@ pub fn app(st: AppState) -> Router {
         .merge(migrate::api::router())
         .merge(releases::api::router())
         .merge(crossseed::api::router())
+        .merge(prowlarr_ui::router(&st))
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))
         .layer(tower_http::compression::CompressionLayer::new())
+}
+
+/// Prowlarr's web frontend (the fork in `ui/prowlarr/`, built) at `/prowlarr/`, served as Prowlarr serves it with
+/// its URL base set to `/prowlarr`; its API calls go to Lantern's `/api/v1`. Lantern's own web app stays at `/`
+/// until the frontend's API is ported (docs/DECISIONS.md).
+pub mod prowlarr_ui {
+    // Ported from Prowlarr v2.7.0.5723 (src/Prowlarr.Http/Frontend/StaticResourceController.cs,
+    // Mappers/IndexHtmlMapper.cs, Mappers/HtmlMapperBase.cs, InitializeJsonController.cs), GPL-3.0.
+    use super::{AppState, VERSION};
+    use axum::extract::{Request, State};
+    use axum::http::header;
+    use axum::response::{IntoResponse, Redirect, Response};
+    use axum::routing::get;
+    use axum::Router;
+    use std::sync::LazyLock;
+    use tower_http::services::ServeDir;
+
+    /// The URL base the frontend runs under (Prowlarr's `UrlBase` setting).
+    pub const URL_BASE: &str = "/prowlarr";
+
+    /// The routes: the page (at `/prowlarr`, `/prowlarr/` and every path that is not a file), `initialize.json`,
+    /// and every built file.
+    pub fn router(st: &AppState) -> Router<AppState> {
+        let files = ServeDir::new(&st.prowlarr_ui_dir).append_index_html_on_directories(false).fallback(get(page).with_state(st.clone()));
+        let guard = || axum::middleware::from_fn_with_state(st.clone(), signed_in_only);
+        let inside = Router::new()
+            .route("/", get(page))
+            .route("/index.html", get(page))
+            .route("/initialize.json", get(initialize))
+            .route("/Content/manifest.json", get(manifest))
+            .fallback_service(files)
+            .layer(guard());
+        Router::new().route("/prowlarr/", get(page).layer(guard())).nest(URL_BASE, inside)
+    }
+
+    /// Prowlarr's `[Authorize(Policy = "UI")]`: only `Content/` is open to everyone. A page asked for without a
+    /// session goes to Lantern's sign-in at `/`; anything else answers 401. (Inside the nest the path comes
+    /// without the URL base.)
+    async fn signed_in_only(State(st): State<AppState>, req: Request, next: axum::middleware::Next) -> Response {
+        let path = req.uri().path();
+        if path.strip_prefix(URL_BASE).unwrap_or(path).to_ascii_lowercase().starts_with("/content/") {
+            return next.run(req).await;
+        }
+        let (parts, body) = req.into_parts();
+        if crate::auth::signed_in(&st, &parts).is_ok() {
+            return next.run(Request::from_parts(parts, body)).await;
+        }
+        if is_page(parts.uri.path()) {
+            Redirect::to("/").into_response()
+        } else {
+            kit_server_core::err(401, "Sign in to Lantern first, then open this page again.").into_response()
+        }
+    }
+
+    /// Whether `path` (with or without the URL base) is one of the frontend's pages rather than a file: no dot
+    /// in it, and not under `/content` or `/login` (`IndexHtmlMapper.CanHandle`).
+    pub fn is_page(path: &str) -> bool {
+        let rest = path.strip_prefix(URL_BASE).unwrap_or(path).to_ascii_lowercase();
+        rest.is_empty() || rest == "/index.html" || (!rest.starts_with("/content") && !rest.starts_with("/login") && !rest.contains('.'))
+    }
+
+    /// The page (the build's `index.html`) for every path that is not a file, with the URL base put in front of
+    /// its links and in place of `__URL_BASE__`. A missing file is a 404.
+    async fn page(State(st): State<AppState>, req: Request) -> Response {
+        if !is_page(req.uri().path()) {
+            return kit_server_core::err(404, "This file is not part of Lantern's Prowlarr pages.").into_response();
+        }
+        match tokio::fs::read_to_string(st.prowlarr_ui_dir.join("index.html")).await {
+            Ok(text) => {
+                ([(header::CONTENT_TYPE, "text/html; charset=utf-8"), (header::CACHE_CONTROL, "no-cache")], with_url_base(&text, URL_BASE))
+                    .into_response()
+            }
+            Err(_) => kit_server_core::err(
+                404,
+                "Prowlarr's pages are not built into this copy of Lantern. Build ui/prowlarr (yarn build) and set \
+                 APP_PROWLARR_UI_DIR to its _output/UI folder.",
+            )
+            .into_response(),
+        }
+    }
+
+    /// `HtmlMapperBase.GetHtmlText`: every `href` or `src` to a css, js, png, ico, ics, svg or json file gets the
+    /// URL base in front, and `__URL_BASE__` becomes the URL base. Prowlarr's `?h=` cache breaker is left out:
+    /// these files are answered with `no-cache`, so a browser checks them every time anyway.
+    pub fn with_url_base(html: &str, url_base: &str) -> String {
+        static LINK: LazyLock<regex::Regex> = LazyLock::new(|| {
+            regex::Regex::new(r#"(?i)(?P<attribute>href|src)="(?P<path>[^"]*?(?:css|js|png|ico|ics|svg|json))""#).expect("a valid pattern")
+        });
+        let text = LINK.replace_all(html, |c: &regex::Captures| format!("{}=\"{url_base}{}\"", &c["attribute"], &c["path"]));
+        text.replace("__URL_BASE__", url_base)
+    }
+
+    /// `Content/manifest.json` (`ManifestMapper`): the build's manifest with `__URL_BASE__` and `__INSTANCE_NAME__`
+    /// put in.
+    async fn manifest(State(st): State<AppState>) -> Response {
+        match tokio::fs::read_to_string(st.prowlarr_ui_dir.join("Content/manifest.json")).await {
+            Ok(text) => {
+                let text = text.replace("__URL_BASE__", URL_BASE).replace("__INSTANCE_NAME__", &st.app_name());
+                ([(header::CONTENT_TYPE, "application/manifest+json")], text).into_response()
+            }
+            Err(_) => kit_server_core::err(404, "This file is not part of Lantern's Prowlarr pages.").into_response(),
+        }
+    }
+
+    /// `initialize.json` (`InitializeJsonController`): what the frontend reads before it starts. The API root is
+    /// Lantern's `/api/v1` (Prowlarr's is `<urlBase>/api/v1`); analytics are always off.
+    async fn initialize(State(st): State<AppState>) -> Response {
+        let body = serde_json::json!({
+            "apiRoot": "/api/v1",
+            "apiKey": st.settings.str("api_key"),
+            "release": VERSION,
+            "version": VERSION,
+            "instanceName": st.app_name(),
+            "theme": "auto",
+            "branch": "main",
+            "analytics": false,
+            "userHash": "",
+            "urlBase": URL_BASE,
+            "isProduction": !cfg!(debug_assertions),
+        });
+        ([(header::CACHE_CONTROL, "no-store")], axum::Json(body)).into_response()
+    }
 }
 
 /// Keeps the indexer definitions current: at start when there are none, then once a day, while the
