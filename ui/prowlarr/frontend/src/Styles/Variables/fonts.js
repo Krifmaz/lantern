@@ -1,7 +1,8 @@
 module.exports = {
   // Families
-  defaultFontFamily: 'Roboto, "open sans", "Helvetica Neue", Helvetica, Arial, sans-serif',
-  monoSpaceFontFamily: '"Ubuntu Mono", Menlo, Monaco, Consolas, "Courier New", monospace;',
+  // LANTERN: the kit's fonts (kit-leptos style/kit.css): the system's own, as every kit app uses
+  defaultFontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif',
+  monoSpaceFontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
 
   // Sizes
   extraSmallFontSize: '11px',

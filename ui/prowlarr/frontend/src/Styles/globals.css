@@ -2,5 +2,7 @@
 
 @import "~normalize.css/normalize.css";
 @import "scaffolding.css";
+/* LANTERN: the kit's colour tokens, which Themes/encore.js maps Prowlarr's variables to */
+@import "Themes/kit-tokens.css";
 
 /* stylelint-enable */

@@ -7,6 +7,9 @@
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
   Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition
   editor. The plan shows which way each indexer came over. Newznab indexers can sign in with a user name and password.
+- Prowlarr's web frontend (`ui/prowlarr/`) has the kit's Encore look: Prowlarr's theme colours come from the kit's
+  colour tokens and its fonts are the kit's, with its own layouts kept. Its themes are Auto, Encore, Dark, OLED and
+  Light, as in Lantern's other apps.
 - `scripts/upstream-merge.sh` brings Prowlarr's web frontend into `ui/prowlarr/` at the commit `UPSTREAM.lock`
   pins, as merges of an `upstream/prowlarr` snapshot branch, so later Prowlarr versions merge in with Lantern's
   changes kept (see `UPSTREAM.md`).

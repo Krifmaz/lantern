@@ -24,6 +24,8 @@
 .default {
   border-color: var(--themeLightColor);
   background-color: var(--themeLightColor);
+  /* LANTERN: text on the accent fill (Styles/Themes/encore.js) */
+  color: var(--onAccentColor);
 
   &.outline {
     color: var(--themeLightColor);
@@ -62,6 +64,8 @@
 .primary {
   border-color: var(--primaryColor);
   background-color: var(--primaryColor);
+  /* LANTERN: text on the accent fill (Styles/Themes/encore.js) */
+  color: var(--onAccentColor);
 
   &.outline {
     color: var(--primaryColor);

@@ -45,12 +45,13 @@
 .primary {
   border-color: var(--primaryBorderColor);
   background-color: var(--primaryBackgroundColor);
-  color: var(--white);
+  /* LANTERN: text on the accent fill (Styles/Themes/encore.js) */
+  color: var(--onAccentColor);
 
   &:hover {
     border-color: var(--primaryHoverBorderColor);
     background-color: var(--primaryHoverBackgroundColor);
-    color: var(--white);
+    color: var(--onAccentColor);
   }
 }
 

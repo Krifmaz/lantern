@@ -16,7 +16,8 @@
 html,
 body {
   color: var(--textColor);
-  font-family: 'Roboto', 'open sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  /* LANTERN: the kit's fonts (Styles/Variables/fonts.js) */
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Ubuntu', sans-serif;
 }
 
 body {

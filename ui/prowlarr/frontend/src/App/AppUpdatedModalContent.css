@@ -11,6 +11,6 @@
 .changes {
   margin-top: 20px;
   padding-bottom: 5px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--borderColor) /* LANTERN: was #e5e5e5 */;
   font-size: 18px;
 }

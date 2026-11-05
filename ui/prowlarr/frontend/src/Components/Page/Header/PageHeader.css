@@ -53,7 +53,7 @@
 
 .actionMenu {
   &:hover {
-    color: #515253;
+    color: var(--accent); /* LANTERN: was #515253 */
   }
 }
 
@@ -64,12 +64,12 @@
   align-items: center;
   justify-content: center;
   width: 35px;
-  color: #fff;
+  color: var(--white); /* LANTERN: was #fff */
   text-align: center;
   line-height: 60px;
 
   &:hover {
-    color: #515253;
+    color: var(--accent); /* LANTERN: was #515253 */
   }
 }
 

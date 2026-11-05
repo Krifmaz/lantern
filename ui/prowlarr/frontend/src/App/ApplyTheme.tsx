@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { createSelector } from 'reselect';
-import themes from 'Styles/Themes';
+import themes, { dataThemes } from 'Styles/Themes';
 import AppState from './State/AppState';
 
 function createThemeSelector() {
@@ -20,6 +20,15 @@ function ApplyTheme() {
     Object.entries(themes[theme]).forEach(([key, value]) => {
       document.documentElement.style.setProperty(`--${key}`, value);
     });
+
+    // LANTERN: the kit's tokens follow <html data-theme> (none is Encore)
+    const dataTheme = dataThemes[theme as keyof typeof dataThemes];
+
+    if (dataTheme) {
+      document.documentElement.dataset.theme = dataTheme;
+    } else {
+      delete document.documentElement.dataset.theme;
+    }
   }, [theme]);
 
   // On Component Mount and Component Update
