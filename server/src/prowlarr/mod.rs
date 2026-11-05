@@ -20,11 +20,14 @@
 //! GET/POST /api/v1/command, GET/DELETE /api/v1/command/{id}
 //! GET      /api/v1/log, /api/v1/log/file[/{name}], /api/v1/log/file/update[/{name}]
 //! GET      /api/v1/update
+//! *        /api/v1/applications[/{id}], /schema, /test, /testall, /bulk, /action/{name}
+//! *        /api/v1/appprofile[/{id}], /schema
 //! ```
 //!
 //! Every `/api/v1` route needs the API key (`?apikey=`, `X-Api-Key` or `Authorization: Bearer <key>`, as Prowlarr
 //! reads them) or a signed-in Lantern session.
 
+pub mod apps;
 pub mod commands;
 pub mod config;
 pub mod filters;
@@ -94,7 +97,8 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
     )
     .map_err(|e| anyhow::anyhow!("The Prowlarr API's tables can't be made: {}", e.detail))?;
     system::seed_tasks(db).map_err(|e| anyhow::anyhow!("The scheduled tasks can't be saved: {}", e.detail))?;
-    commands::at_start(db).map_err(|e| anyhow::anyhow!("The commands can't be read: {}", e.detail))
+    commands::at_start(db).map_err(|e| anyhow::anyhow!("The commands can't be read: {}", e.detail))?;
+    apps::migrate(db)
 }
 
 /// Every route of the Prowlarr API this module answers.
@@ -108,6 +112,7 @@ pub fn router() -> Router<AppState> {
         .merge(health::router())
         .merge(commands::router())
         .merge(logs::router())
+        .merge(apps::router())
 }
 
 /// A request that may use the Prowlarr API: it carries the API key (`?apikey=`, then `X-Api-Key`, then
