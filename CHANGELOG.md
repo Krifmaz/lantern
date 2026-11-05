@@ -22,6 +22,8 @@
   and import path and get their own category and folder; search and grab through Lantern; progress followed, failed
   sends tried again (5 times by default), and apps called back by webhook and a live event stream with the finished
   files' exact paths in their own view.
+- Download hub: Transmission, Deluge, rTorrent and NZBGet join qBittorrent and SABnzbd behind the same client
+  layer (qBittorrent and SABnzbd stay the defaults).
 
 ## 0.0.1
 
