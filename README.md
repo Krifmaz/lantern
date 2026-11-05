@@ -24,6 +24,17 @@ ease-of-use features from the first commit.
    - API path: `/api`. API key: Lantern's.
 3. Apps made for Prowlarr also find Lantern's Prowlarr API at `http://<lantern>:9696/api/v1`.
 
+## Move from Prowlarr and FlareSolverr
+
+1. In Prowlarr, open **System → Backup**, press **Backup Now** and download the `.zip` (it keeps the logins; Prowlarr's
+   API hides passwords, so its address and API key work too but you fill those in again).
+2. In Lantern, open **Import**, choose the backup and press **Look at it**. The plan says what would be added, what is
+   already there, what is skipped and why, and what you do by hand. Nothing changes yet.
+3. Press **Import**. Indexers keep Prowlarr's numbers and Lantern takes Prowlarr's API key, so once Lantern answers at
+   Prowlarr's address, apps keep searching without changes.
+4. For FlareSolverr, paste its docker-compose service, `.env` or `docker run` command under **From FlareSolverr** to see
+   what to change; Lantern solves Cloudflare checks by itself.
+
 ## First steps
 
 1. Make the lock files and commit them (CI and the Docker build use `--locked`):
