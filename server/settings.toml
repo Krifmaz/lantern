@@ -150,3 +150,39 @@ group = "seeding"
 label = "After an app imported a download that has seeded enough"
 type = "select"
 options = [["off", "Keep it in the download client"], ["remove", "Remove it from the download client, keep the files"], ["delete", "Remove it and delete its files"]]
+
+[groups.cross_seed]
+section = "downloads"
+title = "Cross-seed"
+desc = "When a torrent has finished, Lantern looks for the same release on your other torrent sites. A copy with exactly the same files is added to the same download client, next to the files already there, so it seeds on both sites without downloading again."
+
+[keys.cross_seed]
+env = "APP_CROSS_SEED"
+default = true
+group = "cross_seed"
+label = "Cross-seed finished torrents"
+help = "Copies go into the app's category with .cross-seed after it, so the app doesn't import them twice."
+type = "bool"
+
+[keys.cross_seed_delay]
+env = "APP_CROSS_SEED_DELAY"
+default = 30
+group = "cross_seed"
+label = "Wait between searches"
+help = "Seconds between two torrents' searches, so the sites aren't asked too often."
+type = "number"
+unit = "s"
+min = 0
+max = 3600
+
+[keys.cross_seed_again_days]
+env = "APP_CROSS_SEED_AGAIN_DAYS"
+default = 7
+group = "cross_seed"
+label = "Search again after"
+help = "Days before a torrent is searched again, when other sites may have it by then (four searches at most)."
+type = "number"
+unit = "days"
+min = 1
+max = 365
+advanced = true

@@ -82,3 +82,9 @@ Non-obvious calls, one line each, newest last.
   switch by address only; `APP_SOLVER_PORT=0` turns it off for anyone who doesn't need it.
 - 2026-11-05 — When a site checks every plain request even with the cookies, a GET is read through the browser
   instead (pages only; files still go through Lantern's own client).
+- 2026-11-05 — Cross-seed matches strictly: same release name (punctuation and file ending aside), size within 2 %,
+  then every file's path and size equal in the candidate's `.torrent`. Copies whose files differ are listed, never
+  added, so nothing is ever downloaded again or renamed. Magnet-only sites are skipped (no file list to compare).
+- 2026-11-05 — Cross-seed copies go into `<app category>.cross-seed` at the app's folder, tagged `lantern-xs-<grab>`,
+  so the app doesn't import them again and the hub's grab tracking never mistakes them for grabs. Each grab is
+  searched when it finishes and again weekly, four times at most, 30 s apart by default.

@@ -10,11 +10,13 @@
 //! | `#/vault` | the account vault (admins): tracker and Usenet logins, Show with the password, Back up and Restore |
 //! | `#/import` | move from Prowlarr and FlareSolverr: look first, then import |
 //! | `#/releases?t=recent\|filters\|sources` | releases as they appear: what came and what happened, the filters, the IRC and RSS sources |
+//! | `#/cross-seed` | finished torrents seeding on more sites, and what happened to each copy found |
 //! | `#/bug-reports` | the account's bug reports and the New report sheet |
 //! | `#/settings?s=<page>` | the server settings form from the server's schema, Diagnostics and What's new |
 //!
 //! The app's own pages go next to [`Home`], one component each, with a link in [`Shell`].
 
+mod crossseed;
 mod import;
 mod indexers;
 mod pages;
@@ -186,6 +188,7 @@ fn Shell(me: Value) -> impl IntoView {
             "/vault" if admin => view! { <vault::Vault owner=owner/> }.into_any(),
             "/import" => view! { <import::Import admin=admin/> }.into_any(),
             "/releases" => view! { <releases::Releases admin=admin tab=r.param("t")/> }.into_any(),
+            "/cross-seed" => view! { <crossseed::CrossSeed admin=admin/> }.into_any(),
             "/bug-reports" => view! { <pages::BugReports/> }.into_any(),
             "/settings" => view! { <pages::Settings page=r.param("s")/> }.into_any(),
             _ => view! { <pages::Home/> }.into_any(),
@@ -202,6 +205,7 @@ fn Shell(me: Value) -> impl IntoView {
                     {admin.then(|| view! { <NavLink href="/vault" label="Vault" route=route/> })}
                     {admin.then(|| view! { <NavLink href="/import" label="Import" route=route/> })}
                     <NavLink href="/releases" label="Releases" route=route/>
+                    <NavLink href="/cross-seed" label="Cross-seed" route=route/>
                 </nav>
                 <nav class="nav nav-under">
                     <NavLink href="/bug-reports" label="Bug reports" route=route/>

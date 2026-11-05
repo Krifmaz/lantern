@@ -50,6 +50,12 @@ Outside the image, set `APP_CHROMIUM` to a Chromium or Chrome program.
    to Sonarr, Radarr, Lidarr, Readarr or Whisparr. **Check a release** shows which filter would take a name and why.
 3. **Recent** lists every release seen and what happened to it. A release goes out seconds after it is announced.
 
+## Cross-seed
+
+When a torrent grab finishes, Lantern looks for the same release on your other torrent sites. A copy with exactly
+the same files is added to the same download client next to the files already there, so it seeds on more sites
+without downloading again. The Cross-seed page lists every copy found and what happened to it.
+
 ## First steps
 
 1. Make the lock files and commit them (CI and the Docker build use `--locked`):

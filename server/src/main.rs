@@ -23,6 +23,7 @@ async fn main() -> anyhow::Result<()> {
     server::spawn_definition_updates(st.clone());
     server::spawn_hub(st.clone());
     st.releases.start();
+    server::crossseed::spawn(st.cross_seed.clone());
     let addr = SocketAddr::from(([0, 0, 0, 0], server::port()));
     tracing::info!("{name} {} listening on {addr}", server::VERSION);
     let solver_port = server::solver_port();

@@ -44,6 +44,10 @@
   or to a download client through the download hub, within seconds. A Releases page shows what came and why each was sent or skipped, and checks any release name.
 - Download hub: seeding rules (seed to a ratio or for some hours) and cleanup once an app says it imported a
   download: keep it, remove it from the client, or remove it with its files (off by default).
+- Cross-seed: finished torrents are searched on the other torrent indexers; a copy with exactly the same files is
+  added to the same download client next to the files already there (category `<app>.cross-seed`, so apps don't
+  import it twice). A Cross-seed page shows what happened to every copy found; Settings → Downloads turns it off.
+  Cleanup never deletes files a cross-seed copy seeds from.
 
 ## 0.0.1
 
