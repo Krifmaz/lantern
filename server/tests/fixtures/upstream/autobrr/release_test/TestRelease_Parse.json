@@ -1,0 +1,643 @@
+[
+ {
+  "name": "parse_1",
+  "fields": {
+   "TorrentName": "Servant S01 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-FLUX",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Servant S01 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-FLUX",
+   "NormalizedHash": "9b73e77d51fb0b69367ea96c761577b0",
+   "Title": "Servant",
+   "Season": 1,
+   "Episode": 0,
+   "Resolution": "2160p",
+   "Source": "WEB-DL",
+   "Codec": [
+    "HEVC"
+   ],
+   "Audio": [
+    "DDP",
+    "Atmos"
+   ],
+   "AudioChannels": "5.1",
+   "HDR": [
+    "DV"
+   ],
+   "Group": "FLUX",
+   "Website": "ATVP",
+   "Type": {
+    "__const": "rls.Series"
+   },
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_2",
+  "fields": {
+   "TorrentName": "Servant.S01.2160p.ATVP.WEB-DL.DDP.5.1.Atmos.DV.HEVC-FLUX",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Servant.S01.2160p.ATVP.WEB-DL.DDP.5.1.Atmos.DV.HEVC-FLUX",
+   "NormalizedHash": "9b73e77d51fb0b69367ea96c761577b0",
+   "Title": "Servant",
+   "Season": 1,
+   "Episode": 0,
+   "Resolution": "2160p",
+   "Source": "WEB-DL",
+   "Codec": [
+    "HEVC"
+   ],
+   "Audio": [
+    "DDP",
+    "Atmos"
+   ],
+   "AudioChannels": "5.1",
+   "HDR": [
+    "DV"
+   ],
+   "Group": "FLUX",
+   "Website": "ATVP",
+   "Type": {
+    "__const": "rls.Series"
+   },
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_3",
+  "fields": {
+   "TorrentName": "Servant.S01.2160p.ATVP.WEB-DL.DDP.5.1.Atmos.DV.HEVC-FLUX",
+   "ReleaseTags": "MKV / 2160p / WEB-DL",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Servant.S01.2160p.ATVP.WEB-DL.DDP.5.1.Atmos.DV.HEVC-FLUX",
+   "NormalizedHash": "9b73e77d51fb0b69367ea96c761577b0",
+   "ReleaseTags": "MKV / 2160p / WEB-DL",
+   "Title": "Servant",
+   "Season": 1,
+   "Episode": 0,
+   "Resolution": "2160p",
+   "Source": "WEB-DL",
+   "Container": "mkv",
+   "Codec": [
+    "HEVC"
+   ],
+   "Audio": [
+    "DDP",
+    "Atmos"
+   ],
+   "AudioChannels": "5.1",
+   "HDR": [
+    "DV"
+   ],
+   "Group": "FLUX",
+   "Website": "ATVP",
+   "Type": {
+    "__const": "rls.Series"
+   },
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_4",
+  "fields": {
+   "TorrentName": "Servant.S01.2160p.ATVP.WEB-DL.DDP.5.1.Atmos.DV.HEVC-FLUX",
+   "ReleaseTags": "MKV | 2160p | WEB-DL",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Servant.S01.2160p.ATVP.WEB-DL.DDP.5.1.Atmos.DV.HEVC-FLUX",
+   "NormalizedHash": "9b73e77d51fb0b69367ea96c761577b0",
+   "ReleaseTags": "MKV | 2160p | WEB-DL",
+   "Title": "Servant",
+   "Season": 1,
+   "Episode": 0,
+   "Resolution": "2160p",
+   "Source": "WEB-DL",
+   "Container": "mkv",
+   "Codec": [
+    "HEVC"
+   ],
+   "Audio": [
+    "DDP",
+    "Atmos"
+   ],
+   "AudioChannels": "5.1",
+   "HDR": [
+    "DV"
+   ],
+   "Group": "FLUX",
+   "Website": "ATVP",
+   "Type": {
+    "__const": "rls.Series"
+   },
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_5",
+  "fields": {
+   "TorrentName": "Servant.S01.2160p.ATVP.WEB-DL.DDP.5.1.Atmos.DV.HEVC-FLUX",
+   "ReleaseTags": "MP4 | 2160p | WEB-DL",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Servant.S01.2160p.ATVP.WEB-DL.DDP.5.1.Atmos.DV.HEVC-FLUX",
+   "NormalizedHash": "9b73e77d51fb0b69367ea96c761577b0",
+   "ReleaseTags": "MP4 | 2160p | WEB-DL",
+   "Title": "Servant",
+   "Season": 1,
+   "Episode": 0,
+   "Resolution": "2160p",
+   "Source": "WEB-DL",
+   "Container": "mp4",
+   "Codec": [
+    "HEVC"
+   ],
+   "Audio": [
+    "DDP",
+    "Atmos"
+   ],
+   "AudioChannels": "5.1",
+   "HDR": [
+    "DV"
+   ],
+   "Group": "FLUX",
+   "Website": "ATVP",
+   "Type": {
+    "__const": "rls.Series"
+   },
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_6",
+  "fields": {
+   "TorrentName": "Servant.S01.2160p.ATVP.WEB-DL.DDP.5.1.Atmos.DV.HEVC-FLUX",
+   "ReleaseTags": "MP4 | 2160p | WEB-DL | Freeleech!",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Servant.S01.2160p.ATVP.WEB-DL.DDP.5.1.Atmos.DV.HEVC-FLUX",
+   "NormalizedHash": "9b73e77d51fb0b69367ea96c761577b0",
+   "ReleaseTags": "MP4 | 2160p | WEB-DL | Freeleech!",
+   "Title": "Servant",
+   "Season": 1,
+   "Episode": 0,
+   "Resolution": "2160p",
+   "Source": "WEB-DL",
+   "Container": "mp4",
+   "Codec": [
+    "HEVC"
+   ],
+   "Audio": [
+    "DDP",
+    "Atmos"
+   ],
+   "AudioChannels": "5.1",
+   "HDR": [
+    "DV"
+   ],
+   "Group": "FLUX",
+   "Freeleech": true,
+   "Bonus": [
+    "Freeleech"
+   ],
+   "Website": "ATVP",
+   "Type": {
+    "__const": "rls.Series"
+   },
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_8",
+  "fields": {
+   "TorrentName": "Rippers.Revenge.2023.German.DL.1080p.BluRay.MPEG2-GROUP",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Rippers.Revenge.2023.German.DL.1080p.BluRay.MPEG2-GROUP",
+   "NormalizedHash": "cb28c69ce117723d01ea6562ef3bae67",
+   "Title": "Rippers Revenge",
+   "Year": 2023,
+   "Language": [
+    "GERMAN",
+    "DL"
+   ],
+   "Resolution": "1080p",
+   "Source": "BluRay",
+   "Codec": [
+    "MPEG-2"
+   ],
+   "Group": "GROUP",
+   "Type": {
+    "__const": "rls.Movie"
+   },
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_7",
+  "fields": {
+   "TorrentName": "Analogue.1080i.AHDTV.H264-ABCDEF",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Analogue.1080i.AHDTV.H264-ABCDEF",
+   "NormalizedHash": "1a1eb25b15269d3189138326658aafe0",
+   "Title": "Analogue",
+   "Resolution": "1080p",
+   "Source": "AHDTV",
+   "Codec": [
+    "H.264"
+   ],
+   "Group": "ABCDEF",
+   "Type": {
+    "__const": "rls.Movie"
+   },
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_music_1",
+  "fields": {
+   "TorrentName": "Artist - Albumname",
+   "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Artist - Albumname",
+   "NormalizedHash": "5de820bfae23f2bdc3a56c827a5230ac",
+   "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD",
+   "Title": "Artist",
+   "Group": "Albumname",
+   "Audio": [
+    "Cue",
+    "FLAC",
+    "Lossless",
+    "Log100",
+    "Log"
+   ],
+   "AudioFormat": "FLAC",
+   "Source": "CD",
+   "Bitrate": "Lossless",
+   "HasLog": true,
+   "LogScore": 100,
+   "HasCue": true,
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_music_2",
+  "fields": {
+   "TorrentName": "Various Artists - Music '21",
+   "Tags": [
+    "house, techno, tech.house, electro.house, future.house, bass.house, melodic.house"
+   ],
+   "ReleaseTags": "MP3 / 320 / Cassette",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Various Artists - Music '21",
+   "NormalizedHash": "fbf7713532f4d2d03b62897fc990e37e",
+   "Tags": [
+    "house, techno, tech.house, electro.house, future.house, bass.house, melodic.house"
+   ],
+   "ReleaseTags": "MP3 / 320 / Cassette",
+   "Title": "Various Artists - Music '21",
+   "Source": "Cassette",
+   "Audio": [
+    "320",
+    "MP3"
+   ],
+   "AudioFormat": "MP3",
+   "Bitrate": "320",
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_music_3",
+  "fields": {
+   "TorrentName": "The artist (ザ・フリーダムユニティ) - Long album name",
+   "ReleaseTags": "MP3 / V0 (VBR) / CD",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "The artist (ザ・フリーダムユニティ) - Long album name",
+   "NormalizedHash": "6b4051de7524f65d3c25be535d2c95ed",
+   "ReleaseTags": "MP3 / V0 (VBR) / CD",
+   "Title": "The artist",
+   "Group": "name",
+   "Source": "CD",
+   "Audio": [
+    "MP3",
+    "VBR",
+    "V0 (VBR)"
+   ],
+   "AudioFormat": "MP3",
+   "Bitrate": "V0 (VBR)",
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_music_4",
+  "fields": {
+   "TorrentName": "Artist - Albumname",
+   "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Artist - Albumname",
+   "NormalizedHash": "5de820bfae23f2bdc3a56c827a5230ac",
+   "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD",
+   "Title": "Artist",
+   "Group": "Albumname",
+   "Audio": [
+    "Cue",
+    "FLAC",
+    "Lossless",
+    "Log100",
+    "Log"
+   ],
+   "AudioFormat": "FLAC",
+   "Source": "CD",
+   "Bitrate": "Lossless",
+   "HasLog": true,
+   "LogScore": 100,
+   "HasCue": true,
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_music_5",
+  "fields": {
+   "TorrentName": "Artist - Albumname",
+   "ReleaseTags": "FLAC / 24bit Lossless / Log / 100% / Cue / CD",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Artist - Albumname",
+   "NormalizedHash": "5de820bfae23f2bdc3a56c827a5230ac",
+   "ReleaseTags": "FLAC / 24bit Lossless / Log / 100% / Cue / CD",
+   "Title": "Artist",
+   "Group": "Albumname",
+   "Audio": [
+    "24BIT Lossless",
+    "Cue",
+    "FLAC",
+    "Log100",
+    "Log"
+   ],
+   "AudioFormat": "FLAC",
+   "Source": "CD",
+   "Bitrate": "24BIT Lossless",
+   "HasLog": true,
+   "LogScore": 100,
+   "HasCue": true,
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_music_6",
+  "fields": {
+   "TorrentName": "Artist - Albumname",
+   "ReleaseTags": "FLAC / 24bit Lossless / Log / 78% / Cue / CD",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Artist - Albumname",
+   "NormalizedHash": "5de820bfae23f2bdc3a56c827a5230ac",
+   "ReleaseTags": "FLAC / 24bit Lossless / Log / 78% / Cue / CD",
+   "Title": "Artist",
+   "Group": "Albumname",
+   "Audio": [
+    "24BIT Lossless",
+    "Cue",
+    "FLAC",
+    "Log78",
+    "Log"
+   ],
+   "AudioFormat": "FLAC",
+   "Source": "CD",
+   "Bitrate": "24BIT Lossless",
+   "HasLog": true,
+   "LogScore": 78,
+   "HasCue": true,
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_movies_case_1",
+  "fields": {
+   "TorrentName": "I Am Movie 2007 Theatrical UHD BluRay 2160p DTS-HD MA 5.1 DV HEVC HYBRID REMUX-GROUP1",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "I Am Movie 2007 Theatrical UHD BluRay 2160p DTS-HD MA 5.1 DV HEVC HYBRID REMUX-GROUP1",
+   "NormalizedHash": "f70840f42149d7d2b539c75f5e853493",
+   "Title": "I Am Movie",
+   "Resolution": "2160p",
+   "Source": "UHD.BluRay",
+   "Codec": [
+    "HEVC"
+   ],
+   "HDR": [
+    "DV"
+   ],
+   "Audio": [
+    "DTS-HD.MA"
+   ],
+   "AudioChannels": "5.1",
+   "Year": 2007,
+   "Group": "GROUP1",
+   "Hybrid": true,
+   "Cut": [
+    "Theatrical.Cut"
+   ],
+   "MediaProcessing": "REMUX",
+   "Other": [
+    "HYBRiD",
+    "REMUX"
+   ],
+   "Type": {
+    "__const": "rls.Movie"
+   },
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_title_1",
+  "fields": {
+   "TorrentName": "The Peripheral (2022) S01 (2160p AMZN WEB-DL H265 HDR10+ DDP 5.1 English - GROUP1)",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "The Peripheral (2022) S01 (2160p AMZN WEB-DL H265 HDR10+ DDP 5.1 English - GROUP1)",
+   "NormalizedHash": "33fe914c00ea5a2945883cffb4183923",
+   "Title": "The Peripheral",
+   "Resolution": "2160p",
+   "Source": "WEB-DL",
+   "Codec": [
+    "H.265"
+   ],
+   "HDR": [
+    "HDR10+"
+   ],
+   "Audio": [
+    "DDP"
+   ],
+   "AudioChannels": "5.1",
+   "Year": 2022,
+   "Group": "GROUP1",
+   "Season": 1,
+   "Language": [
+    "ENGLiSH"
+   ],
+   "Website": "AMZN",
+   "Type": {
+    "__const": "rls.Series"
+   },
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_missing_source",
+  "fields": {
+   "TorrentName": "Old Movie 1954 2160p Remux DoVi HDR10 HEVC DTS-HD MA 5.1-CiNEPHiLES",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Old Movie 1954 2160p Remux DoVi HDR10 HEVC DTS-HD MA 5.1-CiNEPHiLES",
+   "Title": "Old Movie",
+   "NormalizedHash": "9990678babd4f24f268dfe7856b29f0e",
+   "Year": 1954,
+   "Source": "UHD.BluRay",
+   "Resolution": "2160p",
+   "Other": [
+    "REMUX"
+   ],
+   "HDR": [
+    "DV",
+    "HDR10"
+   ],
+   "Codec": [
+    "HEVC"
+   ],
+   "Audio": [
+    "DTS-HD.MA"
+   ],
+   "AudioChannels": "5.1",
+   "Group": "CiNEPHiLES",
+   "Type": {
+    "__const": "rls.Movie"
+   },
+   "MediaProcessing": "REMUX",
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_missing_source",
+  "fields": {
+   "TorrentName": "Death Hunt 1981 1080p Remux AVC DTS-HD MA 2.0-playBD",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Death Hunt 1981 1080p Remux AVC DTS-HD MA 2.0-playBD",
+   "Title": "Death Hunt",
+   "NormalizedHash": "e6b1b708b8ea39470de6d327da2920d6",
+   "Year": 1981,
+   "Source": "BluRay",
+   "Resolution": "1080p",
+   "Other": [
+    "REMUX"
+   ],
+   "Codec": [
+    "AVC"
+   ],
+   "Audio": [
+    "DTS-HD.MA"
+   ],
+   "AudioChannels": "2.0",
+   "Group": "playBD",
+   "Type": {
+    "__const": "rls.Movie"
+   },
+   "MediaProcessing": "REMUX",
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_confusing_group",
+  "fields": {
+   "TorrentName": "Old Movie 1954 2160p Remux DoVi HDR10 HEVC DTS-HD MA 5.1-VHS",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Old Movie 1954 2160p Remux DoVi HDR10 HEVC DTS-HD MA 5.1-VHS",
+   "Title": "Old Movie",
+   "NormalizedHash": "1ea814c8c21979e7692efb1b24298e95",
+   "Year": 1954,
+   "Source": "UHD.BluRay",
+   "Resolution": "2160p",
+   "Other": [
+    "REMUX"
+   ],
+   "HDR": [
+    "DV",
+    "HDR10"
+   ],
+   "Codec": [
+    "HEVC"
+   ],
+   "Audio": [
+    "DTS-HD.MA"
+   ],
+   "AudioChannels": "5.1",
+   "Group": "VHS",
+   "Type": {
+    "__const": "rls.Movie"
+   },
+   "MediaProcessing": "REMUX",
+   "__type": "Release"
+  }
+ },
+ {
+  "name": "parse_confusing_group",
+  "fields": {
+   "TorrentName": "Old Movie 1954 2160p Remux DoVi HDR10 HEVC DTS-HD MA 5.1 VHS",
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Old Movie 1954 2160p Remux DoVi HDR10 HEVC DTS-HD MA 5.1 VHS",
+   "Title": "Old Movie",
+   "NormalizedHash": "1ea814c8c21979e7692efb1b24298e95",
+   "Year": 1954,
+   "Source": "UHD.BluRay",
+   "Resolution": "2160p",
+   "Other": [
+    "REMUX"
+   ],
+   "HDR": [
+    "DV",
+    "HDR10"
+   ],
+   "Codec": [
+    "HEVC"
+   ],
+   "Audio": [
+    "DTS-HD.MA"
+   ],
+   "AudioChannels": "5.1",
+   "Group": "VHS",
+   "Type": {
+    "__const": "rls.Movie"
+   },
+   "MediaProcessing": "REMUX",
+   "__type": "Release"
+  }
+ }
+]

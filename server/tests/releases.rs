@@ -263,11 +263,23 @@ async fn the_check_says_why_and_bad_input_is_explained() {
     assert_eq!(v["name"]["resolution"], "1080p");
     assert_eq!(v["filters"][0]["passes"], false);
     let why: Vec<String> = serde_json::from_value(v["filters"][0]["why"].clone()).unwrap();
-    assert_eq!(why, vec!["its resolution (1080p) isn't one to grab", "the group BAD is one to skip", "it is 2.0 GB, smaller than 5 GB"]);
+    // autobrr's rejection reasons, in autobrr's order
+    assert_eq!(
+        why,
+        vec![
+            "[except release groups] not matching: got BAD want: BAD",
+            "[resolution] not matching: got 1080p want: [2160p]",
+            "release size 2000000000 bytes is smaller than filter min size 5000000000 bytes",
+            "[min size] not matching: got 2000000000 want: 5 GB",
+        ]
+    );
 
     let (s, v) = call(&app, "POST", "/api/releases/filters", Some(json!({ "name": "Bad", "max_size": "huge" }))).await;
     assert_eq!(s, StatusCode::BAD_REQUEST);
-    assert_eq!(v["detail"], "The largest size \"huge\" can't be read. Write it like 700 MB or 1.5 GB");
+    assert_eq!(
+        v["detail"],
+        "error validating filter size limits: could not parse filter max size: strconv.ParseFloat: parsing \"\": invalid syntax"
+    );
     let (s, v) = call(
         &app,
         "POST",

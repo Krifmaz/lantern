@@ -1,0 +1,41 @@
+[
+ {
+  "name": "test_1",
+  "args": {
+   "s": "Tag1 / Tag2 / Tag3",
+   "seps": "/ ",
+   "__type": "args"
+  },
+  "want": [
+   "Tag1",
+   "Tag2",
+   "Tag3"
+  ]
+ },
+ {
+  "name": "test_2",
+  "args": {
+   "s": "Tag1 | Tag2 | Tag3",
+   "seps": "| ",
+   "__type": "args"
+  },
+  "want": [
+   "Tag1",
+   "Tag2",
+   "Tag3"
+  ]
+ },
+ {
+  "name": "test_3",
+  "args": {
+   "s": "Tag1 | Tag2 / Tag3",
+   "seps": "| /",
+   "__type": "args"
+  },
+  "want": [
+   "Tag1",
+   "Tag2",
+   "Tag3"
+  ]
+ }
+]

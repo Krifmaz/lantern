@@ -1,0 +1,49 @@
+[
+ {
+  "name": "valid_rolling",
+  "filter": {
+   "Name": "test",
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsDay"
+   },
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "__type": "Filter"
+  }
+ },
+ {
+  "name": "valid_empty",
+  "filter": {
+   "Name": "test",
+   "__type": "Filter"
+  }
+ },
+ {
+  "name": "invalid_unit",
+  "filter": {
+   "Name": "test",
+   "MaxDownloadsUnit": "YEAR",
+   "__type": "Filter"
+  },
+  "wantErr": true
+ },
+ {
+  "name": "invalid_unit_case",
+  "filter": {
+   "Name": "test",
+   "MaxDownloadsUnit": "day",
+   "__type": "Filter"
+  },
+  "wantErr": true
+ },
+ {
+  "name": "invalid_window_type",
+  "filter": {
+   "Name": "test",
+   "MaxDownloadsWindowType": "rolling",
+   "__type": "Filter"
+  },
+  "wantErr": true
+ }
+]

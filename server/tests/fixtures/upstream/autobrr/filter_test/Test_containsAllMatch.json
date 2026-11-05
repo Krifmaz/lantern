@@ -1,0 +1,103 @@
+[
+ {
+  "name": "test_1",
+  "args": {
+   "tags": [
+    "HDR",
+    "DV"
+   ],
+   "filters": [
+    "DV"
+   ],
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_2",
+  "args": {
+   "tags": [
+    "HDR",
+    "DV"
+   ],
+   "filters": [
+    "DV",
+    "DoVI"
+   ],
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "test_3",
+  "args": {
+   "tags": [
+    "HDR",
+    "DV",
+    "DoVI"
+   ],
+   "filters": [
+    "DV",
+    "DoVI"
+   ],
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_4",
+  "args": {
+   "tags": [
+    "HDR",
+    "DV"
+   ],
+   "filters": [
+    "HD*",
+    "D*"
+   ],
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_5",
+  "args": {
+   "tags": [
+    "HDR",
+    "DV"
+   ],
+   "filters": [
+    "HD*",
+    "TEST*"
+   ],
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "test_6",
+  "args": {
+   "tags": [
+    "HDR"
+   ],
+   "filters": [
+    "DV"
+   ],
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "test_7",
+  "args": {
+   "tags": [
+    ""
+   ],
+   "filters": [
+    "test,"
+   ],
+   "__type": "args"
+  },
+  "want": false
+ }
+]

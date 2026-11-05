@@ -1,0 +1,36 @@
+[
+ {
+  "name": "test_1",
+  "args": {
+   "tags": [
+    "HDR",
+    "DV"
+   ],
+   "filter": "DV",
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_2",
+  "args": {
+   "tags": [
+    "HDR"
+   ],
+   "filter": "DV",
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "test_3",
+  "args": {
+   "tags": [
+    ""
+   ],
+   "filter": "test,",
+   "__type": "args"
+  },
+  "want": false
+ }
+]

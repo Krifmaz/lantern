@@ -26,7 +26,6 @@
 //!       encode: [torrentName]
 //! ```
 
-use super::filter::parse_size;
 use super::Found;
 use crate::indexers::template::{self, Vars};
 use regex::Regex;
@@ -360,7 +359,7 @@ pub fn found(def: &Definition, mut vars: HashMap<String, String>, settings: &BTr
         } else {
             s
         };
-        parse_size(&s.replace(' ', ""))
+        super::humanize::parse_bytes(&s).ok()
     };
     let fl = get("freeleech").to_lowercase();
     let freeleech_percent = get("freeleechPercent").trim_end_matches('%').trim().parse::<u32>().ok();
@@ -383,6 +382,9 @@ pub fn found(def: &Definition, mut vars: HashMap<String, String>, settings: &BTr
         tags,
         year: get("year").parse().ok(),
         protocol: if def.protocol == "newznab" || def.protocol == "usenet" { "usenet".into() } else { "torrent".into() },
+        identifier: def.identifier.clone(),
+        vars: vars.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
+        force_size_unit: p.forcesizeunit.clone(),
         ..Found::default()
     })
 }

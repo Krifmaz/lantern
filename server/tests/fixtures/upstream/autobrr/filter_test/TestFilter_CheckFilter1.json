@@ -1,0 +1,1777 @@
+[
+ {
+  "name": "test_1",
+  "fields": {
+   "Shows": "WeCrashed",
+   "Seasons": "1",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB-DL"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "MatchReleaseGroups": "NOSiViD",
+   "MatchHDR": [
+    "DV",
+    "HDR"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "WeCrashed.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_2",
+  "fields": {
+   "Shows": "WeCrashed",
+   "Seasons": "1",
+   "Episodes": "2-8",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB-DL"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "MatchReleaseGroups": "NOSiViD",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "WeCrashed.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "episodes",
+     "got": 0,
+     "want": "2-8"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_3",
+  "fields": {
+   "Shows": "WeCrashed",
+   "Seasons": "1",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB-DL"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "MatchReleaseGroups": "NOSiViD",
+   "MatchHDR": [
+    "HDR"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "WeCrashed.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "match hdr",
+     "got": "DV",
+     "want": [
+      "HDR"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_4",
+  "fields": {
+   "Shows": "WeCrashed",
+   "Seasons": "1",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB-DL"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "MatchReleaseGroups": "NOSiViD",
+   "ExceptHDR": [
+    "DV",
+    "HDR"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "WeCrashed.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "except hdr",
+     "got": "DV",
+     "want": [
+      "DV",
+      "HDR"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_5",
+  "fields": {
+   "Shows": "WeWork",
+   "Seasons": "1",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB-DL"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "MatchReleaseGroups": "NOSiViD",
+   "ExceptHDR": [
+    "DV",
+    "HDR"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "WeCrashed.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "shows",
+     "got": "WeCrashed",
+     "want": "WeWork"
+    },
+    {
+     "key": "except hdr",
+     "got": "DV",
+     "want": [
+      "DV",
+      "HDR"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_6",
+  "fields": {
+   "Shows": "WeWork",
+   "Seasons": "1",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB-DL"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "ExceptReleaseGroups": "NOSiViD",
+   "ExceptHDR": [
+    "DV",
+    "HDR"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "WeCrashed.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "shows",
+     "got": "WeCrashed",
+     "want": "WeWork"
+    },
+    {
+     "key": "except release groups",
+     "got": "NOSiViD",
+     "want": "NOSiViD"
+    },
+    {
+     "key": "except hdr",
+     "got": "DV",
+     "want": [
+      "DV",
+      "HDR"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_7",
+  "fields": {
+   "Shows": "WeWork",
+   "Seasons": "1",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB-DL"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "ExceptReleaseGroups": "NOSiViD",
+   "ExceptHDR": [
+    "DV",
+    "HDR"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "WeCrashed.S01.DV.2160p.ATVP.WEB.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "shows",
+     "got": "WeCrashed",
+     "want": "WeWork"
+    },
+    {
+     "key": "except release groups",
+     "got": "NOSiViD",
+     "want": "NOSiViD"
+    },
+    {
+     "key": "source",
+     "got": "WEB",
+     "want": [
+      "WEB-DL"
+     ]
+    },
+    {
+     "key": "except hdr",
+     "got": "DV",
+     "want": [
+      "DV",
+      "HDR"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_8",
+  "fields": {
+   "Shows": "WeCrashed",
+   "Seasons": "1",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "MatchReleaseGroups": "NOSiViD",
+   "MatchHDR": [
+    "DV",
+    "HDR"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "WeCrashed.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "source",
+     "got": "WEB-DL",
+     "want": [
+      "WEB"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_9",
+  "fields": {
+   "Shows": "WeCrashed",
+   "Seasons": "1",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "MatchReleaseGroups": "NOSiViD",
+   "MatchHDR": [
+    "DV",
+    "HDR"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "WeCrashed.S01.DV.2160p.Blu-ray.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "source",
+     "got": "BluRay",
+     "want": [
+      "WEB"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_10",
+  "fields": {
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "BluRay"
+   ],
+   "Codecs": [
+    "x265",
+    "HEVC"
+   ],
+   "MatchHDR": [
+    "DV",
+    "HDR"
+   ],
+   "ExceptOther": [
+    "REMUX",
+    "HYBRID"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Stranger Things S02 UHD BluRay 2160p DTS-HD MA 5.1 DV HEVC HYBRID REMUX-FraMeSToR",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "source",
+     "got": "UHD.BluRay",
+     "want": [
+      "BluRay"
+     ]
+    },
+    {
+     "key": "except other",
+     "got": [
+      "HYBRiD",
+      "REMUX"
+     ],
+     "want": [
+      "REMUX",
+      "HYBRID"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_10",
+  "fields": {
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "UHD.BluRay"
+   ],
+   "Codecs": [
+    "x265",
+    "HEVC"
+   ],
+   "MatchHDR": [
+    "DV",
+    "HDR"
+   ],
+   "MatchOther": [
+    "REMUX",
+    "HYBRID"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Stranger Things S02 UHD BluRay 2160p DTS-HD MA 5.1 DV HEVC HYBRID REMUX-FraMeSToR",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_11",
+  "fields": {
+   "Resolutions": [
+    "1080p"
+   ],
+   "Sources": [
+    "BluRay"
+   ],
+   "Codecs": [
+    "HEVC"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Food Wars!: Shokugeki no Soma S05 2020 1080p BluRay HEVC 10-Bit DD2.0 Dual Audio -ZR-",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_12",
+  "fields": {
+   "Resolutions": [
+    "2160p"
+   ],
+   "Codecs": [
+    "h.265"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "The.First.Lady.S01E01.DV.2160p.WEB-DL.DD5.1.H265-GLHF",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_13",
+  "fields": {
+   "Resolutions": [
+    "2160p"
+   ],
+   "Codecs": [
+    "h.265"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "The First Lady S01E01 DV 2160p WEB-DL DD5.1 H 265-GLHF",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_14",
+  "fields": {
+   "Sources": [
+    "WEBRip"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Halt and Catch Fire S04 1080p WEBRip x265-HiQVE",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_15",
+  "fields": {
+   "Sources": [
+    "WEB"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Dominik Walter-Cocktail Girl-(NS1083)-WEB-2022-AFO",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_16",
+  "fields": {
+   "Sources": [
+    "ViNYL"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Love Unlimited - Under the Influence of Love Unlimited [1973] [Album] - MP3 / V0 (VBR) / Vinyl",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_17",
+  "fields": {
+   "Resolutions": [
+    "1080p"
+   ],
+   "Sources": [
+    "BluRay"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "A Movie [2015] - GROUP",
+     "ReleaseTags": "Type: Movie / 1080p / Encode / Freeleech: 100 Size: 7.00GB",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "source",
+     "got": "",
+     "want": [
+      "BluRay"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_18",
+  "fields": {
+   "Resolutions": [
+    "2160p"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "The Green Mile [1999] - playBD",
+     "ReleaseTags": "Type: Movie / 2160p / Remux / Freeleech: 100 Size: 72.78GB",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_19",
+  "fields": {
+   "Shows": "Reacher",
+   "Seasons": "1",
+   "Episodes": "0",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB-DL"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Preacher.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "shows",
+     "got": "Preacher",
+     "want": "Reacher"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_20",
+  "fields": {
+   "Shows": "Atlanta",
+   "Resolutions": [
+    "1080p"
+   ],
+   "Sources": [
+    "WEB-DL",
+    "WEB"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "NBA.2022.04.19.Atlanta.Hawks.vs.Miami.Heat.1080p.WEB.H264-SPLASH",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "shows",
+     "got": "NBA",
+     "want": "Atlanta"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_21",
+  "fields": {
+   "Formats": [
+    "FLAC"
+   ],
+   "Quality": [
+    "Lossless"
+   ],
+   "Media": [
+    "CD"
+   ],
+   "Log": true,
+   "Cue": true,
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Gillan - Future Shock",
+     "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD / Scene",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_22",
+  "fields": {
+   "PerfectFlac": true,
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Gillan - Future Shock",
+     "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD / Scene",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_23",
+  "fields": {
+   "Origins": [
+    "Internal"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Gillan - Future Shock",
+     "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD / Scene",
+     "Origin": "Internal",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_24",
+  "fields": {
+   "Origins": [
+    "P2P"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Gillan - Future Shock",
+     "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD / Scene",
+     "Origin": "Internal",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "match origin",
+     "got": "Internal",
+     "want": [
+      "P2P"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_25",
+  "fields": {
+   "Origins": [
+    "O-SCENE"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Gillan - Future Shock",
+     "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD / Scene",
+     "Origin": "SCENE",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "match origin",
+     "got": "SCENE",
+     "want": [
+      "O-SCENE"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_26",
+  "fields": {
+   "Origins": [
+    "SCENE"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Gillan - Future Shock",
+     "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD / Scene",
+     "Origin": "O-SCENE",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "match origin",
+     "got": "O-SCENE",
+     "want": [
+      "SCENE"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_26",
+  "fields": {
+   "Origins": [
+    "SCENE"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Gillan - Future Shock",
+     "ReleaseTags": "FLAC / Lossless / Log / 100% / Cue / CD / Scene",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_27",
+  "fields": {
+   "UseRegex": true,
+   "MatchReleases": ".*1080p.+(group1|group3)",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "match releases: REGEX",
+     "got": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "want": ".*1080p.+(group1|group3)"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_28",
+  "fields": {
+   "UseRegex": true,
+   "MatchReleases": ".*2160p.+(group1|group2)",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_29",
+  "fields": {
+   "UseRegex": true,
+   "MatchReleases": "*2160p*",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "match releases: REGEX",
+     "got": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "want": "*2160p*"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_30",
+  "fields": {
+   "UseRegex": true,
+   "MatchReleases": "2160p",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_31",
+  "fields": {
+   "UseRegex": false,
+   "MatchReleases": "*2160p*",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_32",
+  "fields": {
+   "MaxDownloads": 1,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsMonth"
+   },
+   "Downloads": {
+    "PeriodCount": 0,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_33",
+  "fields": {
+   "MaxDownloads": 10,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsMonth"
+   },
+   "Downloads": {
+    "PeriodCount": 10,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "max downloads",
+     "got": "Period: 10",
+     "want": "reached 10 per MONTH",
+     "format": "[%[1]s] %[3]s"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_34",
+  "fields": {
+   "MaxDownloads": 10,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsMonth"
+   },
+   "Downloads": {
+    "PeriodCount": 50,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "max downloads",
+     "got": "Period: 50",
+     "want": "reached 10 per MONTH",
+     "format": "[%[1]s] %[3]s"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_35",
+  "fields": {
+   "MaxDownloads": 15,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsHour"
+   },
+   "Downloads": {
+    "PeriodCount": 20,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "max downloads",
+     "got": "Period: 20",
+     "want": "reached 15 per HOUR",
+     "format": "[%[1]s] %[3]s"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_36",
+  "fields": {
+   "MaxDownloads": 15,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsHour"
+   },
+   "Downloads": {
+    "PeriodCount": 14,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_37",
+  "fields": {
+   "ExceptOrigins": [
+    "Internal"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Gillan - Future Shock",
+     "Origin": "Internal",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "except origin",
+     "got": "Internal",
+     "want": [
+      "Internal"
+     ]
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_38",
+  "fields": {
+   "ExceptOrigins": [
+    "Internal"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Gillan - Future Shock",
+     "Origin": "Scene",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_39",
+  "fields": {
+   "UseRegexReleaseTags": true,
+   "MatchReleaseTags": ".*1080p.+(group1|group3)",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "ReleaseTags": "MKV | x264 | WEB | P2P",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "match release tags: REGEX",
+     "got": "MKV | x264 | WEB | P2P",
+     "want": ".*1080p.+(group1|group3)"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_40",
+  "fields": {
+   "UseRegexReleaseTags": true,
+   "MatchReleaseTags": "foreign - 16",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "ReleaseTags": "MKV | x264 | WEB | P2P | Foreign - 17",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "match release tags: REGEX",
+     "got": "MKV | x264 | WEB | P2P | Foreign - 17",
+     "want": "foreign - 16"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_41",
+  "fields": {
+   "UseRegexReleaseTags": true,
+   "MatchReleaseTags": "foreign - 17",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "ReleaseTags": "MKV | x264 | WEB | P2P | Foreign - 17",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_42",
+  "fields": {
+   "UseRegexReleaseTags": true,
+   "MatchReleaseTags": "foreign - 17",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-GROUP2",
+     "ReleaseTags": "",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "match release tags: REGEX",
+     "got": "",
+     "want": "foreign - 17"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_43",
+  "fields": {
+   "Shows": ",Dutchess, preacher",
+   "Seasons": "1",
+   "Episodes": "0",
+   "Resolutions": [
+    "2160p"
+   ],
+   "Sources": [
+    "WEB-DL"
+   ],
+   "Codecs": [
+    "x265"
+   ],
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Preacher.S01.DV.2160p.ATVP.WEB-DL.DDPA5.1.x265-NOSiViD",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_44",
+  "fields": {
+   "MatchDescription": "*black?metal*",
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "Description": "dog\ncat\r\nblack metalo\negg",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_period_below",
+  "fields": {
+   "MaxDownloads": 10,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsHour"
+   },
+   "MaxDownloadsPeriod": 2,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "Downloads": {
+    "PeriodCount": 9,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.2160p.WEB-DL.x265-GROUP",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_period_reached",
+  "fields": {
+   "MaxDownloads": 10,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsHour"
+   },
+   "MaxDownloadsPeriod": 2,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "Downloads": {
+    "PeriodCount": 10,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.2160p.WEB-DL.x265-GROUP",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "max downloads",
+     "got": "Period: 10",
+     "want": "reached 10 per 2 HOUR",
+     "format": "[%[1]s] %[3]s"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_period_day_reached",
+  "fields": {
+   "MaxDownloads": 5,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsDay"
+   },
+   "MaxDownloadsPeriod": 3,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "Downloads": {
+    "PeriodCount": 15,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.2160p.WEB-DL.x265-GROUP",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "max downloads",
+     "got": "Period: 15",
+     "want": "reached 5 per 3 DAY",
+     "format": "[%[1]s] %[3]s"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_period_fixed_ignored",
+  "fields": {
+   "MaxDownloads": 10,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsMonth"
+   },
+   "MaxDownloadsPeriod": 3,
+   "Downloads": {
+    "PeriodCount": 10,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.2160p.WEB-DL.x265-GROUP",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "max downloads",
+     "got": "Period: 10",
+     "want": "reached 10 per MONTH",
+     "format": "[%[1]s] %[3]s"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_period_default_zero",
+  "fields": {
+   "MaxDownloads": 10,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsHour"
+   },
+   "MaxDownloadsPeriod": 0,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "Downloads": {
+    "PeriodCount": 5,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.2160p.WEB-DL.x265-GROUP",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_minute_period_below",
+  "fields": {
+   "MaxDownloads": 5,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsMinute"
+   },
+   "MaxDownloadsPeriod": 2,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "Downloads": {
+    "PeriodCount": 4,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.2160p.WEB-DL.x265-GROUP",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ },
+ {
+  "name": "test_minute_period_reached",
+  "fields": {
+   "MaxDownloads": 5,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsMinute"
+   },
+   "MaxDownloadsPeriod": 2,
+   "MaxDownloadsWindowType": {
+    "__const": "FilterMaxDownloadsWindowRolling"
+   },
+   "Downloads": {
+    "PeriodCount": 5,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.2160p.WEB-DL.x265-GROUP",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [
+    {
+     "key": "max downloads",
+     "got": "Period: 5",
+     "want": "reached 5 per 2 MINUTE",
+     "format": "[%[1]s] %[3]s"
+    }
+   ],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": false
+ },
+ {
+  "name": "test_minute_single",
+  "fields": {
+   "MaxDownloads": 3,
+   "MaxDownloadsUnit": {
+    "__const": "FilterMaxDownloadsMinute"
+   },
+   "Downloads": {
+    "PeriodCount": 2,
+    "__type": "FilterDownloads"
+   },
+   "__type": "fields"
+  },
+  "args": {
+   "__type": "args",
+   "__pos": [
+    {
+     "TorrentName": "Show.Name.S01.2160p.WEB-DL.x265-GROUP",
+     "__type": "Release"
+    }
+   ]
+  },
+  "rejectionReasons": {
+   "data": [],
+   "__type": "RejectionReasons"
+  },
+  "wantMatch": true
+ }
+]

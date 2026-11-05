@@ -107,5 +107,6 @@ fn found(releases: &Releases, s: &Source, r: Release) -> Result<Found, String> {
         uploader: String::new(),
         tags: r.genre.split(',').map(|g| g.trim().to_string()).filter(|g| !g.is_empty()).collect(),
         year: r.year.and_then(|y| u32::try_from(y).ok()),
+        ..Found::default()
     })
 }

@@ -1,0 +1,64 @@
+[
+ {
+  "name": "1",
+  "args": {
+   "target": [],
+   "source": [
+    "mp4"
+   ],
+   "__type": "args"
+  },
+  "want": [
+   "mp4"
+  ]
+ },
+ {
+  "name": "2",
+  "args": {
+   "target": [
+    "mp4"
+   ],
+   "source": [
+    "mp4"
+   ],
+   "__type": "args"
+  },
+  "want": [
+   "mp4"
+  ]
+ },
+ {
+  "name": "3",
+  "args": {
+   "target": [
+    "mp4"
+   ],
+   "source": [
+    "mp4",
+    "dv"
+   ],
+   "__type": "args"
+  },
+  "want": [
+   "mp4",
+   "dv"
+  ]
+ },
+ {
+  "name": "4",
+  "args": {
+   "target": [
+    "dv"
+   ],
+   "source": [
+    "mp4",
+    "dv"
+   ],
+   "__type": "args"
+  },
+  "want": [
+   "dv",
+   "mp4"
+  ]
+ }
+]
