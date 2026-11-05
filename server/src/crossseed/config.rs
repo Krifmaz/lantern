@@ -17,9 +17,21 @@
 //! | `delay` | `cross_seed_delay` |
 //! | `port` | `cross_seed_port` (0: off) |
 //! | `apiKey` | Lantern's `api_key` |
+//! | `action` | `cross_seed_action` |
+//! | `linkDirs` | `cross_seed_link_dirs` (one folder per line) |
+//! | `linkType` | `cross_seed_link_type` |
+//! | `flatLinking` | `cross_seed_flat_linking` |
+//! | `linkCategory` | `cross_seed_link_category` (empty: none) |
+//! | `duplicateCategories` | `cross_seed_duplicate_categories` |
+//! | `skipRecheck` | `cross_seed_skip_recheck` |
+//! | `autoResumeMaxDownload` | `cross_seed_auto_resume_max_download` |
+//! | `ignoreNonRelevantFilesToResume` | `cross_seed_ignore_non_relevant_files_to_resume` |
+//! | `torrentClients` | `cross_seed_torrent_clients` (one per line; empty: Lantern's torrent download clients) |
+//! | `outputDir` | `cross-seeds` in the data folder |
 //!
 //! The other settings keep cross-seed's defaults until the parts that use them are ported.
 
+use super::clients::{clients_are_unique, parse_client_entry, CLIENT_TYPES};
 use super::constants::{parse_blocklist_entry, Action, BlocklistType, LinkType, MatchMode, INFO_HASH_REGEX};
 use super::jsre::test;
 use super::utils::format_as_list;
@@ -213,6 +225,12 @@ impl RuntimeConfig {
     /// The settings from Lantern's settings (see the module's table), and the problems [`validate`] and the
     /// reading found, in cross-seed's words.
     pub fn from_settings(s: &kit_server_settings::Store) -> (RuntimeConfig, Vec<String>) {
+        RuntimeConfig::from_settings_with(s, &[])
+    }
+
+    /// [`from_settings`](Self::from_settings), with `lantern_clients` (Lantern's torrent download clients as
+    /// cross-seed's `torrentClients` entries) used when `cross_seed_torrent_clients` is empty.
+    pub fn from_settings_with(s: &kit_server_settings::Store, lantern_clients: &[String]) -> (RuntimeConfig, Vec<String>) {
         let mut problems = Vec::new();
         let mut c = RuntimeConfig::default();
         let mode = s.str("cross_seed_match_mode");
@@ -246,6 +264,28 @@ impl RuntimeConfig {
             };
         }
         c.block_list = block_list_lines(&s.str("cross_seed_block_list"));
+        let action = s.str("cross_seed_action");
+        match Action::parse(&action) {
+            Some(a) => c.action = a,
+            None => problems.push(issue(&action, "Invalid enum value. Expected 'save' | 'inject'")),
+        }
+        c.link_dirs = block_list_lines(&s.str("cross_seed_link_dirs")).into_iter().map(|d| d.trim().to_string()).collect();
+        let link_type = s.str("cross_seed_link_type");
+        match LinkType::parse(&link_type) {
+            Some(l) => c.link_type = l,
+            None => problems.push(issue(&link_type, "Invalid enum value. Expected 'symlink' | 'hardlink' | 'reflink' | 'reflinkOrCopy'")),
+        }
+        c.flat_linking = s.bool("cross_seed_flat_linking");
+        let link_category = s.str("cross_seed_link_category");
+        c.link_category = if link_category.is_empty() { None } else { Some(link_category) };
+        c.duplicate_categories = s.bool("cross_seed_duplicate_categories");
+        c.skip_recheck = s.bool("cross_seed_skip_recheck");
+        c.auto_resume_max_download = s.int("cross_seed_auto_resume_max_download");
+        c.ignore_non_relevant_files_to_resume = s.bool("cross_seed_ignore_non_relevant_files_to_resume");
+        c.torrent_clients = block_list_lines(&s.str("cross_seed_torrent_clients")).into_iter().map(|d| d.trim().to_string()).collect();
+        if c.torrent_clients.is_empty() {
+            c.torrent_clients = lantern_clients.to_vec();
+        }
         let api_key = s.str("api_key");
         c.api_key = if api_key.is_empty() { None } else { Some(api_key) };
         problems.extend(validate(&mut c));
@@ -363,6 +403,27 @@ pub const BLOCKLIST_TRACKER: &str = "Blocklist tracker is not a valid URL host. 
 pub const BLOCKLIST_HASH: &str = "Blocklist hash must be 40 characters and alphanumeric";
 /// `blocklistSize`.
 pub const BLOCKLIST_SIZE: &str = "Blocklist size must be an integer for the number of bytes. You can only have one sizeBelow, one sizeAbove, and sizeBelow <= sizeAbove.";
+
+/// `autoResumeMaxDownloadUnsupported`.
+pub const AUTO_RESUME_MAX_DOWNLOAD_UNSUPPORTED: &str =
+    "autoResumeMaxDownload must be an integer of bytes between between 0 and 52428800 (50 MiB).";
+/// `clientTypeReadOnly`.
+pub const CLIENT_TYPE_READ_ONLY: &str = "You must have at least one non-readonly torrent client when using action: \"inject\"";
+/// `duplicateClients`.
+pub const DUPLICATE_CLIENTS: &str = "Duplicate torrent client URLs are not allowed.";
+/// `injectNeedsClients`.
+pub const INJECT_NEEDS_CLIENTS: &str = "You need to specify torrentClients when using 'inject'";
+/// `needsClient`.
+pub const NEEDS_CLIENT: &str = "You need to have a client configured for useClientTorrents.";
+
+/// `clientType`: a torrent client entry with a type cross-seed doesn't know.
+pub fn client_type_message() -> String {
+    let names: Vec<String> = CLIENT_TYPES.iter().map(|t| format!("{t}:")).collect();
+    format!(
+        "torrentClients type prefix must be one of {} and optionally followed by readonly: (e.g torrentClients: [\"qbittorrent:http://username:password@localhost:8080\", \"rtorrent:readonly:http://username:password@localhost:1234/RPC2\"])",
+        format_as_list(&names, false, "narrow", "unit")
+    )
+}
 
 /// `blocklistType`: a block list entry with a prefix cross-seed doesn't know.
 pub fn blocklist_type_message() -> String {
@@ -492,7 +553,28 @@ pub fn validate(c: &mut RuntimeConfig) -> Vec<String> {
             p.push("searchCadence must be at least 1 day.".to_string());
         }
     }
+    if !(0..=52_428_800).contains(&c.auto_resume_max_download) {
+        p.push(AUTO_RESUME_MAX_DOWNLOAD_UNSUPPORTED.to_string());
+    }
+    for entry in &c.torrent_clients {
+        if !parse_client_entry(entry).is_some_and(|e| CLIENT_TYPES.contains(&e.client_type.as_str())) {
+            p.push(issue(entry, &client_type_message()));
+        }
+    }
     p.extend(check_block_list(&mut c.block_list));
+    if c.use_client_torrents && c.torrent_clients.is_empty() {
+        p.push(NEEDS_CLIENT.to_string());
+    }
+    if c.action == Action::Inject && !c.torrent_clients.iter().any(|t| !t.contains(":readonly:")) {
+        p.push(CLIENT_TYPE_READ_ONLY.to_string());
+    }
+    let entries_ok = c.torrent_clients.iter().all(|t| parse_client_entry(t).is_some_and(|e| url::Url::parse(&e.url).is_ok()));
+    if entries_ok {
+        let (hosts, with_path) = clients_are_unique(&c.torrent_clients);
+        if !hosts && !with_path {
+            p.push(DUPLICATE_CLIENTS.to_string());
+        }
+    }
     if let (Some(s), Some(r)) = (c.search_cadence, c.exclude_recent_search) {
         if 3.0 * s > r {
             p.push(SEARCH_CADENCE_EXCLUDE_RECENT.to_string());
@@ -510,6 +592,12 @@ pub fn validate(c: &mut RuntimeConfig) -> Vec<String> {
     }
     if cadence && c.season_from_episodes.is_some_and(|s| s < 0.5) {
         p.push(SEASON_FROM_EPISODES_MIN.to_string());
+    }
+    if c.action == Action::Save && !c.link_dirs.is_empty() {
+        tracing::error!("You cannot use action 'save' with linkDirs, use 'inject' for cross-seed to perform linking.");
+    }
+    if c.torrent_clients.is_empty() && c.action == Action::Inject {
+        p.push(INJECT_NEEDS_CLIENTS.to_string());
     }
     if c.link_dirs.is_empty() && c.match_mode != MatchMode::Strict && c.action != Action::Save {
         p.push(MATCH_MODE_NEEDS_LINK_DIRS.to_string());
@@ -569,6 +657,17 @@ mod tests {
     #[test]
     fn the_default_needs_link_dirs_as_in_cross_seed() {
         let mut c = RuntimeConfig::default();
+        assert_eq!(
+            validate(&mut c),
+            vec![
+                NEEDS_CLIENT.to_string(),
+                CLIENT_TYPE_READ_ONLY.to_string(),
+                INJECT_NEEDS_CLIENTS.to_string(),
+                MATCH_MODE_NEEDS_LINK_DIRS.to_string(),
+                ENSEMBLE_NEEDS_LINK_DIRS.to_string()
+            ]
+        );
+        let mut c = RuntimeConfig { torrent_clients: vec!["qbittorrent:http://q:8080".into()], ..RuntimeConfig::default() };
         assert_eq!(validate(&mut c), vec![MATCH_MODE_NEEDS_LINK_DIRS.to_string(), ENSEMBLE_NEEDS_LINK_DIRS.to_string()]);
         c.link_dirs = vec!["/links".into()];
         assert!(validate(&mut c).is_empty());
@@ -579,8 +678,35 @@ mod tests {
     }
 
     #[test]
+    fn torrent_client_checks() {
+        let base = RuntimeConfig { match_mode: MatchMode::Strict, season_from_episodes: None, ..RuntimeConfig::default() };
+        let mut c = RuntimeConfig { torrent_clients: vec!["rtorrent:readonly:http://r/RPC2".into()], ..base.clone() };
+        assert_eq!(validate(&mut c), vec![CLIENT_TYPE_READ_ONLY.to_string()]);
+        c.action = Action::Save;
+        assert!(validate(&mut c).is_empty(), "saving needs no client to add to");
+        let mut c = RuntimeConfig { torrent_clients: vec!["utorrent:http://u".into()], ..base.clone() };
+        assert_eq!(validate(&mut c), vec![issue("utorrent:http://u", &client_type_message())]);
+        assert_eq!(
+            client_type_message(),
+            "torrentClients type prefix must be one of qbittorrent: rtorrent: transmission: deluge: and optionally followed by readonly: (e.g torrentClients: [\"qbittorrent:http://username:password@localhost:8080\", \"rtorrent:readonly:http://username:password@localhost:1234/RPC2\"])"
+        );
+        let mut c = RuntimeConfig {
+            torrent_clients: vec!["qbittorrent:http://q:8080".into(), "qbittorrent:http://q:8080/".into()],
+            ..base.clone()
+        };
+        assert_eq!(validate(&mut c), vec![DUPLICATE_CLIENTS.to_string()]);
+        let mut c =
+            RuntimeConfig { torrent_clients: vec!["deluge:http://:p@d:8112/json".into()], auto_resume_max_download: 52_428_801, ..base };
+        assert_eq!(validate(&mut c), vec![AUTO_RESUME_MAX_DOWNLOAD_UNSUPPORTED.to_string()]);
+    }
+
+    #[test]
     fn settings_ranges_in_cross_seeds_words() {
-        let mut c = RuntimeConfig { link_dirs: vec!["/l".into()], ..RuntimeConfig::default() };
+        let mut c = RuntimeConfig {
+            link_dirs: vec!["/l".into()],
+            torrent_clients: vec!["qbittorrent:http://q:8080".into()],
+            ..RuntimeConfig::default()
+        };
         c.delay = 10.0;
         c.fuzzy_size_threshold = 0.2;
         c.season_from_episodes = Some(0.4);
@@ -589,9 +715,19 @@ mod tests {
         assert!(p.contains(&FUZZY_SIZE_THRESHOLD_MAX.to_string()));
         assert!(p.contains(&SEASON_FROM_EPISODES_MIN.to_string()));
         assert!(p.contains(&ENSEMBLE_NEEDS_PARTIAL.to_string()));
-        let mut c = RuntimeConfig { link_dirs: vec!["/l".into()], exclude_older: Some(DAY), ..RuntimeConfig::default() };
+        let mut c = RuntimeConfig {
+            link_dirs: vec!["/l".into()],
+            torrent_clients: vec!["qbittorrent:http://q:8080".into()],
+            exclude_older: Some(DAY),
+            ..RuntimeConfig::default()
+        };
         assert_eq!(validate(&mut c), vec![EXCLUDE_RECENT_OLDER.to_string()]);
-        let mut c = RuntimeConfig { link_dirs: vec!["/l".into()], exclude_recent_search: Some(DAY), ..RuntimeConfig::default() };
+        let mut c = RuntimeConfig {
+            link_dirs: vec!["/l".into()],
+            torrent_clients: vec!["qbittorrent:http://q:8080".into()],
+            exclude_recent_search: Some(DAY),
+            ..RuntimeConfig::default()
+        };
         let p = validate(&mut c);
         assert!(p.contains(&SEARCH_CADENCE_EXCLUDE_RECENT.to_string()));
         assert_eq!(match_mode_invalid(), r#"matchMode must be one of: "strict" "flexible" "partial""#);

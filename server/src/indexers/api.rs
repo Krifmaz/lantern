@@ -609,3 +609,26 @@ async fn search(State(st): State<AppState>, _: SignedIn, headers: HeaderMap, Q(q
     let failed: Vec<Value> = failed.iter().map(|(n, e)| json!({ "indexer": n, "error": e })).collect();
     Ok(Json(json!({ "results": results, "failed": failed })))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_search_parameters() {
+        let q: HashMap<String, String> = [("t", "tvsearch"), ("q", "Show"), ("season", "1"), ("ep", "2"), ("cat", "5000,5040")]
+            .iter()
+            .map(|(a, b)| (a.to_string(), b.to_string()))
+            .collect();
+        let query = query_of(&q).unwrap();
+        assert_eq!(query.kind, SearchKind::TvSearch);
+        assert_eq!(query.categories, vec![5000, 5040]);
+        assert!(!query.rss);
+        let q: HashMap<String, String> =
+            [("query", "{ImdbId:tt0111161} extra")].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
+        let query = query_of(&q).unwrap();
+        assert_eq!((query.imdbid.as_str(), query.keywords.as_str()), ("tt0111161", "extra"));
+        let q: HashMap<String, String> = [("t", "nope")].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
+        assert!(query_of(&q).is_err());
+    }
+}

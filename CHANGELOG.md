@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+- Cross-seed now adds its matches as cross-seed v6.13.9 does. It talks to qBittorrent, rTorrent, Transmission and
+  Deluge itself, several at once (your torrent download clients, or the ones you list in Torrent clients). It can
+  link a match's files into your link folders (hard links, symbolic links, reflinks or copies, under the site's name
+  or straight in), or just save the `.torrent` (Action: save). It also follows cross-seed's recheck and auto-resume
+  rules. A copy goes in the same category as the torrent it matches, tagged `cross-seed`. With linking, it goes under
+  `cross-seed-link`. With "Own category for matches" turned on, it goes under `<category>.cross-seed` instead.
+
 ### Fixed
 - Cloudflare solving waits up to two minutes for its browser to start, and tries once more if it doesn't, so a busy
   or slow machine no longer fails a check before the browser is ready.

@@ -159,10 +159,9 @@ async fn the_schema_lists_definitions_and_presets_as_prowlarr_does() {
         let name = f["name"].as_str().unwrap();
         let mut got = field(t, name).clone();
         let mut f = f.clone();
-        for skip in ["value"] {
-            got.as_object_mut().unwrap().remove(skip);
-            f.as_object_mut().unwrap().remove(skip);
-        }
+        // the values are the template's (checked below), not the saved indexer's
+        got.as_object_mut().unwrap().remove("value");
+        f.as_object_mut().unwrap().remove("value");
         assert_eq!(got, f, "field {name}");
     }
     assert_eq!(field(t, "definitionFile")["value"], "lantern-test");

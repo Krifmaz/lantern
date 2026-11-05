@@ -278,7 +278,7 @@ env = "APP_CROSS_SEED"
 default = true
 group = "cross_seed"
 label = "Cross-seed finished torrents"
-help = "Copies go into the app's category with .cross-seed after it, so the app doesn't import them twice."
+help = "Copies go into the same category as the torrent they match, tagged cross-seed. Turn on 'Own category for matches' if an app would import them twice."
 type = "bool"
 
 [keys.cross_seed_delay]
@@ -386,6 +386,100 @@ help = "The port of the cross-seed API (webhook, announce, job, ping, status) fo
 type = "number"
 min = 0
 max = 65535
+advanced = true
+
+[keys.cross_seed_action]
+env = "APP_CROSS_SEED_ACTION"
+default = "inject"
+group = "cross_seed"
+label = "What to do with a match"
+help = "Add it to the download client, or only save its .torrent file in the cross-seeds folder of the data folder to add by hand."
+type = "select"
+options = [["inject", "Add it to the download client"], ["save", "Only save the .torrent file"]]
+
+[keys.cross_seed_link_dirs]
+env = "APP_CROSS_SEED_LINK_DIRS"
+default = ""
+group = "cross_seed"
+label = "Link folders"
+help = "Folders where a match's files are linked from the files you have, one per line, each on the same drive as some of your downloads (cross-seed's linkDirs). Needed for the Flexible and Partial match modes and for season packs from episodes."
+type = "textarea"
+
+[keys.cross_seed_link_type]
+env = "APP_CROSS_SEED_LINK_TYPE"
+default = "hardlink"
+group = "cross_seed"
+label = "Link type"
+help = "How files are linked. Hardlink and reflink need the same drive; reflink also needs a file system that has it (btrfs, XFS). Reflink or copy copies the file where a reflink can't be made."
+type = "select"
+options = [["hardlink", "Hardlink"], ["symlink", "Symlink"], ["reflink", "Reflink"], ["reflinkOrCopy", "Reflink or copy"]]
+advanced = true
+
+[keys.cross_seed_flat_linking]
+env = "APP_CROSS_SEED_FLAT_LINKING"
+default = false
+group = "cross_seed"
+label = "Link straight into the link folder"
+help = "Off: each site's matches are linked in a folder named after the site, inside the link folder. On: all in the link folder itself."
+type = "bool"
+advanced = true
+
+[keys.cross_seed_link_category]
+env = "APP_CROSS_SEED_LINK_CATEGORY"
+default = "cross-seed-link"
+group = "cross_seed"
+label = "Category of linked matches"
+help = "The download client category (qBittorrent) or label (Deluge) of matches added from linked files. Empty: none."
+type = "text"
+advanced = true
+
+[keys.cross_seed_duplicate_categories]
+env = "APP_CROSS_SEED_DUPLICATE_CATEGORIES"
+default = false
+group = "cross_seed"
+label = "Own category for matches"
+help = "Add matches under the torrent's category with .cross-seed after it, instead of the same category."
+type = "bool"
+advanced = true
+
+[keys.cross_seed_skip_recheck]
+env = "APP_CROSS_SEED_SKIP_RECHECK"
+default = true
+group = "cross_seed"
+label = "Skip the check of matched files"
+help = "Matches with every file are added without the client checking them first. Partial matches and disc images are always checked."
+type = "bool"
+advanced = true
+
+[keys.cross_seed_auto_resume_max_download]
+env = "APP_CROSS_SEED_AUTO_RESUME_MAX_DOWNLOAD"
+default = 52428800
+group = "cross_seed"
+label = "Start partial matches missing up to"
+help = "After its check, a partial match missing at most this many bytes is started; a bigger one stays paused (0 to 52428800, which is 50 MiB)."
+type = "number"
+unit = "bytes"
+min = 0
+max = 52428800
+advanced = true
+
+[keys.cross_seed_ignore_non_relevant_files_to_resume]
+env = "APP_CROSS_SEED_IGNORE_NON_RELEVANT_FILES_TO_RESUME"
+default = false
+group = "cross_seed"
+label = "Start partial matches missing only extras"
+help = "Also start a partial match whose missing part is only samples, trailers, extras, .nfo, .srt and the like, up to 200 MiB."
+type = "bool"
+advanced = true
+
+[keys.cross_seed_torrent_clients]
+env = "APP_CROSS_SEED_TORRENT_CLIENTS"
+default = ""
+secret = true
+group = "cross_seed"
+label = "Torrent clients"
+help = "Empty: Lantern's torrent download clients. Otherwise one per line as cross-seed writes them, such as qbittorrent:http://user:password@qbittorrent:8080 or rtorrent:readonly:http://rtorrent/RPC2. A readonly client is searched but nothing is added to it."
+type = "textarea"
 advanced = true
 
 [groups.soulseek]

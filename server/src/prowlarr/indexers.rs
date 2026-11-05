@@ -1107,10 +1107,8 @@ fn validate_settings(kind: &str, values: &Map<String, Value>) -> Vec<ProviderFai
     let mut out = Vec::new();
     let get = |k: &str| values.get(k).cloned().unwrap_or(Value::Null);
     let text = |k: &str| values.get(k).and_then(Value::as_str).map(str::to_string);
-    if kind == "cardigann" {
-        if text("definitionFile").is_none_or(|d| d.trim().is_empty()) {
-            out.push(failure("DefinitionFile", "'Definition File' must not be empty.", &get("definitionFile"), false));
-        }
+    if kind == "cardigann" && text("definitionFile").is_none_or(|d| d.trim().is_empty()) {
+        out.push(failure("DefinitionFile", "'Definition File' must not be empty.", &get("definitionFile"), false));
     }
     let lantern: BTreeMap<String, String> = values.iter().map(|(k, v)| (k.clone(), text_of(v))).collect();
     let (errors, warnings) = limits::validate(&lantern);
