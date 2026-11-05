@@ -101,3 +101,7 @@ Non-obvious calls, one line each, newest last.
   limits, pause/resume) are accepted and ignored, since Lantern's own rules decide.
 - 2026-11-05 — Torrents an app uploads are kept in `<data>/grabs/` until the grab is removed, so a failed send can
   be retried; their info hash is worked out from the file (SHA-1 of the `info` dictionary), as apps expect.
+- 2026-11-05 — The emulated SABnzbd knows the app by `ma_username` when the app sends one, else by the category it
+  uses (a new app `SABnzbd <category>` the first time), since SABnzbd's API has only one key. The emulated NZBGet
+  knows it by its Basic-auth user name, like qBittorrent, and keeps the parameters the app attaches (Sonarr's
+  `drone`), which apps use to find their downloads again.

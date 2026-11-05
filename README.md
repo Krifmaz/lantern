@@ -96,6 +96,11 @@ docker run --read-only -p 9696:9696 -p 8191:8191 -v lantern-data:/data lantern
 Download clients: qBittorrent (default for torrents), Transmission, Deluge, rTorrent, SABnzbd (default for Usenet)
 and NZBGet. Apps never see which one a grab went to.
 
+Apps that only know download clients can add Lantern as one, at Lantern's address and port:
+**qBittorrent** (user name: the app's name, password: Lantern's API key), **SABnzbd** (API key: Lantern's; URL base
+empty or `/sabnzbd`) or **NZBGet** (user name: the app's name, password: Lantern's API key). Set each app's own
+view of its folder on the Apps page (`import_path`) when its container mounts the downloads elsewhere.
+
 Apps need only Lantern's address and API key (`X-Api-Key`). They register once (`POST /api/hub/apps` with `name`,
 `media`, `import_path`, `callback_url`), search (`GET /api/hub/search?app=`), grab (`POST /api/hub/grabs` with a
 result's `token` or any `url`), and hear back through their callback address or the live stream

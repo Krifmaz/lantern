@@ -52,6 +52,8 @@ pub fn router() -> Router<AppState> {
         .route("/api/hub/grabs/{id}/imported", post(imported))
         .route("/api/hub/events", get(events))
         .merge(super::emulate::qbittorrent::router())
+        .merge(super::emulate::sabnzbd::router())
+        .merge(super::emulate::nzbget::router())
 }
 
 async fn clients(State(st): State<AppState>, _: SignedIn) -> Result<Json<Value>> {
