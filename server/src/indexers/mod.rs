@@ -175,17 +175,25 @@ pub struct Indexers {
     clients: Arc<Mutex<ClientCache>>,
     /// The settings (the site proxy), when there are any.
     pub settings: Option<kit_server_settings::Store>,
+    /// The solver for Cloudflare checks, when there is one.
+    pub solver: Option<crate::solver::Solver>,
 }
 
 impl Indexers {
     /// The indexers on `db` with `library`.
     pub fn new(db: SqliteDb, library: Library) -> Indexers {
-        Indexers { db, library, clients: Default::default(), settings: None }
+        Indexers { db, library, clients: Default::default(), settings: None, solver: None }
     }
 
     /// The same, reading the site proxy from `settings`.
     pub fn with_settings(mut self, settings: kit_server_settings::Store) -> Indexers {
         self.settings = Some(settings);
+        self
+    }
+
+    /// With `solver` for the sites' Cloudflare checks.
+    pub fn with_solver(mut self, solver: crate::solver::Solver) -> Indexers {
+        self.solver = Some(solver);
         self
     }
 
@@ -310,7 +318,7 @@ impl Indexers {
                 })?;
                 let delay =
                     def.request_delay.unwrap_or(0.0).max(ix.settings.get("request_delay").and_then(|d| d.parse().ok()).unwrap_or(0.0));
-                let http = http::Http::new(&ix.name, delay, &def.encoding, Some(&proxy));
+                let http = http::Http::new(&ix.name, delay, &def.encoding, Some(&proxy)).with_solver(self.solver.clone());
                 let site = Cardigann::new(def, &ix.base_url, ix.settings.clone(), http);
                 if !ix.cookies.is_empty() {
                     site.http.add_cookies(&site.base, &ix.cookies);
@@ -326,7 +334,7 @@ impl Indexers {
                     apikey: ix.settings.get("apikey").cloned().unwrap_or_default(),
                     protocol: if kind == "newznab" { Protocol::Usenet } else { Protocol::Torrent },
                     extra: ix.settings.get("extra").cloned().unwrap_or_default(),
-                    http: http::Http::new(&ix.name, delay, "UTF-8", Some(&proxy)),
+                    http: http::Http::new(&ix.name, delay, "UTF-8", Some(&proxy)).with_solver(self.solver.clone()),
                 })
             }
         };

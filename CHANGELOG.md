@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- Cloudflare solving: a headless Chromium (in the image) gets past Cloudflare and DDoS-Guard checks by itself when an
+  indexer meets one; the site's cookies are kept and reused, so most requests need no browser.
+- The FlareSolverr API on port 8191 (`APP_SOLVER_PORT`), so apps that use FlareSolverr can use Lantern instead.
+- A Cloudflare checks card on the Indexers page (test any address) and a Diagnostics check for the browser.
+- CI checks the image as it ships: its browser gets past a Cloudflare-style check through the FlareSolverr API.
 - Indexers: every site in the Prowlarr/Indexers definitions (bundled in the image and updated daily), plus
   Newznab and Torznab indexers, with login, tests, health and hold after repeated failures.
 - Torznab/Newznab feeds per indexer and for all of them (`/{id}/api`, `/all/api`), Jackett and Prowlarr paths too,
@@ -28,6 +33,21 @@
   files' exact paths in their own view.
 - Download hub: Transmission, Deluge, rTorrent and NZBGet join qBittorrent and SABnzbd behind the same client
   layer (qBittorrent and SABnzbd stay the defaults).
+- Android: the Vault page. Every saved account with its plain values and which secrets are saved; the owner sees
+  the secrets and the 2FA code after typing their password again, for two minutes, with screenshots blocked. Every
+  value can be copied, secrets marked sensitive on the clipboard.
+- Android: Downloads (what Lantern downloads for the apps, with progress, speed, time left and what went wrong;
+  Try again and Remove for admins) and Apps (every connected app with its folder and downloads by state).
+- Import from Prowlarr (a backup, its database or its API) and FlareSolverr (its settings pasted in), on a new
+  Import page: a dry run first that says line by line what would be added, skipped or left to you, then Import.
+  Indexers keep their logins (also saved in the vault) and Prowlarr's numbers, Lantern can take Prowlarr's API key and proxy, and the apps
+  Prowlarr synced to are kept for app sync.
+- Releases as they appear: trackers' IRC announce channels (autobrr's announce definitions, bundled), RSS feeds and
+  Lantern's own indexers are watched; filters (names, resolution, source, codec, HDR, group, year, season, size,
+  freeleech, category, tags, uploader, grab limits) send a new release to Sonarr, Radarr, Lidarr, Readarr or Whisparr,
+  or to a download client through the download hub, within seconds. A Releases page shows what came and why each was sent or skipped, and checks any release name.
+- Download hub: seeding rules (seed to a ratio or for some hours) and cleanup once an app says it imported a
+  download: keep it, remove it from the client, or remove it with its files (off by default).
 
 ## 0.0.1
 

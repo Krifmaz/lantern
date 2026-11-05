@@ -31,6 +31,8 @@ struct Fake {
     sab_deleted: Vec<String>,
     /// How many NZBs SABnzbd got.
     nzbs: usize,
+    /// qBittorrent's deletions: (hashes, deleteFiles).
+    qbit_deleted: Vec<(String, String)>,
     /// The webhook calls: (event header, signature header, body as sent).
     hooks: Vec<(String, String, String)>,
 }
@@ -113,6 +115,16 @@ async fn qbit_files(h: HeaderMap) -> Response {
         .into_response()
 }
 
+async fn qbit_delete(State(s): State<Shared>, h: HeaderMap, Form(f): Form<HashMap<String, String>>) -> Response {
+    if !qbit_session(&h) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    let mut s = s.lock().unwrap();
+    s.torrents.retain(|t| t["hash"] != f["hashes"]);
+    s.qbit_deleted.push((f["hashes"].clone(), f["deleteFiles"].clone()));
+    "".into_response()
+}
+
 async fn sab_api(State(s): State<Shared>, Query(q): Query<HashMap<String, String>>, m: Option<Multipart>) -> Response {
     if q.get("apikey").map(String::as_str) != Some("sabkey") {
         return Json(json!({ "status": false, "error": "API Key Incorrect" })).into_response();
@@ -171,6 +183,7 @@ async fn fakes() -> (String, Shared) {
         .route("/api/v2/torrents/add", post(qbit_add))
         .route("/api/v2/torrents/info", get(qbit_info))
         .route("/api/v2/torrents/files", get(qbit_files))
+        .route("/api/v2/torrents/delete", post(qbit_delete))
         .route("/sab/api", get(sab_api).post(sab_api))
         .route("/files/book.nzb", get(nzb))
         .route("/hook", post(hook))
@@ -433,6 +446,78 @@ async fn grabs_take_lanterns_own_download_links_and_refuse_strange_ones() {
     let r = app.clone().oneshot(Request::get("/api/hub/events?apikey=test-key").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(r.status(), StatusCode::OK);
     assert_eq!(r.headers().get(header::CONTENT_TYPE).unwrap(), "text/event-stream");
+}
+
+#[tokio::test]
+async fn an_imported_torrent_is_cleaned_up_once_it_has_seeded_enough() {
+    let (base, fake) = fakes().await;
+    let (app, st, _) = server("cleanup", &[("APP_SEED_RATIO", "1.0"), ("APP_CLEANUP", "delete")]).await;
+    server::hub::migrate(&st.db).unwrap();
+    call(&app, "POST", "/api/hub/clients", Some(json!({ "kind": "qbittorrent", "url": base, "username": "admin", "password": "adminpw" })))
+        .await;
+    call(&app, "POST", "/api/hub/apps", Some(json!({ "name": "Radarr", "media": "movie" }))).await;
+    let (_, g) = call(&app, "POST", "/api/hub/grabs", Some(json!({ "app": "Radarr", "url": "magnet:?xt=urn:btih:abc&dn=Film" }))).await;
+    let id = g["id"].as_i64().unwrap();
+    let (s, v) = call(&app, "POST", &format!("/api/hub/grabs/{id}/imported"), None).await;
+    assert_eq!((s, v["detail"].as_str()), (StatusCode::CONFLICT, Some("Only a finished grab can be marked as imported")));
+    st.hub.tick().await;
+    {
+        let mut f = fake.lock().unwrap();
+        f.torrents[0]["state"] = json!("uploading");
+        f.torrents[0]["progress"] = json!(1.0);
+        f.torrents[0]["ratio"] = json!(0.5);
+        f.torrents[0]["seeding_time"] = json!(60);
+    }
+    st.hub.tick().await;
+    let (_, g) = call(&app, "GET", &format!("/api/hub/grabs/{id}"), None).await;
+    assert_eq!((g["state"].as_str(), g["ratio"].as_f64(), g["seeded"].as_bool()), (Some("seeding"), Some(0.5), Some(false)));
+
+    let (s, g) = call(&app, "POST", &format!("/api/hub/grabs/{id}/imported"), None).await;
+    assert_eq!(s, StatusCode::OK, "{g}");
+    assert!(g["imported"].as_f64().unwrap() > 0.0);
+    st.hub.tick().await;
+    assert_eq!(grab(&st, id).state, "seeding", "imported but not seeded enough: it keeps seeding");
+    assert!(fake.lock().unwrap().qbit_deleted.is_empty());
+
+    let mut events = st.hub.events.subscribe();
+    fake.lock().unwrap().torrents[0]["ratio"] = json!(1.2);
+    st.hub.tick().await;
+    assert_eq!(grab(&st, id).state, "removed");
+    assert_eq!(fake.lock().unwrap().qbit_deleted, [("hash1".to_string(), "true".to_string())]);
+    let mut removed = None;
+    while let Ok(e) = events.try_recv() {
+        if e.event == "grab.removed" {
+            removed = Some(e.grab);
+        }
+    }
+    assert_eq!(removed.unwrap()["reason"], "cleaned up: removed with its files");
+}
+
+#[tokio::test]
+async fn nothing_is_cleaned_up_while_cleanup_is_off() {
+    let (base, fake) = fakes().await;
+    let (app, st, _) = server("cleanup-off", &[]).await;
+    call(&app, "POST", "/api/hub/clients", Some(json!({ "kind": "qbittorrent", "url": base, "username": "admin", "password": "adminpw" })))
+        .await;
+    call(&app, "POST", "/api/hub/apps", Some(json!({ "name": "Radarr" }))).await;
+    let (_, g) = call(&app, "POST", "/api/hub/grabs", Some(json!({ "app": "Radarr", "url": "magnet:?xt=urn:btih:abc&dn=Film" }))).await;
+    let id = g["id"].as_i64().unwrap();
+    st.hub.tick().await;
+    {
+        let mut f = fake.lock().unwrap();
+        f.torrents[0]["state"] = json!("pausedUP");
+        f.torrents[0]["progress"] = json!(1.0);
+    }
+    st.hub.tick().await;
+    let (_, g) = call(&app, "POST", &format!("/api/hub/grabs/{id}/imported"), None).await;
+    assert_eq!(
+        (g["state"].as_str(), g["seeded"].as_bool()),
+        (Some("completed"), Some(true)),
+        "no goal: stopped by its client counts as seeded"
+    );
+    st.hub.tick().await;
+    assert_eq!(grab(&st, id).state, "completed");
+    assert!(fake.lock().unwrap().qbit_deleted.is_empty());
 }
 
 /// Test helpers on the state.

@@ -1,6 +1,11 @@
 //! The HTTP client of one indexer: its own cookies, the site's request delay, the site's text encoding, and
 //! plain-words errors (no answer, a Cloudflare check, an error page).
+//!
+//! A site that answers with a Cloudflare (or DDoS-Guard) check goes to the [solver](crate::solver) once: the
+//! client then sends the cookies the browser got, with the browser's user agent, until they run out. When the
+//! site still checks plain requests, a page is read through the browser instead.
 
+use crate::solver::{host_of, SolveRequest, Solver};
 use reqwest::cookie::{CookieStore, Jar};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -86,6 +91,10 @@ pub struct Http {
     encoding: &'static encoding_rs::Encoding,
     name: String,
     timeout: Duration,
+    /// The solver for Cloudflare checks, when there is one.
+    solver: Option<Solver>,
+    /// The proxy the client goes through ("" for none); the solver's browser uses the same one.
+    proxy: String,
 }
 
 impl Http {
@@ -99,8 +108,9 @@ impl Http {
             .redirect(reqwest::redirect::Policy::limited(10))
             .connect_timeout(Duration::from_secs(15))
             .timeout(Duration::from_secs(60));
-        if let Some(p) = proxy.filter(|p| !p.trim().is_empty()) {
-            if let Ok(px) = reqwest::Proxy::all(p.trim()) {
+        let proxy = proxy.map(str::trim).unwrap_or("").to_string();
+        if !proxy.is_empty() {
+            if let Ok(px) = reqwest::Proxy::all(&proxy) {
                 b = b.proxy(px);
             }
         }
@@ -112,7 +122,15 @@ impl Http {
             encoding: encoding_rs::Encoding::for_label(encoding.as_bytes()).unwrap_or(encoding_rs::UTF_8),
             name: name.to_string(),
             timeout: Duration::from_secs(60),
+            solver: None,
+            proxy,
         }
+    }
+
+    /// With `solver` for Cloudflare checks.
+    pub fn with_solver(mut self, solver: Option<Solver>) -> Http {
+        self.solver = solver;
+        self
     }
 
     /// Adds cookies (`a=1; b=2`) for the site at `url`.
@@ -129,8 +147,88 @@ impl Http {
         self.jar.cookies(&u).and_then(|h| h.to_str().ok().map(str::to_string)).unwrap_or_default()
     }
 
-    /// Makes a request, waiting the site's delay since the last one.
+    /// Makes a request, waiting the site's delay since the last one. A Cloudflare check is solved once (see the
+    /// module's words).
     pub async fn fetch(&self, f: Fetch) -> Result<Page, String> {
+        let host = host_of(&f.url);
+        let kept = self.solver.as_ref().and_then(|s| s.clearance(&host, &self.proxy));
+        if let Some(c) = &kept {
+            self.add_cookies(&f.url, &c.header());
+        }
+        let agent = kept.as_ref().map(|c| c.user_agent.clone());
+        match self.send(&f, agent.as_deref()).await {
+            Err(Sent::Challenge) => {}
+            Err(Sent::Failed(e)) => return Err(e),
+            Ok(p) => return Ok(p),
+        }
+        let Some(solver) = self.solver.clone() else {
+            return Err(format!(
+                "{} {CLOUDFLARE}, and there is no browser to get past it: use the Lantern image, or set APP_CHROMIUM",
+                self.name
+            ));
+        };
+        if kept.is_some() {
+            solver.forget(&host, &self.proxy);
+        }
+        let req = SolveRequest {
+            url: f.url.clone(),
+            post_data: f.post.then(|| self.form_body(&f)),
+            timeout: Duration::from_secs(60),
+            proxy: self.proxy.clone(),
+            cookies: self.cookie_pairs(&f.url),
+            session: String::new(),
+            cookies_only: false,
+        };
+        let sol = solver.solve(&req).await.map_err(|e| format!("{} {CLOUDFLARE} that Lantern couldn't get past: {e}", self.name))?;
+        let header: String = sol
+            .cookies
+            .iter()
+            .filter(|c| crate::solver::domain_matches(&c.domain, &host))
+            .map(|c| format!("{}={}", c.name, c.value))
+            .collect::<Vec<_>>()
+            .join("; ");
+        self.add_cookies(&f.url, &header);
+        match self.send(&f, Some(&sol.user_agent)).await {
+            Ok(p) => Ok(p),
+            Err(Sent::Failed(e)) => Err(e),
+            // plain requests are still checked: the browser's own page stands in (pages, not files)
+            Err(Sent::Challenge) if !f.post && !sol.response.is_empty() => {
+                let bytes = sol.response.clone().into_bytes();
+                Ok(Page {
+                    redirected: sol.url != f.url,
+                    url: sol.url,
+                    status: sol.status,
+                    text: sol.response,
+                    bytes,
+                    content_type: "text/html".into(),
+                })
+            }
+            Err(Sent::Challenge) => {
+                Err(format!("{} {CLOUDFLARE} that lets the browser through but not Lantern's own requests; try a proxy", self.name))
+            }
+        }
+    }
+
+    /// The cookies the site at `url` has set, as name-value pairs.
+    fn cookie_pairs(&self, url: &str) -> Vec<(String, String)> {
+        self.cookies(url).split(';').filter_map(|c| c.trim().split_once('=')).map(|(k, v)| (k.to_string(), v.to_string())).collect()
+    }
+
+    /// The body of a form POST, in the site's encoding.
+    fn form_body(&self, f: &Fetch) -> String {
+        let mut body: String =
+            f.form.iter().map(|(k, v)| format!("{}={}", enc(self.encoding, k), enc(self.encoding, v))).collect::<Vec<_>>().join("&");
+        if !f.raw_body.is_empty() {
+            if !body.is_empty() {
+                body.push('&');
+            }
+            body.push_str(f.raw_body.trim_start_matches('&'));
+        }
+        body
+    }
+
+    /// One request, sending `agent` as the user agent when given.
+    async fn send(&self, f: &Fetch, agent: Option<&str>) -> Result<Page, Sent> {
         {
             let mut last = self.last.lock().await;
             if let Some(t) = *last {
@@ -143,26 +241,21 @@ impl Http {
         }
         let mut req = if f.post { self.client.post(&f.url) } else { self.client.get(&f.url) };
         if f.post {
-            let mut body: String =
-                f.form.iter().map(|(k, v)| format!("{}={}", enc(self.encoding, k), enc(self.encoding, v))).collect::<Vec<_>>().join("&");
-            if !f.raw_body.is_empty() {
-                if !body.is_empty() {
-                    body.push('&');
-                }
-                body.push_str(f.raw_body.trim_start_matches('&'));
-            }
-            req = req.header("Content-Type", "application/x-www-form-urlencoded").body(body);
+            req = req.header("Content-Type", "application/x-www-form-urlencoded").body(self.form_body(f));
         }
         for (k, v) in &f.headers {
             req = req.header(k.as_str(), v.as_str());
         }
-        let resp = req.timeout(self.timeout).send().await.map_err(|e| self.reach_error(&f.url, &e))?;
+        if let Some(a) = agent.filter(|a| !a.is_empty()) {
+            req = req.header("User-Agent", a);
+        }
+        let resp = req.timeout(self.timeout).send().await.map_err(|e| Sent::Failed(self.reach_error(&f.url, &e)))?;
         let status = resp.status().as_u16();
         let url = resp.url().to_string();
         let server = resp.headers().get("server").and_then(|v| v.to_str().ok()).unwrap_or("").to_lowercase();
         let mitigated = resp.headers().contains_key("cf-mitigated");
         let content_type = resp.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
-        let bytes = resp.bytes().await.map_err(|e| format!("{} stopped answering mid-way: {e}", self.name))?.to_vec();
+        let bytes = resp.bytes().await.map_err(|e| Sent::Failed(format!("{} stopped answering mid-way: {e}", self.name)))?.to_vec();
         let enc = charset(&content_type).unwrap_or(self.encoding);
         let (text, _, _) = enc.decode(&bytes);
         let text = text.into_owned();
@@ -170,19 +263,20 @@ impl Http {
             || (server.contains("cloudflare") && matches!(status, 403 | 429 | 503) && is_challenge(&text))
             || (matches!(status, 403 | 503) && is_challenge(&text))
         {
-            return Err(format!("{} {CLOUDFLARE}: Lantern can't get past it yet", self.name));
+            return Err(Sent::Challenge);
         }
+        let failed = |e: String| Err(Sent::Failed(e));
         if status >= 500 {
-            return Err(format!("{} is having trouble (it answered {status}); try again later", self.name));
+            return failed(format!("{} is having trouble (it answered {status}); try again later", self.name));
         }
         if status == 429 {
-            return Err(format!("{} says Lantern is asking too often (429); it will slow down", self.name));
+            return failed(format!("{} says Lantern is asking too often (429); it will slow down", self.name));
         }
         if status == 401 || status == 403 {
-            return Err(format!("{} refused the request ({status}): check the indexer's sign-in, API key or cookie", self.name));
+            return failed(format!("{} refused the request ({status}): check the indexer's sign-in, API key or cookie", self.name));
         }
         if status == 404 {
-            return Err(format!(
+            return failed(format!(
                 "{} has no page at {} (404): the site may have moved; check its address",
                 self.name,
                 strip_secrets(&f.url)
@@ -209,6 +303,12 @@ impl Http {
         };
         format!("{} {what} – {}", self.name, strip_secrets(url))
     }
+}
+
+/// How one request went wrong: a check to solve, or anything else in words.
+enum Sent {
+    Challenge,
+    Failed(String),
 }
 
 /// `url` with its query left out, so keys and passkeys never end up in a message or log.

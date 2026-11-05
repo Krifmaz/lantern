@@ -1,7 +1,8 @@
 name: ci
 
 # Every pull request: the kit's checks (fmt, clippy -D warnings, tests of server/, desktop/ and web/), the Docker image
-# built (not pushed), the Android app built and unit-tested, and real Sonarr, Radarr, Lidarr and Readarr adding Lantern as an indexer. Required to pass before a merge.
+# built (not pushed), the image's browser getting past a Cloudflare-style check, the Android app built and unit-tested,
+# and real Sonarr, Radarr, Lidarr and Readarr adding Lantern as an indexer. Required to pass before a merge.
 on:
   pull_request:
   workflow_dispatch:
@@ -53,3 +54,20 @@ jobs:
         run: cd server && cargo build --release --locked && cargo build --release --locked --example mock_tracker
       - name: Sonarr, Radarr, Lidarr and Readarr add Lantern
         run: bash scripts/contract-arrs.sh
+
+  # The image as it ships gets past a Cloudflare-style check with its own browser (scripts/image-solver.sh)
+  image:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server
+      - name: Build the test site
+        run: cd server && cargo build --release --locked --example mock_challenge
+      - name: Build the image
+        run: docker build -t lantern:ci .
+      - name: The image's browser gets past a check
+        run: bash scripts/image-solver.sh
