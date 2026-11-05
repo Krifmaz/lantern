@@ -5,11 +5,14 @@
 //! | everywhere | toasts with Copy, the details dialog, the data folder notice with Check again, the offline and connection banners, self-update after a new server build |
 //! | after signing in | the What's new popup, once per release |
 //! | `#/` | Home: the app's own start page (a bug report button to begin with) |
+//! | `#/indexers` | the indexers: add, edit, test and remove sites, update the definitions |
+//! | `#/search` | search every indexer at once |
 //! | `#/bug-reports` | the account's bug reports and the New report sheet |
 //! | `#/settings?s=<page>` | the server settings form from the server's schema, Diagnostics and What's new |
 //!
 //! The app's own pages go next to [`Home`], one component each, with a link in [`Shell`].
 
+mod indexers;
 mod pages;
 
 use kit_leptos::api::{self, HttpBackend};
@@ -167,9 +170,12 @@ fn Shell(me: Value) -> impl IntoView {
             }
         })
     };
+    let admin = me.get("is_admin").and_then(Value::as_bool).unwrap_or(false);
     let page = move || {
         let r = route.get();
         match r.path.as_str() {
+            "/indexers" => view! { <indexers::Indexers admin=admin/> }.into_any(),
+            "/search" => view! { <indexers::Search/> }.into_any(),
             "/bug-reports" => view! { <pages::BugReports/> }.into_any(),
             "/settings" => view! { <pages::Settings page=r.param("s")/> }.into_any(),
             _ => view! { <pages::Home/> }.into_any(),
@@ -181,6 +187,8 @@ fn Shell(me: Value) -> impl IntoView {
                 <a class="brand" href="#/">{name}</a>
                 <nav class="nav">
                     <NavLink href="/" label="Home" route=route/>
+                    <NavLink href="/indexers" label="Indexers" route=route/>
+                    <NavLink href="/search" label="Search" route=route/>
                 </nav>
                 <nav class="nav nav-under">
                     <NavLink href="/bug-reports" label="Bug reports" route=route/>

@@ -42,6 +42,24 @@ hex = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1"
+# indexers: definitions, sites, Torznab
+serde_yaml = "0.9"
+indexmap = { version = "2", features = ["serde"] }
+dom_query = "0.29"
+regex = "1"
+fancy-regex = "0.14"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+url = "2"
+percent-encoding = "2"
+html-escape = "0.2"
+unicode-normalization = "0.1"
+encoding_rs = "0.8"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "cookies", "gzip", "brotli", "deflate", "socks"] }
+quick-xml = "0.37"
+futures-util = "0.3"
+hmac = "0.12"
+tar = "0.4"
+flate2 = "1"
 
 [build-dependencies]
 kit-server-settings = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1", default-features = false, features = ["toml"] }

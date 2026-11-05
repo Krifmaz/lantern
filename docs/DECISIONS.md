@@ -11,3 +11,12 @@ Non-obvious calls, one line each, newest last.
   since both push through the hub's download clients.
 - 2026-11-05 — GPL-3.0-only (Cargo `license`), so the GPL indexer definitions and code learnt from GPL projects sit
   under a compatible license; the kit stays MIT, which GPL allows.
+- 2026-11-05 — Port 9696 (Prowlarr's), so apps moving from Prowlarr keep their indexer address.
+- 2026-11-05 — The Cardigann definitions are bundled in the image (`/app/definitions`, from Prowlarr/Indexers at
+  build time) and updated daily into the data folder; the newer copy wins. Lantern never needs the network to start.
+- 2026-11-05 — Download links in feeds are signed (HMAC-SHA256, key in `data/link.key`) instead of carrying the API
+  key, so a link that leaks from an app's history can't be used to read anything else.
+- 2026-11-05 — The *arr contract test uses Docker Hub `linuxserver/*` images (lscr.io is blocked in some CI
+  networks); Readarr is pinned to `0.4.18-develop`, the last amd64 build after Readarr was retired.
+- 2026-11-05 — A site whose login needs a captcha asks for a browser cookie instead; Cloudflare challenges say so in
+  words until the Cloudflare solving stage lands.

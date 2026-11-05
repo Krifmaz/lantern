@@ -37,4 +37,57 @@ min = 1
 env = "APP_API_KEY"
 default = ""
 secret = true
-help = "The server's API key (`x-api-key`): signs in as the owner. Empty: no API key."
+help = "The API key apps use (Sonarr, Radarr, Prowlarr API clients) as `apikey` or `x-api-key`; made at the first start."
+group = "apps"
+label = "API key"
+type = "password"
+
+[keys.public_url]
+env = "APP_PUBLIC_URL"
+default = ""
+group = "apps"
+label = "Lantern's address for apps"
+help = "The address apps reach Lantern at (http://lantern:9696). Empty: the address each app used."
+type = "url"
+
+[sections.indexers]
+title = "Indexers"
+
+[groups.apps]
+section = "general"
+title = "Apps"
+desc = "How apps like Sonarr, Radarr and Lidarr reach Lantern."
+
+[groups.definitions]
+section = "indexers"
+title = "Indexer definitions"
+desc = "The site definitions Lantern searches with, from Prowlarr/Indexers."
+
+[keys.definitions_auto_update]
+env = "APP_DEFINITIONS_AUTO_UPDATE"
+default = true
+group = "definitions"
+label = "Update the definitions every day"
+type = "bool"
+
+[keys.definitions_source]
+env = "APP_DEFINITIONS_SOURCE"
+default = ""
+group = "definitions"
+label = "Where updates come from"
+help = "A .tar.gz of the Prowlarr/Indexers repository. Empty: GitHub."
+type = "url"
+advanced = true
+
+[groups.network]
+section = "indexers"
+title = "Network"
+desc = "How Lantern reaches the sites."
+
+[keys.site_proxy]
+env = "APP_SITE_PROXY"
+default = ""
+group = "network"
+label = "Proxy for sites"
+help = "An HTTP or SOCKS5 proxy for every indexer (socks5://host:1080). Empty: none."
+type = "text"

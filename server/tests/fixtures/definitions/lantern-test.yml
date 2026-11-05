@@ -1,0 +1,122 @@
+---
+# A small private tracker for Lantern's own tests: a sign-in form, an HTML results table over two kinds of rows,
+# and a details page with the download link. Served by tests/mock_site.rs.
+id: lantern-test
+name: Lantern Test Tracker
+description: "A tracker that only exists in Lantern's tests"
+language: en-US
+type: private
+encoding: UTF-8
+links:
+  - http://127.0.0.1:1/
+
+caps:
+  categorymappings:
+    - {id: 1, cat: Movies/HD, desc: "Movies HD"}
+    - {id: 2, cat: TV/HD, desc: "TV HD"}
+    - {id: 3, cat: Audio/Lossless, desc: "Music FLAC"}
+    - {id: 4, cat: Books/EBook, desc: "Books"}
+  modes:
+    search: [q]
+    tv-search: [q, season, ep, imdbid]
+    movie-search: [q, imdbid]
+    music-search: [q, artist, album]
+    book-search: [q, author, title]
+
+settings:
+  - name: username
+    type: text
+    label: Username
+  - name: password
+    type: password
+    label: Password
+  - name: freeleech
+    type: checkbox
+    label: Search freeleech only
+    default: false
+  - name: sort
+    type: select
+    label: Sort requested from site
+    default: added
+    options:
+      added: created
+      seeders: seeders
+
+login:
+  path: login.php
+  method: form
+  form: form#login
+  inputs:
+    username: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+  error:
+    - selector: div.error
+  test:
+    path: index.php
+    selector: a[href="logout.php"]
+
+download:
+  selectors:
+    - selector: a.dl
+      attribute: href
+
+search:
+  paths:
+    - path: browse.php
+  inputs:
+    $raw: "{{ range .Categories }}c{{.}}=1&{{end}}"
+    search: "{{ if .Query.IMDBID }}{{ .Query.IMDBID }}{{ else }}{{ .Keywords }}{{ end }}"
+    sort: "{{ .Config.sort }}"
+    free: "{{ if .Config.freeleech }}1{{ else }}0{{ end }}"
+  keywordsfilters:
+    - name: re_replace
+      args: ["\\s+", "."]
+  rows:
+    selector: table#torrents > tbody > tr:has(a[href^="details.php"])
+  fields:
+    title:
+      selector: a[href^="details.php"]
+    details:
+      selector: a[href^="details.php"]
+      attribute: href
+    download:
+      selector: a[href^="details.php"]
+      attribute: href
+    category:
+      selector: td.cat a
+      attribute: href
+      filters:
+        - name: querystring
+          args: cat
+    size:
+      selector: td.size
+    seeders:
+      selector: td.seeders
+    leechers:
+      selector: td.leechers
+    grabs:
+      selector: td.grabs
+    date:
+      selector: td.added
+      filters:
+        - name: append
+          args: " +00:00"
+        - name: dateparse
+          args: "yyyy-MM-dd HH:mm zzz"
+    imdbid:
+      optional: true
+      selector: a[href*="imdb.com/title/tt"]
+      attribute: href
+      filters:
+        - name: regexp
+          args: "(tt\\d+)"
+    downloadvolumefactor:
+      case:
+        img[alt="Free"]: 0
+        "*": 1
+    uploadvolumefactor:
+      text: 1
+    minimumratio:
+      text: 1.0
+    description:
+      text: "{{ if .Result.imdbid }}IMDb {{ .Result.imdbid }}{{ else }}no IMDb{{ end }}"
