@@ -323,6 +323,48 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — A session the request makes by itself (`request.*` with an unknown `session`, or one past its
   `session_ttl_minutes`) has no proxy, as in FlareSolverr; a proxy with `username` and `password` signs in through the
   browser's auth handling (FlareSolverr loads an extension for it).
+- 2026-11-05 — Indexer proxies (`server/src/indexers/proxies.rs`) follow Prowlarr's `IndexerHttpClient.GetProxies`:
+  an indexer takes the first HTTP/SOCKS proxy and the first FlareSolverr that share one of its tags; a proxy without
+  tags is off. SOCKS5 resolves names through the proxy (`socks5h`), as .NET does. Credentials are used only when
+  both user name and password are set. Proxy settings are sealed with the vault. Proxy tags are kept as Prowlarr tag
+  ids; indexer tags stay labels and are answered as ids.
+- 2026-11-05 — A FlareSolverr proxy whose `Host` is Lantern's own solver port (localhost, a loopback address,
+  0.0.0.0 or the container's host name) is answered in-process by `server/src/solver/`; any other host is called over
+  HTTP like FlareSolverr.cs. A tagged FlareSolverr proxy replaces Lantern's built-in Cloudflare solving for that
+  indexer; indexers without one keep the built-in solving. The call to FlareSolverr skips the general proxy for local
+  and dotless hosts. An unknown proxy implementation answers 400 in words instead of Prowlarr's 500.
+- 2026-11-05 — The proxy test pings Prowlarr's own `https://prowlarr.servarr.com/v1/ping`, as Prowlarr does, so a
+  proxy that passes in Prowlarr passes in Lantern.
+- 2026-11-05 — Per-site waits (`server/src/indexers/rate_limit.rs`) are Prowlarr's `RateLimitService`: one wait per
+  host, shared by every indexer on it, at least 2 seconds or the definition's `requestDelay`. The 2-second floor is
+  not applied to local sites (loopback hosts), so a local Jackett or test site isn't slowed; an indexer's own
+  `request_delay` still applies there.
+- 2026-11-05 — Generic Newznab/Torznab indexers ask the site for `t=caps` (Prowlarr's
+  `NewznabCapabilitiesProvider`, kept 7 days and stored with the indexer). A failed fetch is logged and Lantern falls
+  back to the stored answer or the `categories` setting; it never blocks adding or changing an indexer.
+- 2026-11-05 — `AppProfileId` (default 1) and `DownloadClientId` (default 0) are stored on each indexer and checked as
+  Prowlarr does. "App Profile does not exist" and "Download Client does not exist" are checked only once such a table
+  exists (Prowlarr's app profiles and download clients come with P-app; Lantern's own download clients count until
+  then).
+- 2026-11-05 — Prowlarr's applications live in P-app's own tables (`prowlarr_applications`, `_application_status`,
+  `_app_indexer_maps`, `_app_profiles`). The migration's `imported_apps` rows are copied in once each (remembered in
+  `prowlarr_imported_apps_taken`, so a removed app does not come back); the old Prowlarr address becomes the app's
+  Prowlarr Server, since Lantern takes over that address. `imported_apps` itself is left alone.
+- 2026-11-05 — Lantern's indexers have no change events, so a watcher looks every 5 seconds (an indexer's name,
+  switch, priority, tags, address and settings; and the API key) and runs Prowlarr's added, updated and deleted
+  handlers, and a forced full sync after a new API key, as Prowlarr's event handlers do. The same watcher queues
+  `ApplicationIndexerSync` when its 6 hours are up; no other scheduled task runs yet.
+- 2026-11-05 — An indexer's app profile and seeding settings are read from its settings under Prowlarr's names
+  (`appProfileId`, default profile 1; `torrentBaseSettings.appMinimumSeeders`, `.seedRatio`, `.seedTime`,
+  `.packSeedTime`) until P-idx gives indexers those fields; an indexer whose saved login can't be opened counts as
+  having invalid settings, so it is not synced.
+- 2026-11-05 — App sync keeps Prowlarr's texts word for word where apps or their users see them: pushed indexers are
+  named `<name> (Prowlarr)` and fields say "Prowlarr Server", so an app moved from Prowlarr sees no change and its
+  existing indexers are matched by address instead of being added twice. Texts with `{appName}` say Lantern.
+- 2026-11-05 — The provider API (`server/src/prowlarr/apps/provider.rs`, Prowlarr's `ProviderControllerBase` and
+  `SchemaBuilder`) is generic over a `Family` (table, fields, test, hooks), so download clients, notifications and
+  indexer proxies reuse it. Removing apps in bulk also removes their indexer maps and status, which Prowlarr leaves
+  to its housekeeping.
 - 2026-11-05 — autobrr's `/api` is served at `/autobrr/api` (`releases::autobrr_api::router()`, paths relative to
   autobrr's `/api`), where the forked autobrr frontend calls it: `lib.rs` passes it to `autobrr_ui::router(&st, api)`,
   so paths Lantern doesn't answer yet keep the frontend's plain 404.

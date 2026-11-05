@@ -1,0 +1,54 @@
+{
+  "id": 1,
+  "name": "Office proxy",
+  "fields": [
+    {
+      "order": 0,
+      "name": "host",
+      "label": "Host",
+      "value": "proxy.lan",
+      "type": "textbox",
+      "advanced": false,
+      "privacy": "normal",
+      "isFloat": false
+    },
+    {
+      "order": 1,
+      "name": "port",
+      "label": "Port",
+      "value": 3128,
+      "type": "textbox",
+      "advanced": false,
+      "privacy": "normal",
+      "isFloat": false
+    },
+    {
+      "order": 2,
+      "name": "username",
+      "label": "Username",
+      "value": "me",
+      "type": "textbox",
+      "advanced": false,
+      "privacy": "userName",
+      "isFloat": false
+    },
+    {
+      "order": 3,
+      "name": "password",
+      "label": "Password",
+      "value": "********",
+      "type": "password",
+      "advanced": false,
+      "privacy": "password",
+      "isFloat": false
+    }
+  ],
+  "implementationName": "Http",
+  "implementation": "Http",
+  "configContract": "HttpSettings",
+  "infoLink": "https://wiki.servarr.com/prowlarr/supported#http",
+  "tags": [],
+  "onHealthIssue": false,
+  "supportsOnHealthIssue": false,
+  "includeHealthWarnings": false
+}

@@ -9,7 +9,9 @@
 //! | [`library`] | the definitions on disk and their updates |
 //! | [`catalog`] | the torrent sites and Usenet indexers to add from, in one list |
 //! | [`capabilities`], [`newznab_request`], [`newznab_results`], [`nabxml`], [`api`] | what apps get (ported from Prowlarr) |
-//! | [`status`], [`limits`] | holds after failures, query and grab limits (ported from Prowlarr) |
+//! | [`status`], [`limits`], [`rate_limit`] | holds after failures, query and grab limits, the wait between requests (ported from Prowlarr) |
+//! | [`proxies`], [`proxies_api`] | indexer proxies: HTTP, SOCKS4, SOCKS5 and FlareSolverr (ported from Prowlarr) |
+//! | [`newznab_caps`] | the capabilities of a Newznab/Torznab API, asked from it (ported from Prowlarr) |
 //!
 //! Each indexer is a row of `indexers`; its settings' secrets are never sent back by the API. The search itself
 //! ([`Indexers::dispatch`]) follows Prowlarr's `ReleaseSearchService` and `HttpIndexerBase`.
@@ -27,8 +29,12 @@ pub mod library;
 pub mod limits;
 pub mod nabxml;
 pub mod newznab;
+pub mod newznab_caps;
 pub mod newznab_request;
 pub mod newznab_results;
+pub mod proxies;
+pub mod proxies_api;
+pub mod rate_limit;
 pub mod release;
 pub mod status;
 pub mod template;
@@ -91,6 +97,11 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
         ("indexers", "redirect", "INTEGER NOT NULL DEFAULT 0"),
         ("indexer_history", "host", "TEXT NOT NULL DEFAULT ''"),
         ("indexer_history", "data", "TEXT NOT NULL DEFAULT '{}'"),
+        // Prowlarr's AppProfileId (1: its Standard profile) and DownloadClientId (0: none)
+        ("indexers", "app_profile_id", "INTEGER NOT NULL DEFAULT 1"),
+        ("indexers", "download_client_id", "INTEGER NOT NULL DEFAULT 0"),
+        // the capabilities a Newznab/Torznab API answered (`NewznabSettings.Capabilities`), and when
+        ("indexers", "capabilities", "TEXT NOT NULL DEFAULT ''"),
     ];
     for (table, col, def) in added {
         let have: Vec<String> = db
@@ -104,7 +115,7 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
                 .map_err(|e| anyhow::anyhow!("The indexer tables can't be changed: {}", e.detail))?;
         }
     }
-    Ok(())
+    proxies::migrate(db)
 }
 
 /// A configured indexer, as stored.
@@ -145,6 +156,12 @@ pub struct Indexer {
     pub last_error: String,
     /// When it was added.
     pub added: f64,
+    /// The app profile apps sync it with (Prowlarr's `AppProfileId`; 1 is the Standard profile).
+    pub app_profile_id: i64,
+    /// The download client apps send its releases to (Prowlarr's `DownloadClientId`; 0: the app's own choice).
+    pub download_client_id: i64,
+    /// The capabilities answer (`t=caps`) its Newznab/Torznab API last gave ("" when none was fetched yet).
+    pub caps_xml: String,
     /// Why its saved settings or cookies can't be opened (the vault is locked), "" when they can.
     pub locked: String,
 }
@@ -191,6 +208,9 @@ impl Indexer {
             most_recent_failure: r.f("most_recent_failure"),
             last_error: r.s("last_error"),
             added: r.f("added"),
+            app_profile_id: r.i("app_profile_id"),
+            download_client_id: r.i("download_client_id"),
+            caps_xml: r.s("capabilities"),
             locked,
         }
     }
@@ -302,13 +322,47 @@ pub struct Indexers {
     pub vault: Option<crate::vault::Vault>,
     /// Held while an indexer's health is read and written, so two answers at once don't lose one.
     status_lock: Arc<Mutex<()>>,
+    /// The capabilities Newznab/Torznab APIs answered: settings fingerprint → (when, answer), kept 7 days.
+    caps: Arc<Mutex<newznab_caps::Cache>>,
+    /// Where a proxy check asks (Prowlarr's ping address; tests point it elsewhere).
+    proxy_ping: Arc<Mutex<String>>,
 }
 
 impl Indexers {
     /// The indexers on `db` with `library`.
     pub fn new(db: SqliteDb, library: Library) -> Indexers {
         status::mark_start(crate::auth::now());
-        Indexers { db, library, clients: Default::default(), settings: None, solver: None, vault: None, status_lock: Default::default() }
+        Indexers {
+            db,
+            library,
+            clients: Default::default(),
+            settings: None,
+            solver: None,
+            vault: None,
+            status_lock: Default::default(),
+            caps: Default::default(),
+            proxy_ping: Arc::new(Mutex::new(proxies::PING_URL.to_string())),
+        }
+    }
+
+    /// Where a proxy check asks now.
+    pub fn proxy_ping_url(&self) -> String {
+        self.proxy_ping.lock().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+
+    /// Makes proxy checks ask `url` instead of Prowlarr's ping address (tests).
+    pub fn set_proxy_ping_url(&self, url: &str) {
+        *self.proxy_ping.lock().unwrap_or_else(|e| e.into_inner()) = url.to_string();
+    }
+
+    /// Drops every running client, so the next request makes them again (after a proxy changed).
+    pub fn forget_clients(&self) {
+        self.clients.lock().unwrap_or_else(|e| e.into_inner()).clear();
+    }
+
+    /// The general proxy (`site_proxy`), "" for none.
+    pub fn site_proxy(&self) -> String {
+        self.settings.as_ref().map(|s| s.str("site_proxy")).unwrap_or_default()
     }
 
     /// The same, reading the site proxy from `settings`.
@@ -426,9 +480,13 @@ impl Indexers {
             }
         }
         check_limits(&settings)?;
+        let app_profile_id = int_of(body, &["app_profile_id", "appProfileId"]).unwrap_or(1);
+        let download_client_id = int_of(body, &["download_client_id", "downloadClientId"]).unwrap_or(0);
+        self.check_links(app_profile_id, download_client_id)?;
+        let tags = self.tags_text(body.get("tags"), "");
         let settings = self.seal(SETTINGS_AAD, &serde_json::to_string(&settings).unwrap_or_default())?;
         let id = self.db.execute(
-            "INSERT INTO indexers (kind, definition, name, base_url, settings, enabled, priority, tags, redirect, added) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO indexers (kind, definition, name, base_url, settings, enabled, priority, tags, redirect, added, app_profile_id, download_client_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             p![
                 kind,
                 definition,
@@ -437,9 +495,11 @@ impl Indexers {
                 settings,
                 body.get("enabled").and_then(Value::as_bool).unwrap_or(true),
                 body.get("priority").and_then(Value::as_i64).unwrap_or(25).clamp(1, 50),
-                body.get("tags").and_then(Value::as_str).unwrap_or(""),
+                tags,
                 body.get("redirect").and_then(Value::as_bool).unwrap_or(false),
-                crate::auth::now()
+                crate::auth::now(),
+                app_profile_id,
+                download_client_id
             ],
         )?;
         Ok(id)
@@ -462,22 +522,66 @@ impl Indexers {
             return Err(err(400, "Enter a name for the indexer"));
         }
         check_limits(&settings)?;
+        let app_profile_id = int_of(body, &["app_profile_id", "appProfileId"]).unwrap_or(cur.app_profile_id);
+        let download_client_id = int_of(body, &["download_client_id", "downloadClientId"]).unwrap_or(cur.download_client_id);
+        self.check_links(app_profile_id, download_client_id)?;
         self.db.execute(
-            "UPDATE indexers SET name=?, base_url=?, settings=?, enabled=?, priority=?, tags=?, redirect=?, failures=CASE WHEN ? THEN 0 ELSE failures END, disabled_until=CASE WHEN ? THEN 0 ELSE disabled_until END WHERE id=?",
+            "UPDATE indexers SET name=?, base_url=?, settings=?, enabled=?, priority=?, tags=?, redirect=?, app_profile_id=?, download_client_id=?, failures=CASE WHEN ? THEN 0 ELSE failures END, disabled_until=CASE WHEN ? THEN 0 ELSE disabled_until END WHERE id=?",
             p![
                 name,
                 text("base_url", &cur.base_url),
                 self.seal(SETTINGS_AAD, &serde_json::to_string(&settings).unwrap_or_default())?,
                 body.get("enabled").and_then(Value::as_bool).unwrap_or(cur.enabled),
                 body.get("priority").and_then(Value::as_i64).unwrap_or(cur.priority).clamp(1, 50),
-                text("tags", &cur.tags),
+                self.tags_text(body.get("tags"), &cur.tags),
                 body.get("redirect").and_then(Value::as_bool).unwrap_or(cur.redirect),
+                app_profile_id,
+                download_client_id,
                 body.get("settings").is_some(),
                 body.get("settings").is_some() || body.get("enabled") == Some(&json!(true)),
                 id
             ],
         )?;
         self.clients.lock().unwrap_or_else(|e| e.into_inner()).remove(&id);
+        Ok(())
+    }
+
+    /// An indexer's tags as kept (names, comma separated) from a request's `tags`: names as text, or Prowlarr's tag
+    /// ids (or names) as a list; `old` when there is none.
+    fn tags_text(&self, v: Option<&Value>, old: &str) -> String {
+        match v {
+            Some(Value::String(s)) => s.trim().to_string(),
+            Some(Value::Array(a)) => {
+                let ids: Vec<i64> = a.iter().filter_map(Value::as_i64).collect();
+                let mut out = self.tag_labels(&ids);
+                for n in a.iter().filter_map(Value::as_str).map(|s| s.trim().to_lowercase()).filter(|s| !s.is_empty()) {
+                    if !out.is_empty() {
+                        out.push(',');
+                    }
+                    out.push_str(&n);
+                }
+                out
+            }
+            Some(Value::Null) => String::new(),
+            _ => old.to_string(),
+        }
+    }
+
+    /// Prowlarr's checks of an indexer's app profile and download client (`IndexerController`): the profile id
+    /// must be above 0 and the profile must exist; a download client other than 0 must exist. Profiles and
+    /// clients are only looked up once Lantern keeps them.
+    fn check_links(&self, app_profile_id: i64, download_client_id: i64) -> Result<()> {
+        if app_profile_id <= 0 {
+            return Err(err(400, "'App Profile Id' must be greater than '0'."));
+        }
+        if exists_in(&self.db, &["prowlarr_app_profiles", "app_profiles"], app_profile_id) == Some(false) {
+            return Err(err(400, "App Profile does not exist"));
+        }
+        if download_client_id != 0
+            && exists_in(&self.db, &["prowlarr_download_clients", "download_clients"], download_client_id) == Some(false)
+        {
+            return Err(err(400, "Download Client does not exist"));
+        }
         Ok(())
     }
 
@@ -495,8 +599,11 @@ impl Indexers {
         if !ix.locked.is_empty() {
             return Err(err(503, format!("{}'s saved login can't be opened: {}", ix.name, ix.locked)));
         }
-        let proxy = self.settings.as_ref().map(|s| s.str("site_proxy")).unwrap_or_default();
-        let fp = format!("{}|{}|{:?}|{proxy}", ix.base_url, ix.definition, ix.settings);
+        let site_proxy = self.site_proxy();
+        // an HTTP/SOCKS proxy sharing a tag takes the place of the general one (`IndexerHttpClient`)
+        let plan = self.plan_for(ix.id, &ix.tags);
+        let proxy = plan.proxy.clone().unwrap_or_else(|| site_proxy.clone());
+        let fp = format!("{}|{}|{:?}|{site_proxy}|{plan:?}", ix.base_url, ix.definition, ix.settings);
         if let Some((f, c)) = self.clients.lock().unwrap_or_else(|e| e.into_inner()).get(&ix.id) {
             if *f == fp {
                 return Ok(c.clone());
@@ -512,7 +619,9 @@ impl Indexers {
                 })?;
                 let delay =
                     def.request_delay.unwrap_or(0.0).max(ix.settings.get("request_delay").and_then(|d| d.parse().ok()).unwrap_or(0.0));
-                let http = http::Http::new(&ix.name, delay, &def.encoding, Some(&proxy)).with_solver(self.solver.clone());
+                let http = http::Http::new(&ix.name, delay, &def.encoding, Some(&proxy))
+                    .with_solver(self.solver.clone())
+                    .with_flaresolverr(plan.flaresolverr.clone(), &site_proxy);
                 let site = Cardigann::new(def, &ix.base_url, ix.settings.clone(), http);
                 if !ix.cookies.is_empty() {
                     site.http.add_cookies(&site.base, &ix.cookies);
@@ -532,7 +641,9 @@ impl Indexers {
                         (Some(u), Some(p)) if !u.is_empty() && !p.is_empty() => Some((u.clone(), p.clone())),
                         _ => None,
                     },
-                    http: http::Http::new(&ix.name, delay, "UTF-8", Some(&proxy)).with_solver(self.solver.clone()),
+                    http: http::Http::new(&ix.name, delay, "UTF-8", Some(&proxy))
+                        .with_solver(self.solver.clone())
+                        .with_flaresolverr(plan.flaresolverr.clone(), &site_proxy),
                 })
             }
         };
@@ -652,6 +763,16 @@ impl Indexers {
             s.record_failure(crate::auth::now(), status::start_time(), minimum, true);
             self.save_status(id, &s, Some(why));
         }
+    }
+
+    /// What a download client is told about seeding a torrent from indexer `indexer_id`
+    /// (`SeedConfigProvider.GetSeedConfiguration`): none for indexer 0, an indexer that isn't there or a Usenet one.
+    pub fn seed_configuration(&self, indexer_id: i64) -> Option<limits::SeedConfiguration> {
+        if indexer_id == 0 {
+            return None;
+        }
+        let ix = self.get(indexer_id).ok()?;
+        (ix.protocol() == Protocol::Torrent).then(|| limits::SeedConfiguration::of(&ix.torrent_settings()))
     }
 
     /// When indexer `ix` is on hold until, if it is now (`GetBlockedProviders`).
@@ -879,6 +1000,7 @@ impl Indexers {
                 return Err(err(400, "Search failed due to all selected indexers being unavailable"));
             }
         }
+        self.refresh_caps_of(&list).await;
         if !q.categories.is_empty() {
             let cats: Vec<i64> = q.categories.iter().map(|c| *c as i64).collect();
             list.retain(|ix| !self.capabilities(ix).categories.supported(&cats).is_empty());
@@ -901,6 +1023,7 @@ impl Indexers {
 
     /// Searches one indexer, as an RSS source does: its releases or the problem in words.
     pub async fn search_one(&self, ix: &Indexer, q: &Query, source: &str) -> std::result::Result<Vec<Release>, String> {
+        self.refresh_caps_of(std::slice::from_ref(ix)).await;
         let caps = self.capabilities(ix);
         let list = self.fetch(ix, &caps, q, source, "", true).await?;
         if q.categories.is_empty() {
@@ -985,8 +1108,49 @@ impl Indexers {
         self.download(&ix, link, title, source, "").await.map_err(|e| err(502, e.message().to_string()))
     }
 
+    /// What makes a Newznab/Torznab API's capabilities answer differ (Prowlarr keys it by the settings).
+    fn caps_key(ix: &Indexer) -> String {
+        format!("{}|{}|{:?}", ix.kind, ix.base_url, ix.settings)
+    }
+
+    /// Asks a Newznab/Torznab indexer's API for its capabilities (`t=caps`, through its proxies) unless an answer
+    /// for the same settings is younger than 7 days (`NewznabCapabilitiesProvider.GetCapabilities`); the answer is
+    /// kept with the indexer too. Nothing to do for a Cardigann site. The problem in words when the API can't be
+    /// asked or its answer can't be read.
+    pub async fn refresh_caps(&self, ix: &Indexer) -> std::result::Result<(), String> {
+        if ix.kind == "cardigann" || ix.id <= 0 {
+            return Ok(());
+        }
+        let key = Self::caps_key(ix);
+        let now = crate::auth::now();
+        if self.caps.lock().unwrap_or_else(|e| e.into_inner()).fresh(&key, now).is_some() {
+            return Ok(());
+        }
+        let client = self.client(ix).map_err(|e| e.detail)?;
+        let Client::Api(api) = &*client else { return Ok(()) };
+        let text = api.caps_text().await?;
+        newznab_caps::parse(&text).map_err(|e| format!("{}: {e}", ix.name))?;
+        self.caps.lock().unwrap_or_else(|e| e.into_inner()).put(&key, now, &text);
+        if text != ix.caps_xml {
+            let _ = self.db.execute("UPDATE indexers SET capabilities=? WHERE id=?", p![text, ix.id]);
+        }
+        Ok(())
+    }
+
+    /// [`Indexers::refresh_caps`] for each Newznab/Torznab indexer of `list` at once; a problem is only logged (the
+    /// indexer keeps the capabilities it had).
+    pub async fn refresh_caps_of(&self, list: &[Indexer]) {
+        let jobs = list.iter().filter(|ix| ix.kind != "cardigann").map(|ix| async move {
+            if let Err(e) = self.refresh_caps(ix).await {
+                tracing::debug!("Failed to get Newznab API capabilities from {}: {e}", ix.name);
+            }
+        });
+        futures_util::future::join_all(jobs).await;
+    }
+
     /// What indexer `ix` can search for and its categories (`GetCapabilities`): a site's from its definition; a
-    /// Newznab or Torznab API's every kind of search, with the categories of its `categories` setting.
+    /// Newznab or Torznab API's from its own capabilities answer (see [`Indexers::refresh_caps`]), or, before it
+    /// has given one, every kind of search with the categories of its `categories` setting.
     pub fn capabilities(&self, ix: &Indexer) -> Capabilities {
         if ix.kind == "cardigann" {
             return match self.library.get(&ix.definition).map(|d| Capabilities::from_definition(&d)) {
@@ -997,6 +1161,15 @@ impl Indexers {
                 }
                 None => Capabilities::default(),
             };
+        }
+        let kept = self.caps.lock().unwrap_or_else(|e| e.into_inner()).any(&Self::caps_key(ix)).map(str::to_string);
+        for text in kept.iter().chain(std::iter::once(&ix.caps_xml)) {
+            if text.is_empty() {
+                continue;
+            }
+            if let Ok(c) = newznab_caps::parse(text) {
+                return c;
+            }
         }
         let mut c = Capabilities {
             tv_params: vec!["q", "season", "ep", "imdbid", "tvdbid"],
@@ -1054,6 +1227,8 @@ impl Indexers {
             "on_hold_until": if ix.disabled_until > now { json!(ix.disabled_until) } else { Value::Null },
             "last_error": ix.last_error,
             "added": ix.added,
+            "app_profile_id": ix.app_profile_id,
+            "download_client_id": ix.download_client_id,
         })
     }
 
@@ -1150,6 +1325,21 @@ pub fn dedupe(list: Vec<Release>) -> Vec<Release> {
         }
     }
     order.into_iter().filter_map(|g| best.remove(&g)).collect()
+}
+
+/// The whole number under the first of `keys` in `body` (a number or its text), when there is one.
+fn int_of(body: &Value, keys: &[&str]) -> Option<i64> {
+    keys.iter().find_map(|k| match body.get(*k) {
+        Some(Value::Number(n)) => n.as_i64(),
+        Some(Value::String(s)) => s.trim().parse().ok(),
+        _ => None,
+    })
+}
+
+/// Whether row `id` is in the first of `tables` that exists; `None` when none of them does (the part of Lantern
+/// that keeps them isn't there yet).
+fn exists_in(db: &SqliteDb, tables: &[&str], id: i64) -> Option<bool> {
+    tables.iter().find_map(|t| db.one(&format!("SELECT id FROM {t} WHERE id=?"), p![id]).ok().map(|r| r.is_some()))
 }
 
 /// The query and grab limits in `settings` must be more than zero (`IndexerCommonSettingsValidator`).

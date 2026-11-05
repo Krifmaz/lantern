@@ -41,18 +41,49 @@ pub struct Kind {
     pub is_exclusive: bool,
     /// Its own settings and their defaults (`duration` for Test).
     pub extra: &'static [(&'static str, i64)],
+    /// Its own yes-or-no settings and their defaults (`forceSync` for ApplicationIndexerSync).
+    pub flags: &'static [(&'static str, bool)],
 }
 
 /// The commands Lantern runs, as Prowlarr defines them.
-pub const KINDS: [Kind; 8] = [
-    Kind { name: "MessagingCleanup", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[] },
-    Kind { name: "CheckHealth", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[] },
-    Kind { name: "IndexerDefinitionUpdate", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[] },
-    Kind { name: "ResetApiKey", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[] },
-    Kind { name: "ClearLog", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[] },
-    Kind { name: "DeleteLogFiles", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[] },
-    Kind { name: "DeleteUpdateLogFiles", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[] },
-    Kind { name: "Test", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[("duration", 4000)] },
+pub const KINDS: [Kind; 9] = [
+    Kind { name: "MessagingCleanup", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
+    Kind { name: "CheckHealth", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
+    Kind {
+        name: "IndexerDefinitionUpdate",
+        send_updates_to_client: true,
+        completion_message: None,
+        is_exclusive: false,
+        extra: &[],
+        flags: &[],
+    },
+    Kind { name: "ResetApiKey", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
+    Kind { name: "ClearLog", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
+    Kind { name: "DeleteLogFiles", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
+    Kind {
+        name: "DeleteUpdateLogFiles",
+        send_updates_to_client: true,
+        completion_message: None,
+        is_exclusive: false,
+        extra: &[],
+        flags: &[],
+    },
+    Kind {
+        name: "Test",
+        send_updates_to_client: true,
+        completion_message: None,
+        is_exclusive: false,
+        extra: &[("duration", 4000)],
+        flags: &[],
+    },
+    Kind {
+        name: "ApplicationIndexerSync",
+        send_updates_to_client: true,
+        completion_message: Some("Completed"),
+        is_exclusive: false,
+        extra: &[],
+        flags: &[("forceSync", false)],
+    },
 ];
 
 /// Prowlarr's `CommandStatus`, by number.
@@ -134,13 +165,16 @@ fn command_body(kind: &Kind, asked: &Map<String, Value>, user_agent: Option<Stri
     for (k, default) in kind.extra {
         body[*k] = get(k).and_then(Value::as_i64).map(Value::from).unwrap_or_else(|| json!(default));
     }
+    for (k, default) in kind.flags {
+        body[*k] = json!(get(k).and_then(Value::as_bool).unwrap_or(*default));
+    }
     body
 }
 
 /// Whether two commands' own settings are the same (Prowlarr's `CommandEqualityComparer`, which leaves out the
 /// fields every command has).
 fn same_settings(kind: &Kind, a: &Value, b: &Value) -> bool {
-    kind.extra.iter().all(|(k, _)| a.get(*k) == b.get(*k))
+    kind.extra.iter().map(|(k, _)| *k).chain(kind.flags.iter().map(|(k, _)| *k)).all(|k| a.get(k) == b.get(k))
 }
 
 /// Queues a command (or answers the same one already queued or running) and starts what can start; its id.
@@ -254,6 +288,9 @@ async fn execute(st: &AppState, name: &str, body: &Value, id: i64) -> Result<Opt
             progress(&st.db, id, &format!("Starting Test command. duration {ms}"));
             tokio::time::sleep(std::time::Duration::from_millis(ms)).await;
             progress(&st.db, id, "Completed Test command");
+        }
+        "ApplicationIndexerSync" => {
+            super::apps::sync::sync_all(st, body["forceSync"].as_bool().unwrap_or(false)).await;
         }
         _ => {}
     }

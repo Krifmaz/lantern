@@ -56,6 +56,7 @@ while read -r app port ver tag cats; do
     sleep 2
   done
   [ -n "$key" ] || { echo "$app didn't start"; failed=1; echo "::endgroup::"; continue; }
+  echo "$key" > "$WORK/$app.key"
   schema=$(curl -fsS -H "X-Api-Key: $key" "http://127.0.0.1:$port/api/$ver/indexer/schema" | jq '.[] | select(.implementation=="Torznab")')
   body=$(jq --arg url "$LANTERN/$ID/" --arg key "$KEY" --argjson cats "$cats" '
       .name = "Lantern" | .enableRss = true | .enableAutomaticSearch = true | .enableInteractiveSearch = true | .priority = 25
@@ -110,4 +111,36 @@ for src in Sonarr Radarr Lidarr Readarr; do
   curl -fsS -H "x-api-key: $KEY" "$LANTERN/api/indexers/history?limit=200" | jq -e --arg s "$src" '[.history[] | select(.source == $s and .ok)] | length > 0' >/dev/null \
     || { echo "No successful search from $src reached Lantern"; failed=1; }
 done
+
+# Prowlarr's app sync: Sonarr is added as an application through Lantern's Prowlarr API (turned off, then Full Sync
+# with forceSave, which skips the app test: that test is checked by server/tests/prowlarr_apps.rs), and Lantern must push its indexer to
+# Sonarr as Prowlarr does: "<name> (Prowlarr)" at <Prowlarr server>/<id>/.
+echo "::group::Prowlarr app sync to Sonarr"
+skey=$(cat "$WORK/sonarr.key" 2>/dev/null || true)
+if [ -z "$skey" ]; then
+  echo "Sonarr never started, so the app sync can't be checked"; failed=1
+else
+  name=$(curl -fsS -H "x-api-key: $KEY" "$LANTERN/api/indexers/$ID" | jq -r .name)
+  app=$(jq -n --arg url "$LANTERN" --arg key "$skey" '{
+      name: "Sonarr", implementation: "Sonarr", configContract: "SonarrSettings", syncLevel: "disabled", tags: [],
+      fields: [{name: "prowlarrUrl", value: $url}, {name: "baseUrl", value: "http://127.0.0.1:8989"}, {name: "apiKey", value: $key}]}')
+  APP_ID=$(curl -fsS -H "x-api-key: $KEY" -H 'content-type: application/json' "$LANTERN/api/v1/applications" -d "$app" | jq .id)
+  curl -fsS -X PUT -H "x-api-key: $KEY" -H 'content-type: application/json' "$LANTERN/api/v1/applications/$APP_ID?forceSave=true" \
+    -d "$(jq --argjson id "$APP_ID" '.id = $id | .syncLevel = "fullSync"' <<< "$app")" | jq -c '{id, name, syncLevel, enable}'
+  synced=""
+  for _ in $(seq 1 30); do
+    synced=$(curl -fsS -H "X-Api-Key: $skey" "http://127.0.0.1:8989/api/v3/indexer" | jq -r --arg n "$name (Prowlarr)" --arg u "$LANTERN/$ID/" \
+      '.[] | select(.name == $n and ((.fields[] | select(.name == "baseUrl") | .value) == $u)) | .id')
+    [ -n "$synced" ] && break
+    sleep 2
+  done
+  curl -fsS -H "X-Api-Key: $skey" "http://127.0.0.1:8989/api/v3/indexer" \
+    | jq -r '.[] | "\(.id)\t\(.name)\t\(.implementation)\t\(.fields[] | select(.name == "baseUrl") | .value)"'
+  if [ -n "$synced" ]; then
+    echo "Sonarr has Lantern's indexer as Prowlarr pushes it (id $synced)"
+  else
+    echo "Lantern's app sync never reached Sonarr"; failed=1
+  fi
+fi
+echo "::endgroup::"
 exit $failed
