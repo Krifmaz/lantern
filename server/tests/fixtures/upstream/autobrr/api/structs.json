@@ -228,6 +228,177 @@
     "events"
    ],
    "omitempty": []
+  },
+  "IrcNetwork": {
+   "always": [
+    "id",
+    "name",
+    "enabled",
+    "server",
+    "port",
+    "tls",
+    "tls_skip_verify",
+    "pass",
+    "nick",
+    "auth",
+    "invite_command",
+    "use_bouncer",
+    "bouncer_addr",
+    "use_proxy",
+    "proxy_id",
+    "proxy",
+    "bot_mode",
+    "channels",
+    "connected",
+    "connected_since",
+    "connection_errors"
+   ],
+   "omitempty": []
+  },
+  "IrcChannel": {
+   "always": [
+    "id",
+    "enabled",
+    "name",
+    "password",
+    "detached",
+    "monitoring"
+   ],
+   "omitempty": []
+  },
+  "IRCAuth": {
+   "always": [],
+   "omitempty": [
+    "mechanism",
+    "account",
+    "password"
+   ]
+  },
+  "IrcNetworkWithHealth": {
+   "always": [
+    "id",
+    "name",
+    "enabled",
+    "server",
+    "port",
+    "tls",
+    "tls_skip_verify",
+    "pass",
+    "nick",
+    "auth",
+    "invite_command",
+    "use_bouncer",
+    "bouncer_addr",
+    "bot_mode",
+    "current_nick",
+    "preferred_nick",
+    "use_proxy",
+    "proxy_id",
+    "proxy",
+    "channels",
+    "connected",
+    "connected_since",
+    "connection_errors",
+    "healthy"
+   ],
+   "omitempty": []
+  },
+  "IrcChannelWithHealth": {
+   "always": [
+    "id",
+    "enabled",
+    "name",
+    "password",
+    "detached",
+    "state",
+    "monitoring",
+    "monitoring_since",
+    "last_announce",
+    "connection_errors"
+   ],
+   "omitempty": []
+  },
+  "IrcMessage": {
+   "always": [
+    "network",
+    "channel",
+    "nick",
+    "msg",
+    "type",
+    "time"
+   ],
+   "omitempty": []
+  },
+  "Indexer": {
+   "always": [
+    "id",
+    "name",
+    "identifier",
+    "identifier_external",
+    "enabled",
+    "implementation",
+    "use_proxy",
+    "proxy",
+    "proxy_id",
+    "archived"
+   ],
+   "omitempty": [
+    "base_url",
+    "settings",
+    "archived_at"
+   ]
+  },
+  "IndexerDeprecation": {
+   "always": [
+    "identifier",
+    "name",
+    "reason",
+    "issue_url",
+    "deprecated_at",
+    "filter_count"
+   ],
+   "omitempty": [
+    "alias_of"
+   ]
+  },
+  "IndexerDefinition": {
+   "always": [
+    "name",
+    "identifier",
+    "identifier_external",
+    "implementation",
+    "enabled",
+    "description",
+    "language",
+    "privacy",
+    "protocol",
+    "urls",
+    "supports",
+    "use_proxy",
+    "proxy_id"
+   ],
+   "omitempty": [
+    "id",
+    "base_url",
+    "settings",
+    "irc",
+    "feed"
+   ]
+  },
+  "IndexerSetting": {
+   "always": [
+    "name",
+    "type",
+    "label"
+   ],
+   "omitempty": [
+    "required",
+    "value",
+    "default",
+    "description",
+    "help",
+    "regex"
+   ]
   }
  }
 }

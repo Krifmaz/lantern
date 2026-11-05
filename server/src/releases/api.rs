@@ -18,9 +18,11 @@
 //!   POST   /api/releases/check                 {title, size, category, freeleech, tags, source_id}: which filters take it, sending nothing
 //!   GET    /api/releases/log?limit=&status=    the newest releases seen and what happened to each
 //!   POST   /api/releases/announce              a release from elsewhere ({title, download_url, …}) or an announce line
-//!                                              of an IRC source ({source_id, line}); it goes through the filters now
+//!                                              of an IRC source ({source_id, line, channel}; one line per pattern of a
+//!                                              multi-line announce); it goes through the filters now
 //! ```
 
+use super::definition::IndexerDefinition;
 use super::{announce, Found};
 use crate::AppState;
 use axum::extract::{Path, Query, State};
@@ -74,21 +76,25 @@ async fn remove_source(State(st): State<AppState>, _: Admin, Path(id): Path<i64>
 async fn test_source(State(st): State<AppState>, _: Admin, Path(id): Path<i64>) -> Result<Json<Value>> {
     let s = st.releases.source(id)?;
     if s.kind == "irc" {
-        let status = st.releases.irc.status(id);
-        let message = if status.connected {
-            if status.channels.is_empty() {
-                format!("Signed in on {} as {}, not in the announce channels yet", status.server, status.nick)
+        let status = st.releases.source_irc_status(&s);
+        let connected = status["connected"] == true;
+        let channels: Vec<&str> = status["channels"].as_array().into_iter().flatten().filter_map(Value::as_str).collect();
+        let nick = s.settings.get("nick").cloned().unwrap_or_default();
+        let last_error = status["last_error"].as_str().unwrap_or_default().to_string();
+        let message = if connected {
+            if channels.is_empty() {
+                format!("Signed in as {nick}, not in the announce channels yet")
             } else {
-                format!("Signed in on {} as {}, in {}", status.server, status.nick, status.channels.join(", "))
+                format!("Signed in as {nick}, in {}", channels.join(", "))
             }
         } else if !s.enabled {
             "This source is off".to_string()
-        } else if status.last_error.is_empty() {
+        } else if last_error.is_empty() {
             "Connecting…".to_string()
         } else {
-            status.last_error.clone()
+            last_error
         };
-        return Ok(Json(json!({ "ok": status.connected, "message": message })));
+        return Ok(Json(json!({ "ok": connected, "message": message })));
     }
     Ok(Json(match super::rss::poll(&st.releases, &s).await {
         Ok(n) => {
@@ -103,12 +109,14 @@ async fn test_source(State(st): State<AppState>, _: Admin, Path(id): Path<i64>) 
 }
 
 /// A definition as the list shows it.
-fn definition_json(d: &announce::Definition) -> Value {
+fn definition_json(d: &IndexerDefinition) -> Value {
     let irc = d.irc.as_ref();
+    let channels = irc.map(|i| i.channels.iter().map(|c| c.name.clone()).collect::<Vec<_>>());
+    let announcers = irc.map(|i| i.channels.iter().flat_map(|c| c.announcers.clone()).collect::<Vec<_>>());
     json!({
         "id": d.identifier, "name": d.name, "description": d.description, "urls": d.urls, "privacy": d.privacy, "protocol": d.protocol,
         "network": irc.map(|i| i.network.clone()), "server": irc.map(|i| i.server.clone()), "port": irc.map(|i| i.port), "tls": irc.map(|i| i.tls),
-        "channels": irc.map(|i| i.channels.clone()), "announcers": irc.map(|i| i.announcers.clone()),
+        "channels": channels, "announcers": announcers,
     })
 }
 
@@ -130,9 +138,10 @@ async fn definition(State(st): State<AppState>, _: SignedIn, Path(id): Path<Stri
     let d = st.releases.library.get(&id).ok_or_else(|| err(404, "There is no announce definition with that id"))?;
     let mut v = definition_json(&d);
     v["settings"] = json!(d
-        .all_settings()
+        .settings
         .iter()
-        .map(|s| json!({ "name": s.name, "type": s.kind, "label": s.label, "help": s.help, "required": s.required, "default": s.default, "secret": s.is_secret() }))
+        .chain(d.irc.iter().flat_map(|i| i.settings.iter()))
+        .map(|s| json!({ "name": s.name, "type": s.kind, "label": s.label, "help": s.help, "required": s.required, "default": s.default, "secret": s.kind == "secret" }))
         .collect::<Vec<_>>());
     Ok(Json(v))
 }
@@ -220,22 +229,18 @@ async fn log(State(st): State<AppState>, _: SignedIn, Query(q): Query<HashMap<St
 }
 
 async fn announce_now(State(st): State<AppState>, _: Admin, Json(body): Json<Value>) -> Result<Json<Value>> {
-    let f = if let Some(line) = body.get("line").and_then(Value::as_str) {
+    let o = if let Some(line) = body.get("line").and_then(Value::as_str) {
         let id =
             body.get("source_id").and_then(Value::as_i64).ok_or_else(|| err(400, "Say which IRC source the line is from (source_id)"))?;
-        let s = st.releases.source(id)?;
-        let def = st.releases.library.get(&s.definition).ok_or_else(|| err(400, "This source has no announce definition"))?;
-        let vars = announce::LineReader::new(def.clone())
-            .feed(line)
-            .ok_or_else(|| err(400, format!("The line isn't an announce {} makes", def.name)))?;
-        let mut f = announce::found(&def, vars, &s.settings).map_err(|e| err(400, e))?;
-        f.source_id = s.id;
-        f.source_name = s.name;
-        f
+        st.releases.source(id)?;
+        let def = st.releases.mapped_definition(id).ok_or_else(|| err(400, "This source has no announce definition"))?;
+        let lines: Vec<&str> = line.lines().collect();
+        let channel = body.get("channel").and_then(Value::as_str).unwrap_or_default();
+        let r = announce::read_lines(&def, channel, &lines).map_err(|e| err(400, e))?;
+        st.releases.process_release(r).await
     } else {
-        found_of(&st, &body)?
+        st.releases.handle(found_of(&st, &body)?).await
     };
-    let o = st.releases.handle(f).await;
     let reasons: Vec<Value> = o.reasons.iter().map(|(n, why)| json!({ "filter": n, "why": why })).collect();
     Ok(Json(json!({ "status": o.status, "filter": o.filter.map(|(_, n)| n), "detail": o.detail, "reasons": reasons })))
 }

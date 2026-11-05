@@ -17,6 +17,13 @@
   docs, GitHub or Discord. Its pages show errors where Lantern doesn't answer autobrr's API yet.
   `scripts/upstream-merge.sh --project autobrr` keeps it up to date (`ui/autobrr/`, see `UPSTREAM.md`), and
   `docs/parity/a-ui/` shows the Dashboard, Filters and Settings → IRC at desktop and phone width.
+- autobrr's IRC networks and indexers (served at `/autobrr/api`): networks sign in with NickServ or SASL, through a
+  bouncer or straight, with or without TLS; channels are joined after the tracker's invite command, and announces of
+  one line or several are read with every autobrr definition and go through the filters at once. Each channel keeps
+  its last 1000 lines, the live event stream shows what is said and how each channel is doing, and lines can be
+  said or announces read by hand. Indexers keep their passkeys and keys hidden, and indexers whose tracker closed
+  are archived, listed and can be removed once no filter uses them. A ban, wrong sign-in or a connection that keeps
+  dropping stops the network with the reason shown. Lantern's own IRC sources get their network automatically.
 - autobrr's actions and its filter, action and download client API (served at `/autobrr/api`): every autobrr action
   type (qBittorrent, Deluge 1 and 2, rTorrent, Transmission, Porla, Aria2, the *arr apps, SABnzbd, NZBGet, watch
   folder, webhook, exec and test), every action field, external exec and webhook filters, and filter notification

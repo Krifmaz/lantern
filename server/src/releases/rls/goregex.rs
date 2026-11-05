@@ -77,6 +77,29 @@ pub fn go(p: &str) -> String {
             i += 1;
             continue;
         }
+        if c == '{' {
+            // Go reads a `{` that doesn't start a repetition (`{2}`, `{2,}`, `{2,5}`) as itself; Rust refuses it
+            let end = (i + 1..chars.len()).find(|&j| !(chars[j].is_ascii_digit() || chars[j] == ','));
+            let inner: String = end.map(|e| chars[i + 1..e].iter().collect()).unwrap_or_default();
+            let repeat = end.is_some_and(|e| chars[e] == '}')
+                && !inner.is_empty()
+                && inner.matches(',').count() <= 1
+                && inner.chars().next().is_some_and(|d| d.is_ascii_digit());
+            if let (true, Some(e)) = (repeat, end) {
+                out.extend(&chars[i..=e]);
+                i = e + 1;
+            } else {
+                out.push_str(r"\{");
+                i += 1;
+            }
+            continue;
+        }
+        if c == '}' {
+            // a `}` that closes no repetition is itself too
+            out.push_str(r"\}");
+            i += 1;
+            continue;
+        }
         if c == '[' {
             in_class = true;
             out.push(c);
@@ -137,6 +160,10 @@ mod tests {
         assert_eq!(go(r"x\by"), r"x(?-u:\b)y");
         assert_eq!(go(r"[\d\s]"), r"[0-9\t\n\f\r ]");
         assert_eq!(go(r"\d+"), r"[0-9]+");
+        // braces that aren't a repetition are literal in Go (milkie's `{(?P<category>.*)}`)
+        assert_eq!(go(r"{(.*)}\s"), r"\{(.*)\}[\t\n\f\r ]");
+        assert_eq!(go(r"a{2}b{1,}c{1,3}d{,2}"), r"a{2}b{1,}c{1,3}d\{,2\}");
+        assert!(try_compile(r"{(?P<c>.*)} x").unwrap().is_match("{tv} x"));
         assert_eq!(go(r"[A-Z\d\-\_\. ]"), r"[A-Z0-9\-_\. ]");
         assert!(compile(r"(?i)^(?:\Qdv\E\b)").is_match("DV"));
         assert!(compile(r"[\]\)\}]").is_match("]"));

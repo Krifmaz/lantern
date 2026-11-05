@@ -89,7 +89,7 @@ async fn an_irc_announce_is_pushed_to_sonarr() {
     let (app, _) = lantern("irc").await;
     let (sonarr_url, got) = sonarr().await;
 
-    // the tracker's IRC server: welcomes, waits for the JOIN, announces
+    // the tracker's IRC server: welcomes, answers NickServ, waits for the JOIN, announces
     let irc = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = irc.local_addr().unwrap().port();
     let said: Arc<Mutex<Vec<String>>> = Arc::default();
@@ -101,10 +101,17 @@ async fn an_irc_announce_is_pushed_to_sonarr() {
         while let Ok(Some(l)) = lines.next_line().await {
             s2.lock().unwrap().push(l.clone());
             if l.starts_with("USER ") {
-                w.write_all(b":irc.lighthouse 001 lantern|bot :Welcome\r\n").await.unwrap();
+                w.write_all(b":irc.lighthouse 001 lantern|bot :Welcome\r\n:irc.lighthouse 422 lantern|bot :MOTD File is missing\r\n")
+                    .await
+                    .unwrap();
+            }
+            if l.starts_with("PRIVMSG NickServ :IDENTIFY") {
+                w.write_all(b":NickServ!s@services NOTICE lantern|bot :You are now identified for lantern|bot.\r\n").await.unwrap();
             }
             if l.starts_with("JOIN #announce") {
-                w.write_all(b":lantern|bot!u@h JOIN #announce\r\n").await.unwrap();
+                w.write_all(b":lantern|bot!u@h JOIN #announce\r\n:irc.lighthouse 366 lantern|bot #announce :End of /NAMES list.\r\n")
+                    .await
+                    .unwrap();
                 w.write_all(b":someone!u@h PRIVMSG #announce :New Torrent: Fake.S01E01.1080p.WEB-DL.H.264-X [TV :: HD] 1 GB by u - https://lighthouse.example/torrent/1\r\n").await.unwrap();
                 w.write_all(b":Keeper!bot@h PRIVMSG #announce :\x02New Torrent:\x02 Show.Name.S01E02.1080p.WEB-DL.H.264-GROUP [TV :: HD] 1.5 GB by uploader FREELEECH - https://lighthouse.example/torrent/123\r\n").await.unwrap();
                 w.write_all(b"PING :keepalive\r\n").await.unwrap();
@@ -160,14 +167,22 @@ async fn an_irc_announce_is_pushed_to_sonarr() {
 
     let said = said.lock().unwrap().clone();
     assert!(said.contains(&"NICK lantern|bot".to_string()), "{said:?}");
-    assert!(said.contains(&"PRIVMSG NickServ :IDENTIFY lantern|bot nickserv-pass".to_string()), "{said:?}");
-    assert!(said.contains(&"PONG :keepalive".to_string()), "{said:?}");
+    // autobrr's NickServ form: the password alone first
+    assert!(said.contains(&"PRIVMSG NickServ :IDENTIFY nickserv-pass".to_string()), "{said:?}");
+    // irc-go writes the trailing `:` only when a parameter needs it
+    assert!(said.contains(&"PONG keepalive".to_string()), "{said:?}");
 
     let (_, list) = call(&app, "GET", "/api/releases/sources", None).await;
     let irc = &list["sources"][0]["irc"];
     assert_eq!(irc["connected"], true, "{list}");
     assert_eq!(irc["channels"], json!(["#announce"]));
-    assert_eq!(irc["announces"], 1);
+    // the source's network, as autobrr's IRC API shows it
+    let (_, nets) = call(&app, "GET", "/autobrr/api/irc", None).await;
+    assert_eq!(nets[0]["id"], irc["network_id"], "{nets}");
+    assert_eq!(nets[0]["use_bouncer"], true);
+    assert_eq!(nets[0]["bouncer_addr"], format!("127.0.0.1:{port}"));
+    assert_eq!(nets[0]["auth"]["password"], "<redacted>");
+    assert_eq!(nets[0]["channels"][0]["state"], "Monitoring");
 
     // the same name again from an announce line: the filter already took it
     let id = src["id"].as_i64().unwrap();
