@@ -1,0 +1,306 @@
+[
+  {
+    "enableRss": true,
+    "enableAutomaticSearch": true,
+    "enableInteractiveSearch": true,
+    "supportsRss": true,
+    "supportsSearch": true,
+    "protocol": "torrent",
+    "priority": 25,
+    "seasonSearchMaximumSingleEpisodeAge": 0,
+    "downloadClientId": 0,
+    "name": "",
+    "fields": [
+      {
+        "order": 0,
+        "name": "apiKey",
+        "label": "API Key",
+        "type": "textbox",
+        "advanced": false,
+        "privacy": "apiKey",
+        "isFloat": false
+      }
+    ],
+    "implementationName": "BroadcastheNet",
+    "implementation": "BroadcastheNet",
+    "configContract": "BroadcastheNetSettings",
+    "infoLink": "https://wiki.servarr.com/sonarr/supported#broadcasthenet",
+    "tags": [],
+    "presets": []
+  },
+  {
+    "enableRss": true,
+    "enableAutomaticSearch": true,
+    "enableInteractiveSearch": true,
+    "supportsRss": true,
+    "supportsSearch": true,
+    "protocol": "usenet",
+    "priority": 25,
+    "seasonSearchMaximumSingleEpisodeAge": 0,
+    "downloadClientId": 0,
+    "name": "",
+    "fields": [
+      {
+        "order": 0,
+        "name": "baseUrl",
+        "label": "URL",
+        "type": "textbox",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 1,
+        "name": "apiPath",
+        "label": "API Path",
+        "value": "/api",
+        "type": "textbox",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false,
+        "helpText": "Path to the api, usually /api"
+      },
+      {
+        "order": 2,
+        "name": "apiKey",
+        "label": "API Key",
+        "type": "textbox",
+        "advanced": false,
+        "privacy": "apiKey",
+        "isFloat": false
+      },
+      {
+        "order": 3,
+        "name": "categories",
+        "label": "Categories",
+        "value": [
+          5030,
+          5040
+        ],
+        "type": "select",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false,
+        "selectOptionsProviderAction": "newznabCategories"
+      },
+      {
+        "order": 4,
+        "name": "animeCategories",
+        "label": "Anime Categories",
+        "value": [],
+        "type": "select",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false,
+        "selectOptionsProviderAction": "newznabCategories"
+      },
+      {
+        "order": 5,
+        "name": "animeStandardFormatSearch",
+        "label": "Anime Standard Format Search",
+        "value": false,
+        "type": "checkbox",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 6,
+        "name": "additionalParameters",
+        "label": "Additional Parameters",
+        "type": "textbox",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 7,
+        "name": "multiLanguages",
+        "label": "Multi Languages",
+        "value": [],
+        "type": "select",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 8,
+        "name": "failDownloads",
+        "label": "Fail Downloads",
+        "value": [],
+        "type": "select",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false
+      }
+    ],
+    "implementationName": "Newznab",
+    "implementation": "Newznab",
+    "configContract": "NewznabSettings",
+    "infoLink": "https://wiki.servarr.com/sonarr/supported#newznab",
+    "tags": [],
+    "presets": []
+  },
+  {
+    "enableRss": true,
+    "enableAutomaticSearch": true,
+    "enableInteractiveSearch": true,
+    "supportsRss": true,
+    "supportsSearch": true,
+    "protocol": "torrent",
+    "priority": 25,
+    "seasonSearchMaximumSingleEpisodeAge": 0,
+    "downloadClientId": 0,
+    "name": "",
+    "fields": [
+      {
+        "order": 0,
+        "name": "baseUrl",
+        "label": "URL",
+        "type": "textbox",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 1,
+        "name": "apiPath",
+        "label": "API Path",
+        "value": "/api",
+        "type": "textbox",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false,
+        "helpText": "Path to the api, usually /api"
+      },
+      {
+        "order": 2,
+        "name": "apiKey",
+        "label": "API Key",
+        "type": "textbox",
+        "advanced": false,
+        "privacy": "apiKey",
+        "isFloat": false
+      },
+      {
+        "order": 3,
+        "name": "categories",
+        "label": "Categories",
+        "value": [
+          5030,
+          5040
+        ],
+        "type": "select",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false,
+        "selectOptionsProviderAction": "newznabCategories"
+      },
+      {
+        "order": 4,
+        "name": "animeCategories",
+        "label": "Anime Categories",
+        "value": [],
+        "type": "select",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false,
+        "selectOptionsProviderAction": "newznabCategories"
+      },
+      {
+        "order": 5,
+        "name": "animeStandardFormatSearch",
+        "label": "Anime Standard Format Search",
+        "value": false,
+        "type": "checkbox",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 6,
+        "name": "additionalParameters",
+        "label": "Additional Parameters",
+        "type": "textbox",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 7,
+        "name": "multiLanguages",
+        "label": "Multi Languages",
+        "value": [],
+        "type": "select",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 8,
+        "name": "failDownloads",
+        "label": "Fail Downloads",
+        "value": [],
+        "type": "select",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 9,
+        "name": "minimumSeeders",
+        "label": "Minimum Seeders",
+        "value": 1,
+        "type": "number",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false
+      },
+      {
+        "order": 10,
+        "name": "seedCriteria.seedRatio",
+        "label": "Seed Ratio",
+        "type": "textbox",
+        "advanced": false,
+        "privacy": "normal",
+        "isFloat": true
+      },
+      {
+        "order": 11,
+        "name": "seedCriteria.seedTime",
+        "label": "Seed Time",
+        "type": "number",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false,
+        "unit": "minutes"
+      },
+      {
+        "order": 12,
+        "name": "seedCriteria.seasonPackSeedTime",
+        "label": "Season-Pack Seed Time",
+        "type": "number",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false,
+        "unit": "minutes"
+      },
+      {
+        "order": 13,
+        "name": "rejectBlocklistedTorrentHashesWhileGrabbing",
+        "label": "Reject Blocklisted Torrent Hashes While Grabbing",
+        "value": false,
+        "type": "checkbox",
+        "advanced": true,
+        "privacy": "normal",
+        "isFloat": false
+      }
+    ],
+    "implementationName": "Torznab",
+    "implementation": "Torznab",
+    "configContract": "TorznabSettings",
+    "infoLink": "https://wiki.servarr.com/sonarr/supported#torznab",
+    "tags": [],
+    "presets": []
+  }
+]
