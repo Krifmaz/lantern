@@ -9,7 +9,8 @@
 //! | `/api/diagnostics`, `/api/diagnostics/{id}/test` | kit-server-diagnostics |
 //! | `/api/settings`, `/api/settings/schema`, `/api/settings/secret/{key}` | kit-server-settings |
 //! | `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` | [`auth`] |
-//! | `/api/indexers/*`, `/api/search`, `/{id}/api` (Torznab/Newznab), `/{id}/download`, `/api/v1/*` (Prowlarr API) | [`indexers`] |
+//! | `/api/indexers/*`, `/api/search`, `/{id}/api` (Torznab/Newznab), `/{id}/download`, `/api/v1/indexer*`, `/api/v1/search` | [`indexers`] |
+//! | `/ping`, `/api/v1/system/*`, `/api/v1/config/*`, `/api/v1/tag*`, `/api/v1/command*`, `/api/v1/log*`, … (Prowlarr's v1 API) | [`prowlarr`] |
 //! | `/api/solver`, `/api/solver/test`; the FlareSolverr API on its own port ([`solver_port`]) | [`solver`] |
 //! | `/api/hub/*` (download clients, apps, search and grab, live events) | [`hub`] |
 //! | `/api/vault`, `/api/vault/*` (the account vault) | [`vault`] |
@@ -29,6 +30,7 @@ pub mod hub;
 pub mod indexers;
 pub mod keeper;
 pub mod migrate;
+pub mod prowlarr;
 pub mod releases;
 pub mod solver;
 pub mod vault;
@@ -153,6 +155,7 @@ impl AppState {
         hub::migrate(&db)?;
         keeper::migrate(&db)?;
         migrate::migrate(&db)?;
+        prowlarr::migrate(&db)?;
         releases::migrate(&db)?;
         solver::migrate(&db)?;
         let solver = solver::Solver::new(solver::find_program(env("APP_CHROMIUM").as_deref()), data, Some(db.clone()));
@@ -335,6 +338,7 @@ pub fn app(st: AppState) -> Router {
         .merge(kit_server_setup::router())
         .merge(auth::router())
         .merge(indexers::api::router())
+        .merge(prowlarr::router())
         .merge(solver::api::router())
         .merge(hub::api::router())
         .merge(vault::api::router())

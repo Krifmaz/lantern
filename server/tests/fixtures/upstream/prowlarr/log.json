@@ -1,0 +1,16 @@
+{
+  "page": 1,
+  "pageSize": 50,
+  "sortKey": "time",
+  "sortDirection": "descending",
+  "totalRecords": 1,
+  "records": [
+    {
+      "id": 1,
+      "time": "2026-11-05T10:00:00Z",
+      "level": "info",
+      "logger": "Microsoft.Hosting.Lifetime",
+      "message": "Application started."
+    }
+  ]
+}

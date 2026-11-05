@@ -25,6 +25,10 @@
 - `scripts/upstream-merge.sh` brings Prowlarr's web frontend into `ui/prowlarr/` at the commit `UPSTREAM.lock`
   pins, as merges of an `upstream/prowlarr` snapshot branch, so later Prowlarr versions merge in with Lantern's
   changes kept (see `UPSTREAM.md`).
+- Prowlarr's own API for its web app, ported from Prowlarr v2.7.0.5723: system status, general, UI and development
+  settings (with Prowlarr's defaults and checks), tags, custom filters, Prowlarr's translations, health, scheduled
+  tasks, the command queue (test, health check, new API key, clearing the log), the log, backups and updates,
+  under `/api/v1/…` with the API key or a signed-in session.
 - Release filters now decide exactly as autobrr v1.90.0 does: release names are read by a port of rls (the
   library autobrr uses), announces by autobrr's own rules, and every filter field autobrr checks is checked the
   same way, with autobrr's rejection reasons. Download limits count per minute, hour, day, week, month or ever, in

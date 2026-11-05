@@ -1,0 +1,16 @@
+[
+  {
+    "propertyName": "Port",
+    "errorMessage": "'Port' must be between 1 and 65535. You entered 0.",
+    "attemptedValue": 0,
+    "severity": "error",
+    "errorCode": "InclusiveBetweenValidator",
+    "formattedMessageArguments": [],
+    "formattedMessagePlaceholderValues": {
+      "From": 1,
+      "To": 65535,
+      "PropertyName": "Port",
+      "PropertyValue": 0
+    }
+  }
+]

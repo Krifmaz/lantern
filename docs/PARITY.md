@@ -58,22 +58,22 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `POST /login` | P-ui | todo | |  |
 | `GET /login` | P-ui | todo | |  |
 | `GET /logout` | P-ui | todo | |  |
-| `GET /api/v1/system/backup` | P-api | todo | |  |
+| `GET /api/v1/system/backup` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/system.rs`); updates come from Lantern's release notes |
 | `DELETE /api/v1/system/backup/{id}` | P-api | todo | |  |
 | `POST /api/v1/system/backup/restore/{id}` | P-api | todo | |  |
 | `POST /api/v1/system/backup/restore/upload` | P-api | todo | |  |
-| `GET /api/v1/command/{id}` | P-api | todo | |  |
-| `DELETE /api/v1/command/{id}` | P-api | todo | |  |
-| `POST /api/v1/command` | P-api | todo | |  |
-| `GET /api/v1/command` | P-api | todo | |  |
-| `GET /api/v1/customfilter/{id}` | P-api | todo | |  |
-| `PUT /api/v1/customfilter/{id}` | P-api | todo | |  |
-| `DELETE /api/v1/customfilter/{id}` | P-api | todo | |  |
-| `GET /api/v1/customfilter` | P-api | todo | |  |
-| `POST /api/v1/customfilter` | P-api | todo | |  |
-| `PUT /api/v1/config/development/{id}` | P-api | todo | |  |
-| `GET /api/v1/config/development/{id}` | P-api | todo | |  |
-| `GET /api/v1/config/development` | P-api | todo | |  |
+| `GET /api/v1/command/{id}` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported queue (`prowlarr/commands.rs`); commands Lantern can't run yet answer as unknown |
+| `DELETE /api/v1/command/{id}` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported queue (`prowlarr/commands.rs`); commands Lantern can't run yet answer as unknown |
+| `POST /api/v1/command` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported queue (`prowlarr/commands.rs`); commands Lantern can't run yet answer as unknown |
+| `GET /api/v1/command` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported queue (`prowlarr/commands.rs`); commands Lantern can't run yet answer as unknown |
+| `GET /api/v1/customfilter/{id}` | P-api | done | `server/tests/prowlarr_api.rs::custom_filters` | ported (`prowlarr/filters.rs`) |
+| `PUT /api/v1/customfilter/{id}` | P-api | done | `server/tests/prowlarr_api.rs::custom_filters` | ported (`prowlarr/filters.rs`) |
+| `DELETE /api/v1/customfilter/{id}` | P-api | done | `server/tests/prowlarr_api.rs::custom_filters` | ported (`prowlarr/filters.rs`) |
+| `GET /api/v1/customfilter` | P-api | done | `server/tests/prowlarr_api.rs::custom_filters` | ported (`prowlarr/filters.rs`) |
+| `POST /api/v1/customfilter` | P-api | done | `server/tests/prowlarr_api.rs::custom_filters` | ported (`prowlarr/filters.rs`) |
+| `PUT /api/v1/config/development/{id}` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
+| `GET /api/v1/config/development/{id}` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
+| `GET /api/v1/config/development` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
 | `GET /api/v1/downloadclient/{id}` | P-app | todo | |  |
 | `PUT /api/v1/downloadclient/{id}` | P-app | todo | |  |
 | `DELETE /api/v1/downloadclient/{id}` | P-app | todo | |  |
@@ -90,13 +90,13 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `GET /api/v1/config/downloadclient` | P-app | todo | |  |
 | `GET /api/v1/filesystem` | P-api | todo | |  |
 | `GET /api/v1/filesystem/type` | P-api | todo | |  |
-| `GET /api/v1/health` | P-api | partial | | fresh version |
+| `GET /api/v1/health` | P-api | partial | `server/tests/prowlarr_api.rs::localization_and_health` | ported answer; 4 of Prowlarr's 20 checks so far |
 | `GET /api/v1/history` | P-api | todo | |  |
 | `GET /api/v1/history/since` | P-api | todo | |  |
 | `GET /api/v1/history/indexer` | P-api | todo | |  |
-| `GET /api/v1/config/host/{id}` | P-api | todo | |  |
-| `PUT /api/v1/config/host/{id}` | P-api | todo | |  |
-| `GET /api/v1/config/host` | P-api | todo | |  |
+| `GET /api/v1/config/host/{id}` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks`, `server/src/prowlarr/config.rs::tests` | ported (`prowlarr/config.rs`) |
+| `PUT /api/v1/config/host/{id}` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks`, `server/src/prowlarr/config.rs::tests` | ported (`prowlarr/config.rs`) |
+| `GET /api/v1/config/host` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks`, `server/src/prowlarr/config.rs::tests` | ported (`prowlarr/config.rs`) |
 | `GET /api/v1/indexer/{id}` | P-api | partial | | fresh version |
 | `PUT /api/v1/indexer/{id}` | P-api | todo | |  |
 | `DELETE /api/v1/indexer/{id}` | P-api | todo | |  |
@@ -120,11 +120,11 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `POST /api/v1/indexerproxy/action/{name}` | P-idx | todo | |  |
 | `GET /api/v1/indexerstats` | P-api | partial | | fresh version |
 | `GET /api/v1/indexerstatus` | P-api | todo | |  |
-| `GET /api/v1/localization` | P-api | todo | |  |
-| `GET /api/v1/localization/options` | P-api | todo | |  |
-| `GET /api/v1/log` | P-api | todo | |  |
-| `GET /api/v1/log/file` | P-api | todo | |  |
-| `GET /api/v1/log/file/{filename}` | P-api | todo | |  |
+| `GET /api/v1/localization` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/localization.rs::tests` | ported; Prowlarr's strings copied as data (GPL-3.0) |
+| `GET /api/v1/localization/options` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/localization.rs::tests` | ported; Prowlarr's strings copied as data (GPL-3.0) |
+| `GET /api/v1/log` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
+| `GET /api/v1/log/file` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
+| `GET /api/v1/log/file/{filename}` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
 | `GET /api/v1/indexer/{id}/newznab` | P-idx | done | `server/tests/indexers_prowlarr.rs` `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr` | ported |
 | `GET /{id}/api` | P-idx | done | `server/tests/indexers_prowlarr.rs` `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr`, `searches_follow_prowlarr_limits_holds_and_paging` | ported |
 | `GET /api/v1/indexer/{id}/download` | P-idx | done | `server/tests/indexers_prowlarr.rs` `downloads_follow_prowlarr_grab_limits_redirects_and_file_names` | ported |
@@ -138,34 +138,34 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `POST /api/v1/notification/test` | P-app | todo | |  |
 | `POST /api/v1/notification/testall` | P-app | todo | |  |
 | `POST /api/v1/notification/action/{name}` | P-app | todo | |  |
-| `GET /ping` | P-api | todo | |  |
-| `HEAD /ping` | P-api | todo | |  |
+| `GET /ping` | P-api | done | `server/tests/prowlarr_api.rs::ping_and_status` | ported (`prowlarr/system.rs`); appName is Lantern |
+| `HEAD /ping` | P-api | done | `server/tests/prowlarr_api.rs::ping_and_status` | ported (`prowlarr/system.rs`); appName is Lantern |
 | `POST /api/v1/search` | P-api | todo | |  |
 | `GET /api/v1/search` | P-api | partial | | fresh version |
 | `POST /api/v1/search/bulk` | P-api | todo | |  |
 | `GET /content/{path}` | P-ui | partial | `server/tests/prowlarr_ui.rs::only_content_is_open_without_signing_in`, `::the_manifest_names_the_instance_like_manifest_mapper` | the built files, open to everyone, served at `/prowlarr/Content/` for now (moves to `/` later) |
 | `GET /` | P-ui | partial | | fresh version |
 | `GET /{path}` | P-ui | partial | `server/tests/prowlarr_ui.rs::every_page_is_the_frontend_under_prowlarr`, `::the_page_gets_the_url_base_like_html_mapper_base`, `::pages_are_paths_without_a_dot_outside_content`, `::initialize_json_has_prowlarrs_fields_with_lanterns_api` | Prowlarr's frontend with its URL base set to `/prowlarr` (moves to `/` later); no `?h=` cache breaker |
-| `GET /api/v1/system/status` | P-api | partial | | fresh version |
-| `GET /api/v1/system/routes` | P-api | todo | |  |
+| `GET /api/v1/system/status` | P-api | done | `server/tests/prowlarr_api.rs::ping_and_status` | ported (`prowlarr/system.rs`); appName is Lantern |
+| `GET /api/v1/system/routes` | P-api | done | `server/tests/prowlarr_api.rs::ping_and_status` | ported (`prowlarr/system.rs`); appName is Lantern |
 | `GET /api/v1/system/routes/duplicate` | P-api | todo | |  |
 | `POST /api/v1/system/shutdown` | P-api | todo | |  |
 | `POST /api/v1/system/restart` | P-api | todo | |  |
-| `GET /api/v1/tag/{id}` | P-api | todo | |  |
-| `PUT /api/v1/tag/{id}` | P-api | todo | |  |
-| `DELETE /api/v1/tag/{id}` | P-api | todo | |  |
-| `GET /api/v1/tag` | P-api | partial | | fresh version |
-| `POST /api/v1/tag` | P-api | todo | |  |
-| `GET /api/v1/tag/detail/{id}` | P-api | todo | |  |
-| `GET /api/v1/tag/detail` | P-api | todo | |  |
-| `GET /api/v1/system/task` | P-api | todo | |  |
-| `GET /api/v1/system/task/{id}` | P-api | todo | |  |
-| `PUT /api/v1/config/ui/{id}` | P-api | todo | |  |
-| `GET /api/v1/config/ui/{id}` | P-api | todo | |  |
-| `GET /api/v1/config/ui` | P-api | todo | |  |
-| `GET /api/v1/update` | P-api | todo | |  |
-| `GET /api/v1/log/file/update` | P-api | todo | |  |
-| `GET /api/v1/log/file/update/{filename}` | P-api | todo | |  |
+| `GET /api/v1/tag/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
+| `PUT /api/v1/tag/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
+| `DELETE /api/v1/tag/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
+| `GET /api/v1/tag` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
+| `POST /api/v1/tag` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
+| `GET /api/v1/tag/detail/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
+| `GET /api/v1/tag/detail` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
+| `GET /api/v1/system/task` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/system.rs`); updates come from Lantern's release notes |
+| `GET /api/v1/system/task/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/system.rs`); updates come from Lantern's release notes |
+| `PUT /api/v1/config/ui/{id}` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
+| `GET /api/v1/config/ui/{id}` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
+| `GET /api/v1/config/ui` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
+| `GET /api/v1/update` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/system.rs`); updates come from Lantern's release notes |
+| `GET /api/v1/log/file/update` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
+| `GET /api/v1/log/file/update/{filename}` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
 | Newznab/Torznab `t=caps` (all of Prowlarr's parameters and answer fields) | P-idx | partial | `server/tests/indexers_prowlarr.rs` `caps_of_the_test_indexer_match_prowlarr`, `caps_of_a_cardigann_definition_match_prowlarr` | ported for the test indexer and Cardigann; Newznab/Torznab passthrough still reads its `categories` setting, not the remote caps |
 | Newznab/Torznab `t=search` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/tests/indexers_prowlarr.rs` `search_answers_match_prowlarr`, `searches_follow_prowlarr_limits_holds_and_paging` | ported |
 | Newznab/Torznab `t=tvsearch` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/src/indexers/newznab_request.rs` `reads_parameters_like_aspnet`, `should_normalize_imdbid_search_criteria`; `server/tests/indexers_prowlarr.rs` `searches_follow_prowlarr_limits_holds_and_paging` | ported |
@@ -173,7 +173,7 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | Newznab/Torznab `t=music` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/src/indexers/newznab_request.rs` `music_and_book_searches_take_every_prowlarr_parameter` | ported |
 | Newznab/Torznab `t=book` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/src/indexers/newznab_request.rs` `music_and_book_searches_take_every_prowlarr_parameter` | ported |
 | Newznab/Torznab errors (codes 100–910 as Prowlarr answers them) | P-idx | done | `server/tests/indexers_prowlarr.rs` `errors_match_prowlarr`, `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr` | ported (Prowlarr answers 200, 201, 202, 410, 429 and an empty 401) |
-| `apikey` in query or `X-Api-Key` header; `/api/v1/…` behind forms/basic/external auth | P-api | partial | | fresh version |
+| `apikey` in query or `X-Api-Key` header; `/api/v1/…` behind forms/basic/external auth | P-api | done | `server/tests/prowlarr_api.rs::the_key_or_a_session_is_needed_like_prowlarr` | ported (`prowlarr::V1`); forms means Lantern's own sign-in |
 | SignalR `/signalr/messages` (live updates the web UI listens to) | P-api | todo | | |
 
 ### Settings
@@ -182,70 +182,70 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `BindAddress` | P-api | todo | |  |
-| `Port` | P-api | todo | |  |
-| `SslPort` | P-api | todo | |  |
-| `EnableSsl` | P-api | todo | |  |
-| `LaunchBrowser` | P-api | todo | |  |
-| `AuthenticationMethod` | P-api | todo | |  |
-| `AuthenticationRequired` | P-api | todo | |  |
-| `AllowedHosts` | P-api | todo | |  |
-| `AnalyticsEnabled` | P-api | todo | |  |
-| `Username` | P-api | todo | |  |
-| `Password` | P-api | todo | |  |
-| `PasswordConfirmation` | P-api | todo | |  |
-| `LogLevel` | P-api | todo | |  |
-| `LogSizeLimit` | P-api | todo | |  |
-| `ConsoleLogLevel` | P-api | todo | |  |
-| `Branch` | P-api | todo | |  |
-| `ApiKey` | P-api | todo | |  |
-| `SslCertPath` | P-api | todo | |  |
-| `SslCertPassword` | P-api | todo | |  |
-| `UrlBase` | P-api | todo | |  |
-| `TrustedNetworks` | P-api | todo | |  |
-| `InstanceName` | P-api | todo | |  |
-| `ApplicationUrl` | P-api | todo | |  |
-| `UpdateAutomatically` | P-api | todo | |  |
-| `UpdateMechanism` | P-api | todo | |  |
-| `UpdateScriptPath` | P-api | todo | |  |
-| `ProxyEnabled` | P-api | todo | |  |
-| `ProxyType` | P-api | todo | |  |
-| `ProxyHostname` | P-api | todo | |  |
-| `ProxyPort` | P-api | todo | |  |
-| `ProxyUsername` | P-api | todo | |  |
-| `ProxyPassword` | P-api | todo | |  |
-| `ProxyBypassFilter` | P-api | todo | |  |
-| `ProxyBypassLocalAddresses` | P-api | todo | |  |
-| `CertificateValidation` | P-api | todo | |  |
-| `BackupFolder` | P-api | todo | |  |
-| `BackupInterval` | P-api | todo | |  |
-| `BackupRetention` | P-api | todo | |  |
-| `HistoryCleanupDays` | P-api | todo | |  |
-| `TrustCgnatIpAddresses` | P-api | todo | |  |
+| `BindAddress` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `Port` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | read only (APP_PORT) |
+| `SslPort` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `EnableSsl` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `LaunchBrowser` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `AuthenticationMethod` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `AuthenticationRequired` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `AllowedHosts` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `AnalyticsEnabled` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `Username` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; renames the owner |
+| `Password` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; sets the owner's password (shown masked) |
+| `PasswordConfirmation` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; checked with Password |
+| `LogLevel` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `LogSizeLimit` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `ConsoleLogLevel` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `Branch` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `ApiKey` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; Lantern's API key; changed by ResetApiKey |
+| `SslCertPath` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `SslCertPassword` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `UrlBase` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `TrustedNetworks` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `InstanceName` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; Lantern's app name |
+| `ApplicationUrl` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; Lantern's public address |
+| `UpdateAutomatically` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `UpdateMechanism` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `UpdateScriptPath` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `ProxyEnabled` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; Lantern's site proxy |
+| `ProxyType` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; Lantern's site proxy |
+| `ProxyHostname` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; Lantern's site proxy |
+| `ProxyPort` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; Lantern's site proxy |
+| `ProxyUsername` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; Lantern's site proxy |
+| `ProxyPassword` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; Lantern's site proxy |
+| `ProxyBypassFilter` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `ProxyBypassLocalAddresses` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `CertificateValidation` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `BackupFolder` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `BackupInterval` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; the backup task's interval |
+| `BackupRetention` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `HistoryCleanupDays` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `TrustCgnatIpAddresses` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
 
 #### UI (config/ui)
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `FirstDayOfWeek` | P-api | todo | |  |
-| `CalendarWeekColumnHeader` | P-api | todo | |  |
-| `ShortDateFormat` | P-api | todo | |  |
-| `LongDateFormat` | P-api | todo | |  |
-| `TimeFormat` | P-api | todo | |  |
-| `ShowRelativeDates` | P-api | todo | |  |
-| `EnableColorImpairedMode` | P-api | todo | |  |
-| `UILanguage` | P-api | todo | |  |
-| `Theme` | P-api | todo | |  |
+| `FirstDayOfWeek` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported; read by the web app |
+| `CalendarWeekColumnHeader` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported; read by the web app |
+| `ShortDateFormat` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported; read by the web app |
+| `LongDateFormat` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported; read by the web app |
+| `TimeFormat` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported; read by the web app |
+| `ShowRelativeDates` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported; read by the web app |
+| `EnableColorImpairedMode` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported; read by the web app |
+| `UILanguage` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported; read by the web app |
+| `Theme` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported; read by the web app |
 
 #### Development (config/development)
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `ConsoleLogLevel` | P-api | todo | |  |
-| `LogSql` | P-api | todo | |  |
-| `LogIndexerResponse` | P-api | todo | |  |
-| `LogRotate` | P-api | todo | |  |
-| `FilterSentryEvents` | P-api | todo | |  |
+| `ConsoleLogLevel` | P-api | partial | `server/tests/prowlarr_api.rs::ui_and_development_settings` | stored like Prowlarr; not acted on yet |
+| `LogSql` | P-api | partial | `server/tests/prowlarr_api.rs::ui_and_development_settings` | stored like Prowlarr; not acted on yet |
+| `LogIndexerResponse` | P-api | partial | `server/tests/prowlarr_api.rs::ui_and_development_settings` | stored like Prowlarr; not acted on yet |
+| `LogRotate` | P-api | partial | `server/tests/prowlarr_api.rs::ui_and_development_settings` | stored like Prowlarr; not acted on yet |
+| `FilterSentryEvents` | P-api | partial | `server/tests/prowlarr_api.rs::ui_and_development_settings` | stored like Prowlarr; not acted on yet |
 
 #### Indexer (every indexer, besides its definition's own fields)
 
@@ -584,15 +584,15 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `MessagingCleanupCommand` every 5 min | P-api | todo | |  |
-| `ClearExpiredCacheCommand` every 5 min | P-api | todo | |  |
-| `ApplicationUpdateCheckCommand` every 6 * 60 min | P-api | todo | |  |
-| `CheckHealthCommand` every 6 * 60 min | P-api | todo | |  |
-| `HousekeepingCommand` every 24 * 60 min | P-api | todo | |  |
-| `CleanUpHistoryCommand` every 24 * 60 min | P-api | todo | |  |
-| `IndexerDefinitionUpdateCommand` every 24 * 60 min | P-api | partial | | fresh version |
-| `ApplicationIndexerSyncCommand` every 6 * 60 min | P-api | todo | |  |
-| `BackupCommand` (backup interval setting) | P-api | todo | |  |
+| `MessagingCleanupCommand` every 5 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
+| `ClearExpiredCacheCommand` every 5 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
+| `ApplicationUpdateCheckCommand` every 6 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
+| `CheckHealthCommand` every 6 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
+| `HousekeepingCommand` every 24 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
+| `CleanUpHistoryCommand` every 24 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
+| `IndexerDefinitionUpdateCommand` every 24 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
+| `ApplicationIndexerSyncCommand` every 6 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
+| `BackupCommand` (backup interval setting) | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
 
 #### Commands (`POST /api/v1/command`)
 
@@ -602,37 +602,37 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `ApplicationUpdateCheckCommand` | P-api | todo | |  |
 | `ApplicationUpdateCommand` | P-api | todo | |  |
 | `BackupCommand` | P-api | todo | |  |
-| `CheckHealthCommand` | P-api | todo | |  |
+| `CheckHealthCommand` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported (`prowlarr/commands.rs`) |
 | `CleanupHistoryCommand` | P-api | todo | |  |
 | `ClearExpiredCacheCommand` | P-api | todo | |  |
 | `ClearHistoryCommand` | P-api | todo | |  |
-| `ClearLogCommand` | P-api | todo | |  |
-| `DeleteLogFilesCommand` | P-api | todo | |  |
-| `DeleteUpdateLogFilesCommand` | P-api | todo | |  |
+| `ClearLogCommand` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/commands.rs`) |
+| `DeleteLogFilesCommand` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/commands.rs`) |
+| `DeleteUpdateLogFilesCommand` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/commands.rs`) |
 | `HousekeepingCommand` | P-api | todo | |  |
-| `IndexerDefinitionUpdateCommand` | P-api | todo | |  |
-| `MessagingCleanupCommand` | P-api | todo | |  |
-| `ResetApiKeyCommand` | P-api | todo | |  |
+| `IndexerDefinitionUpdateCommand` | P-api | partial | | runs Lantern's definition update; no test yet (it needs the network) |
+| `MessagingCleanupCommand` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/commands.rs`) |
+| `ResetApiKeyCommand` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported (`prowlarr/commands.rs`) |
 | `RestartCommand` | P-api | todo | |  |
 | `ShutdownCommand` | P-api | todo | |  |
-| `TestCommand` | P-api | todo | |  |
+| `TestCommand` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported (`prowlarr/commands.rs`) |
 
 #### Health checks
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `AllowedHostsCheck` | P-api | todo | |  |
-| `ApiKeyValidationCheck` | P-api | todo | |  |
+| `AllowedHostsCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
+| `ApiKeyValidationCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
 | `AppDataLocationCheck` | P-api | todo | |  |
 | `ApplicationLongTermStatusCheck` | P-api | todo | |  |
 | `ApplicationStatusCheck` | P-api | todo | |  |
 | `DownloadClientStatusCheck` | P-api | todo | |  |
-| `IndexerCheck` | P-api | todo | |  |
+| `IndexerCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
 | `IndexerDownloadClientCheck` | P-api | todo | |  |
 | `IndexerLongTermStatusCheck` | P-api | todo | |  |
 | `IndexerNoDefinitionCheck` | P-api | todo | |  |
 | `IndexerProxyStatusCheck` | P-api | todo | |  |
-| `IndexerStatusCheck` | P-api | todo | |  |
+| `IndexerStatusCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
 | `IndexerVIPCheck` | P-api | todo | |  |
 | `IndexerVIPExpiredCheck` | P-api | todo | |  |
 | `NotificationStatusCheck` | P-api | todo | |  |

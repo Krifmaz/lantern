@@ -23,7 +23,7 @@
 //!   GET    /api/v2.0/indexers/{id}/results/torznab/api?…        the same, at Jackett's address
 //!   GET    /{id}/download?apikey=&link=&sig=&file=              a release's file through Lantern, or a redirect to it
 //!          (also /api/v1/indexer/{id}/download)
-//!   GET    /api/v1/…                                            the Prowlarr API (system/status, indexer, search, indexerstats, tag, health)
+//!   GET    /api/v1/…                                            the Prowlarr API's indexer routes (indexer, search, indexerstats; the rest is in `prowlarr`)
 //! ```
 
 use super::capabilities::Capabilities;
@@ -61,9 +61,6 @@ pub fn router() -> Router<AppState> {
         .route("/api/v2.0/indexers/{id}/results/torznab/api", get(newznab_api))
         .route("/api/v1/indexer/{id}/newznab", get(newznab_api))
         .route("/api/v1/indexer/{id}/download", get(download))
-        .route("/api/v1/system/status", get(v1_status))
-        .route("/api/v1/health", get(v1_empty))
-        .route("/api/v1/tag", get(v1_empty))
         .route("/api/v1/indexer", get(v1_indexers))
         .route("/api/v1/indexer/{id}", get(v1_indexer))
         .route("/api/v1/indexerstats", get(v1_stats))
@@ -622,36 +619,6 @@ fn v1_auth(st: &AppState, headers: &HeaderMap, q: &HashMap<String, String>) -> R
     } else {
         Err(err(401, "The API key is missing or wrong"))
     }
-}
-
-async fn v1_status(State(st): State<AppState>, headers: HeaderMap, Q(q): Q<HashMap<String, String>>) -> Result<Json<Value>> {
-    v1_auth(&st, &headers, &q)?;
-    Ok(Json(json!({
-        "appName": "Lantern",
-        "instanceName": st.app_name(),
-        "version": crate::VERSION,
-        "buildTime": Value::Null,
-        "isDebug": false,
-        "isProduction": true,
-        "isAdmin": false,
-        "isUserInteractive": false,
-        "startupPath": "/app",
-        "appData": st.data_dir.display().to_string(),
-        "osName": "linux",
-        "isDocker": true,
-        "isLinux": true,
-        "isOsx": false,
-        "isWindows": false,
-        "branch": "main",
-        "authentication": "forms",
-        "urlBase": "",
-        "runtimeName": "rust",
-    })))
-}
-
-async fn v1_empty(State(st): State<AppState>, headers: HeaderMap, Q(q): Q<HashMap<String, String>>) -> Result<Json<Value>> {
-    v1_auth(&st, &headers, &q)?;
-    Ok(Json(json!([])))
 }
 
 /// An indexer as the Prowlarr API describes it.

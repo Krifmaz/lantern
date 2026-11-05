@@ -181,6 +181,25 @@ Non-obvious calls, one line each, newest last.
   (localization, UI and host settings, app profiles, …) in the browser, with Prowlarr's shapes and defaults
   (`docs/parity/p-ui/shots.js`), so the look can be proven before the API is ported. They prove the theme, the
   branding and the mobile layout only; the page rows stay `todo` until their API exists.
+- 2026-11-05 — Prowlarr's v1 API (track P-api) lives in `server/src/prowlarr/`. Its answers keep Prowlarr's field
+  names and camelCase enums. A failed check answers Prowlarr's 400 array of failures (`propertyName`, `errorMessage`,
+  …), because Prowlarr's web app reads it; every other error carries Prowlarr's `message` and the kit's `detail`.
+- 2026-11-05 — Prowlarr's settings that Lantern has no setting for are kept in a `prowlarr_config` table. The ones
+  Lantern already has use Lantern's: the API key (never changed by saving the general settings, as in Prowlarr; the
+  ResetApiKey command changes it), the owner's username and password (shown as a mask, never as the hash), the
+  instance name (Lantern's app name, which must contain "Lantern"), the application URL (Lantern's public address)
+  and the proxy (Lantern's site proxy). The port is shown but read only (`APP_PORT`). Settings like SSL, bind address,
+  authentication method, update mechanism and log levels are stored and checked like Prowlarr but not acted on yet.
+- 2026-11-05 — A wrong `apikey` in the query is refused even when the `X-Api-Key` header is right, as in Prowlarr
+  (which reads the query first); a signed-in session still works. Changes through a session need an admin.
+- 2026-11-05 — Commands Lantern can't run yet (Backup, ApplicationIndexerSync, Housekeeping, …) answer as Prowlarr
+  does for an unknown command (500, "Sequence contains no matching element"), so the web app shows the failure
+  instead of a command that never runs. The queue, its limits and its order follow Prowlarr's `CommandQueue`.
+- 2026-11-05 — `/api/v1/update` lists Lantern's own releases from its release notes (headings with "fix" go under
+  fixed); updates come from the container image, so nothing is installable from the page. `appName` is "Lantern"
+  and Prowlarr's wiki links are kept for health checks.
+- 2026-11-05 — The log endpoints answer from a `prowlarr_logs` table and the `logs` and `UpdateLogs` folders in the
+  data folder; writing to them (a tracing layer in `main.rs`) is the next P-api slice.
 - 2026-11-05 — autobrr reads release names with the Go library rls (autobrr/rls v0.10.0, MIT, © m. jo istari). Its
   lexers, tag table and builder are ported line by line to `server/src/releases/rls/` (licence kept beside it) and
   checked against all 456 names of rls's own tests. Go regular expressions are translated to Rust's syntax with
