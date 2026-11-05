@@ -40,6 +40,13 @@ RUN apk add --no-cache curl tar \
     | tar -xz -C /defs --strip-components=3 --wildcards '*/definitions/v11/*.yml' \
  && ls /defs | grep -c yml
 
+# The IRC announce definitions (autobrr's), so Lantern knows every tracker's announce channels from the first start.
+FROM --platform=$BUILDPLATFORM alpine:3.22 AS announce
+RUN apk add --no-cache curl tar \
+ && mkdir -p /announce && curl -fsSL https://github.com/autobrr/autobrr/archive/refs/heads/develop.tar.gz \
+    | tar -xz -C /announce --strip-components=4 --wildcards '*/internal/indexer/definitions/*.yaml' \
+ && ls /announce | grep -c yaml
+
 # Distroless: no shell, no package manager, only glibc and CA certificates. Runs as the image's non-root user
 # (65532) and writes only to /data, so it also runs with `docker run --read-only`.
 FROM gcr.io/distroless/cc-debian13:nonroot
@@ -50,9 +57,10 @@ COPY --from=build /app /usr/local/bin/lantern
 COPY --from=build --chown=65532:65532 /data /data
 COPY --from=ui /src/web/dist /app/static
 COPY --from=defs /defs /app/definitions
+COPY --from=announce /announce /app/announce
 ARG APP_VERSION=
 LABEL org.opencontainers.image.version="${APP_VERSION}"
-ENV APP_DATA_DIR=/data APP_STATIC_DIR=/app/static APP_DEFINITIONS_DIR=/app/definitions APP_PORT=9696
+ENV APP_DATA_DIR=/data APP_STATIC_DIR=/app/static APP_DEFINITIONS_DIR=/app/definitions APP_ANNOUNCE_DIR=/app/announce APP_PORT=9696
 USER nonroot
 VOLUME /data
 EXPOSE 9696
