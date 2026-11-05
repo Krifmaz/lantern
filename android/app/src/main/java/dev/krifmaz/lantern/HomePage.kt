@@ -138,6 +138,9 @@ fun HomePage(app: App, base: String, bugs: BugReportsHost, open: (Page) -> Unit,
             SectionHead("Indexers", subtitle = health)
             EntryRow("Indexers", "How every site is doing, what went wrong and its numbers") { open(Page.Indexers(me?.admin)) }
             EntryRow("Search", "Search every indexer at once") { open(Page.Search) }
+            if (me?.admin != false) {
+                EntryRow("Vault", "Your tracker and Usenet logins, saved encrypted") { open(Page.Vault(me?.owner)) }
+            }
 
             SectionHead("Settings")
             EntryRow("What's new", "Every release's notes") { open(Page.Changelog) }

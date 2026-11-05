@@ -13,7 +13,9 @@ One activity in the kit's default theme; every page is a kit-compose part, wired
 | `HomePage.kt` | Offline banner, What's new, the server's notices, how the indexers are doing, the entries, bug reports, crash log, updates |
 | `IndexersPage.kt` | Every indexer: working, failing, on hold or off, what went wrong, the last 7 days' numbers, Test (admins) |
 | `SearchPage.kt` | One search through every indexer, by kind; open a result's page, copy its download or magnet link |
-| `IndexerRules.kt`, `SearchRules.kt` | Reading `/api/indexers`, `/api/indexers/stats`, `/api/search` and the words shown (unit-tested in `src/test`) |
+| `VaultPage.kt` | The vault's accounts; the owner shows secrets and the 2FA code with their password, for two minutes |
+| `Phone.kt` | Opening links in the browser and copying to the clipboard (secrets marked sensitive) |
+| `IndexerRules.kt`, `SearchRules.kt`, `VaultRules.kt` | Reading `/api/indexers`, `/api/indexers/stats`, `/api/search`, `/api/vault…` and the words shown (unit-tested in `src/test`) |
 | `AdminPages.kt` | Server settings (forms from the server's schema) and Diagnostics (with the app's crash reports) |
 | `Server.kt` | The address and token, the server's API (`KitApi`), What's new calls, the network check |
 | `ServerAddress.kt` | What is tried for a typed address (unit-tested in `src/test`) |
@@ -35,4 +37,5 @@ device_name}}` answers `{user, token}`; the token goes with every request as `Au
 to the server's own address), with the User-Agent `<app name>-Android/<version>`. A 401 from any later call goes
 back to the sign-in. Admin pages show unless `GET /api/auth/me` says the account isn't one.
 Lantern's own pages call `GET /api/indexers`, `GET /api/indexers/stats?days=7`, `POST /api/indexers/{id}/test` and
-`GET /api/search?q=&type=`, with the same sign-in.
+`GET /api/search?q=&type=`, `GET /api/vault`, `GET /api/vault/items` and `POST /api/vault/items/{id}/reveal`,
+with the same sign-in.
