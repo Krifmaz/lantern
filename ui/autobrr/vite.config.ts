@@ -1,0 +1,149 @@
+import { fileURLToPath, URL } from "node:url";
+import { defineConfig, loadEnv, ConfigEnv } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
+import react from "@vitejs/plugin-react";
+import svgr from "vite-plugin-svgr";
+import path from "node:path";
+import fs from "node:fs";
+import tailwindcss from '@tailwindcss/vite'
+
+interface PreRenderedAsset {
+  name: string | undefined;
+  source: string | Uint8Array;
+  type: 'asset';
+}
+
+interface PreRenderedChunk {
+  name: string;
+  facadeModuleId: string | null;
+  type: 'chunk';
+}
+
+// https://vitejs.dev/config/
+export default ({ mode }: ConfigEnv) => {
+  // early load .env file
+  // import.meta.env.VITE_NAME available here with: process.env.VITE_NAME
+  process.env = { ...process.env, ...loadEnv(mode, process.cwd()) };
+
+  return defineConfig({
+    // __BASE_URL__: "{{.BaseUrl}}",
+    base: "",
+    plugins: [react(), svgr(), tailwindcss(), VitePWA({
+      injectRegister: null,
+      selfDestroying: true,
+      scope: "{{.BaseUrl}}",
+      // strategies: "injectManifest",
+      useCredentials: true,
+      includeAssets: [
+        // looks inside "public" folder 
+        // manifest's icons are automatic added
+        "favicon.ico"
+      ],
+      manifest: {
+        // LANTERN: Lantern's name and the kit's Encore page colour (--bg)
+        name: "Lantern",
+        short_name: "Lantern",
+        description: "Automation for downloads.",
+        theme_color: "#161617",
+        background_color: "#161617",
+        // LANTERN: no autobrr icons
+        icons: [],
+        start_url: "{{.BaseUrl}}",
+        scope: "{{.BaseUrl}}",
+        display: "standalone"
+      },
+      workbox: {
+        // looks inside "dist" folder
+        globPatterns: ["**/*.{js,css,html,svg,woff2}"],
+        sourcemap: true,
+        navigateFallbackDenylist: [/^\/api/]
+      }
+    }),
+    {
+      name: "html-transformer-plugin",
+      enforce: "post",
+      apply: "build",
+      async closeBundle() {
+        const outputDir = 'dist'; // Adjust this if your `build.outDir` is different
+        const htmlPath = path.resolve(outputDir, 'index.html');
+
+        // Check if the file exists
+        if (!fs.existsSync(htmlPath)) {
+          console.error(`Could not find ${htmlPath}. Make sure the output directory matches.`);
+          return;
+        }
+
+        // Read the `index.html` content
+        let html = fs.readFileSync(htmlPath, 'utf-8');
+
+        // Perform your transformations here
+        // the experimental renderBuiltUrl works except for the style font url where it escapes the curly braces
+        // we look for those and replace with the non escaped curly braces to be able to correctly replace baseurl.
+        html = html.replace('%7B%7B.AssetBaseUrl%7D%7D/', '{{.AssetBaseUrl}}'); // Example: Replace `{{.BaseUrl}}`
+
+        // Write the updated `index.html` back
+        fs.writeFileSync(htmlPath, html);
+
+        console.log('Transformed index.html successfully.');
+      },
+    },
+    ],
+    resolve: {
+      alias: [
+        { find: "@", replacement: fileURLToPath(new URL("./src/", import.meta.url)) },
+        { find: "@app", replacement: fileURLToPath(new URL("./src/", import.meta.url)) },
+        { find: "@components", replacement: fileURLToPath(new URL("./src/components", import.meta.url)) },
+        { find: "@forms", replacement: fileURLToPath(new URL("./src/forms", import.meta.url)) },
+        { find: "@hooks", replacement: fileURLToPath(new URL("./src/hooks", import.meta.url)) },
+        { find: "@api", replacement: fileURLToPath(new URL("./src/api", import.meta.url)) },
+        { find: "@screens", replacement: fileURLToPath(new URL("./src/screens", import.meta.url)) },
+        { find: "@utils", replacement: fileURLToPath(new URL("./src/utils", import.meta.url)) },
+        { find: "@types", replacement: fileURLToPath(new URL("./src/types", import.meta.url)) },
+        { find: "@domain", replacement: fileURLToPath(new URL("./src/domain", import.meta.url)) }
+      ]
+    },
+    server: {
+      port: 3000,
+      hmr: {
+        overlay: true
+      },
+      proxy: {
+        "/api": {
+          target: "http://127.0.0.1:7474/",
+          changeOrigin: true,
+          secure: false
+        },
+      }
+    },
+    build: {
+      sourcemap: true,
+      rollupOptions: {
+        output: {
+          assetFileNames: (chunkInfo: PreRenderedAsset) => {
+            if (chunkInfo.name === "Inter-Variable.woff2") {
+              return "assets/[name][extname]";
+            }
+            return "assets/[name]-[hash][extname]";
+          },
+          chunkFileNames: (chunkInfo: PreRenderedChunk) => {
+            const locale = chunkInfo.facadeModuleId?.match(/\/i18n\/locales\/([^/]+)\/([^/]+)\.json$/);
+            if (locale) {
+              return `assets/locales/${locale[1]}-${locale[2]}-[hash].js`;
+            }
+            return "assets/[name]-[hash].js";
+          }
+        },
+      }
+    },
+    experimental: {
+      renderBuiltUrl(filename: string, { hostType }: { hostType: "js" | "css" | "html" }) {
+        // Go only templates index.html. URLs emitted into JS (lazy chunks, modulepreload
+        // hints) must resolve relative to the importing chunk so the runtime base URL holds.
+        if (hostType === "js") {
+          return { relative: true };
+        }
+        return '{{.AssetBaseUrl}}' + filename
+      }
+    }
+  });
+};

@@ -1,0 +1,141 @@
+/*
+ * Copyright (c) 2021 - 2025, Ludvig Lundgren and the autobrr contributors.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+import { ColumnFilter } from "@tanstack/react-table";
+
+export const LogKeys = {
+  all: ["logs"] as const,
+  files: () => [...LogKeys.all, "files"] as const
+};
+
+export const AuthKeys = {
+  all: ["auth"] as const,
+  oidcConfig: () => [...AuthKeys.all, "oidc-config"] as const,
+  canOnboard: () => [...AuthKeys.all, "can-onboard"] as const
+};
+
+export const SettingsKeys = {
+  all: ["settings"] as const,
+  updates: () => [...SettingsKeys.all, "updates"] as const,
+  config: () => [...SettingsKeys.all, "config"] as const,
+  lists: () => [...SettingsKeys.all, "list"] as const,
+};
+
+export const AlertKeys = {
+  all: ["alerts"] as const,
+  lists: () => [...AlertKeys.all, "list"] as const
+};
+
+export const FilterKeys = {
+  all: ["filters"] as const,
+  lists: () => [...FilterKeys.all, "list"] as const,
+  list: (indexers: string[], sortOrder: string) => [...FilterKeys.lists(), {indexers, sortOrder}] as const,
+  details: () => [...FilterKeys.all, "detail"] as const,
+  detail: (id: number) => [...FilterKeys.details(), id] as const
+};
+
+export const ReleaseKeys = {
+  all: ["releases"] as const,
+  lists: () => [...ReleaseKeys.all, "list"] as const,
+  list: (pageIndex: number, pageSize: number, filters: ColumnFilter[]) => [...ReleaseKeys.lists(), {
+    pageIndex,
+    pageSize,
+    filters
+  }] as const,
+  details: () => [...ReleaseKeys.all, "detail"] as const,
+  detail: (id: number) => [...ReleaseKeys.details(), id] as const,
+  indexers: () => [...ReleaseKeys.all, "indexers"] as const,
+  stats: () => [...ReleaseKeys.all, "stats"] as const,
+  statsActivity: (days: number) => [...ReleaseKeys.all, "stats-activity", days] as const,
+  statsVolume: (days: number) => [...ReleaseKeys.all, "stats-volume", days] as const,
+  statsHeatmap: (days: number) => [...ReleaseKeys.all, "stats-heatmap", days] as const,
+  statsTopIndexers: (days: number) => [...ReleaseKeys.all, "stats-top-indexers", days] as const,
+  statsTopFilters: (days: number) => [...ReleaseKeys.all, "stats-top-filters", days] as const,
+  latestActivity: () => [...ReleaseKeys.all, "latest-activity"] as const,
+  cleanupJobs: {
+    all: () => [...ReleaseKeys.all, "cleanup-jobs"] as const,
+    lists: () => [...ReleaseKeys.cleanupJobs.all(), "list"] as const,
+    detail: (id: number) => [...ReleaseKeys.cleanupJobs.all(), id] as const,
+  }
+};
+
+export const ReleaseProfileDuplicateKeys = {
+  all: ["releaseProfileDuplicate"] as const,
+  lists: () => [...ReleaseProfileDuplicateKeys.all, "list"] as const,
+  details: () => [...ReleaseProfileDuplicateKeys.all, "detail"] as const,
+  detail: (id: number) => [...ReleaseProfileDuplicateKeys.details(), id] as const,
+};
+
+export const ApiKeys = {
+  all: ["api_keys"] as const,
+  lists: () => [...ApiKeys.all, "list"] as const,
+  details: () => [...ApiKeys.all, "detail"] as const,
+  detail: (id: string) => [...ApiKeys.details(), id] as const
+};
+
+export const DownloaderKeys = {
+  all: ["downloaders"] as const,
+  lists: () => [...DownloaderKeys.all, "list"] as const,
+  // list: (indexers: string[], sortOrder: string) => [...clientKeys.lists(), { indexers, sortOrder }] as const,
+  details: () => [...DownloaderKeys.all, "detail"] as const,
+  detail: (id: number) => [...DownloaderKeys.details(), id] as const,
+  arrTags: (id: number) => [...DownloaderKeys.details(), id, "arr-tags"] as const
+};
+
+export const FeedKeys = {
+  all: ["feeds"] as const,
+  lists: () => [...FeedKeys.all, "list"] as const,
+  // list: (indexers: string[], sortOrder: string) => [...feedKeys.lists(), { indexers, sortOrder }] as const,
+  details: () => [...FeedKeys.all, "detail"] as const,
+  detail: (id: number) => [...FeedKeys.details(), id] as const
+};
+
+export const IndexerKeys = {
+  all: ["indexers"] as const,
+  schema: () => [...IndexerKeys.all, "indexer-definitions"] as const,
+  options: () => [...IndexerKeys.all, "options"] as const,
+  deprecations: () => [...IndexerKeys.all, "deprecations"] as const,
+  lists: () => [...IndexerKeys.all, "list"] as const,
+  // list: (indexers: string[], sortOrder: string) => [...indexerKeys.lists(), { indexers, sortOrder }] as const,
+  details: () => [...IndexerKeys.all, "detail"] as const,
+  detail: (id: number) => [...IndexerKeys.details(), id] as const
+};
+
+export const IrcKeys = {
+  all: ["irc_networks"] as const,
+  lists: () => [...IrcKeys.all, "list"] as const,
+  // list: (indexers: string[], sortOrder: string) => [...ircKeys.lists(), { indexers, sortOrder }] as const,
+  details: () => [...IrcKeys.all, "detail"] as const,
+  detail: (id: number) => [...IrcKeys.details(), id] as const,
+  channelHistory: (networkId: number, channel: string) => [...IrcKeys.all, "channel-history", networkId, channel] as const
+};
+
+export const NotificationKeys = {
+  all: ["notifications"] as const,
+  lists: () => [...NotificationKeys.all, "list"] as const,
+  details: () => [...NotificationKeys.all, "detail"] as const,
+  detail: (id: number) => [...NotificationKeys.details(), id] as const,
+  pushoverSounds: (apiToken: string) => [...NotificationKeys.all, "pushover-sounds", apiToken] as const,
+  inbox: {
+    all: () => [...NotificationKeys.all, "inbox"] as const,
+    lists: () => [...NotificationKeys.inbox.all(), "list"] as const,
+    list: (params: InboxQueryParams) => [...NotificationKeys.inbox.lists(), params] as const
+  }
+};
+
+export const ProxyKeys = {
+  all: ["proxy"] as const,
+  lists: () => [...ProxyKeys.all, "list"] as const,
+  details: () => [...ProxyKeys.all, "detail"] as const,
+  detail: (id: number) => [...ProxyKeys.details(), id] as const,
+  usage: (id: number) => [...ProxyKeys.details(), id, "usage"] as const
+};
+
+export const ListKeys = {
+  all: ["list"] as const,
+  lists: () => [...ListKeys.all, "list"] as const,
+  details: () => [...ListKeys.all, "detail"] as const,
+  detail: (id: number) => [...ListKeys.details(), id] as const
+};

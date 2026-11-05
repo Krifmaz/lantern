@@ -1,7 +1,7 @@
 name: ci
 
 # Every pull request: the kit's checks (fmt, clippy -D warnings, tests of server/, desktop/ and web/), Prowlarr's web
-# frontend (ui/prowlarr) linted and built, the Docker image
+# frontend (ui/prowlarr) linted and built, autobrr's (ui/autobrr) linted, tested and built, the Docker image
 # built (not pushed), the image's browser getting past a Cloudflare-style check, the Android app built and unit-tested,
 # and real Sonarr, Radarr, Lidarr and Readarr adding Lantern as an indexer. Required to pass before a merge.
 on:
@@ -40,6 +40,26 @@ jobs:
       - run: yarn lint
       - run: yarn stylelint-linux
       - run: yarn build --env production
+
+  # autobrr's web frontend (ui/autobrr): autobrr's own lint, tests (vitest) and build (tsc and vite), with the pnpm its
+  # package.json pins, through corepack
+  autobrr-ui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui/autobrr
+    env:
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: 0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.19.0
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm test
+      - run: pnpm run build
 
   docker:
     needs: test

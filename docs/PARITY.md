@@ -1227,8 +1227,9 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| mobile layout | A-ui | todo | |  |
-| light/dark (rethemed to Encore) | A-ui | todo | |  |
+| mobile layout | A-ui | partial | `docs/parity/a-ui/dashboard-phone.png`, `filters-phone.png`, `settings-irc-phone.png`, `menu-open-phone.png` | autobrr's layout unchanged; the folded menu and three pages are shown, the other pages wait for their API |
+| light/dark (rethemed to Encore) | A-ui | done | `docs/parity/a-ui/dashboard-desktop.png`, `filters-desktop.png`, `settings-irc-desktop.png`, `dashboard-desktop-light.png` | every Tailwind colour scale and the chart colours drawn from the kit's tokens, the kit's fonts; dark mode is Encore, light mode the kit's light theme (`ui/autobrr/LANTERN.md`) |
+| branding: Lantern's name in the header, no docs, GitHub or Discord links, no autobrr icons | A-ui | done | `docs/parity/a-ui/dashboard-desktop.png`, `menu-open-phone.png` | `ui/autobrr/LANTERN.md` lists each change; served at `/autobrr/` (`server/tests/autobrr_ui.rs`) |
 | toasts | A-ui | todo | |  |
 
 ### Background jobs
