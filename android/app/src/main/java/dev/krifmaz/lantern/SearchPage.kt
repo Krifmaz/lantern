@@ -1,11 +1,6 @@
 package dev.krifmaz.lantern
 
-import android.content.ActivityNotFoundException
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -151,29 +146,9 @@ private fun ResultItem(r: SearchResult, expanded: Boolean, onClick: () -> Unit, 
         if (expanded) {
             FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (r.infoUrl.isNotEmpty()) SmallButton("Open page", iconRes = KitR.drawable.kit_ic_open_in_new) { openLink(context, r.infoUrl) }
-                if (r.downloadUrl.isNotEmpty()) SmallButton("Copy download link", iconRes = KitR.drawable.kit_ic_content_copy) { copy(context, "Download link", r.downloadUrl) }
-                if (r.magnetUrl.isNotEmpty()) SmallButton("Copy magnet", iconRes = KitR.drawable.kit_ic_content_copy) { copy(context, "Magnet link", r.magnetUrl) }
+                if (r.downloadUrl.isNotEmpty()) SmallButton("Copy download link", iconRes = KitR.drawable.kit_ic_content_copy) { copyText(context, "Download link", r.downloadUrl) }
+                if (r.magnetUrl.isNotEmpty()) SmallButton("Copy magnet", iconRes = KitR.drawable.kit_ic_content_copy) { copyText(context, "Magnet link", r.magnetUrl) }
             }
         }
     }
-}
-
-/** Opens [url] in the phone's browser; says so when nothing can open it. */
-private fun openLink(context: Context, url: String) {
-    try {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    } catch (_: ActivityNotFoundException) {
-        Toasts.show("No app on this phone can open $url", "err")
-    }
-}
-
-/** Puts [text] on the clipboard as [label], and says so. */
-private fun copy(context: Context, label: String, text: String) {
-    val cm = context.getSystemService(ClipboardManager::class.java)
-    if (cm == null) {
-        Toasts.show("The clipboard isn't available on this phone", "err")
-        return
-    }
-    cm.setPrimaryClip(ClipData.newPlainText(label, text))
-    Toasts.show("$label copied", "ok")
 }

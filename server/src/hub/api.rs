@@ -51,6 +51,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/hub/grabs/{id}/retry", post(retry))
         .route("/api/hub/grabs/{id}/imported", post(imported))
         .route("/api/hub/events", get(events))
+        .merge(super::emulate::qbittorrent::router())
 }
 
 async fn clients(State(st): State<AppState>, _: SignedIn) -> Result<Json<Value>> {

@@ -11,6 +11,8 @@
 //! | [`cleanup`] | seeding rules and cleanup after the app imported |
 //! | [`events`] | the live event stream and the webhooks |
 //! | [`paths`] | translating paths between Lantern, the clients and the apps |
+//! | [`torrent`] | info hashes of torrent files and magnets |
+//! | [`emulate`] | Lantern as a download client: the qBittorrent Web API |
 //! | [`api`] | the routes |
 //!
 //! Every change to a client, a path or an app is read again at the next step, so it applies to every app at once.
@@ -19,9 +21,11 @@ pub mod api;
 pub mod apps;
 pub mod cleanup;
 pub mod clients;
+pub mod emulate;
 pub mod events;
 pub mod grabs;
 pub mod paths;
+pub mod torrent;
 
 use crate::indexers::release::Protocol;
 use crate::indexers::{Indexers, LinkSigner, MASK};
@@ -89,17 +93,23 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
     )
     .map_err(|e| anyhow::anyhow!("The download hub's tables can't be made: {}", e.detail))?;
     // columns added after the first release of the hub
-    let have: Vec<String> = db
-        .query("PRAGMA table_info(hub_grabs)", p![])
-        .map_err(|e| anyhow::anyhow!("The download hub's tables can't be read: {}", e.detail))?
-        .iter()
-        .map(|r| kit_server_core::RowExt::s(r, "name"))
-        .collect();
-    for (col, def) in
-        [("ratio", "REAL NOT NULL DEFAULT 0"), ("seed_secs", "INTEGER NOT NULL DEFAULT 0"), ("imported", "REAL NOT NULL DEFAULT 0")]
-    {
+    let added = [
+        ("hub_grabs", "ratio", "REAL NOT NULL DEFAULT 0"),
+        ("hub_grabs", "seed_secs", "INTEGER NOT NULL DEFAULT 0"),
+        ("hub_grabs", "imported", "REAL NOT NULL DEFAULT 0"),
+        ("hub_grabs", "infohash", "TEXT NOT NULL DEFAULT ''"),
+        ("hub_grabs", "ext_category", "TEXT NOT NULL DEFAULT ''"),
+        ("hub_apps", "ext_categories", "TEXT NOT NULL DEFAULT '[]'"),
+    ];
+    for (table, col, def) in added {
+        let have: Vec<String> = db
+            .query(&format!("PRAGMA table_info({table})"), p![])
+            .map_err(|e| anyhow::anyhow!("The download hub's tables can't be read: {}", e.detail))?
+            .iter()
+            .map(|r| kit_server_core::RowExt::s(r, "name"))
+            .collect();
         if !have.iter().any(|c| c == col) {
-            db.execute_batch(&format!("ALTER TABLE hub_grabs ADD COLUMN {col} {def}"))
+            db.execute_batch(&format!("ALTER TABLE {table} ADD COLUMN {col} {def}"))
                 .map_err(|e| anyhow::anyhow!("The download hub's tables can't be changed: {}", e.detail))?;
         }
     }
@@ -128,11 +138,21 @@ pub struct Hub {
     ticking: Arc<tokio::sync::Mutex<()>>,
     /// Fetches release files from addresses apps give.
     http: reqwest::Client,
+    /// The data folder: release files apps upload are kept in `grabs/` there until their grab is removed.
+    pub data_dir: std::path::PathBuf,
+    /// The sessions of apps signed in to the emulated qBittorrent: session id → app id.
+    pub qbit_sessions: Arc<Mutex<HashMap<String, i64>>>,
 }
 
 impl Hub {
     /// The hub on `db`, grabbing through `indexers`.
-    pub fn new(db: SqliteDb, indexers: Indexers, signer: LinkSigner, settings: kit_server_settings::Store) -> Hub {
+    pub fn new(
+        db: SqliteDb,
+        indexers: Indexers,
+        signer: LinkSigner,
+        settings: kit_server_settings::Store,
+        data_dir: &std::path::Path,
+    ) -> Hub {
         Hub {
             db,
             indexers,
@@ -142,6 +162,8 @@ impl Hub {
             backends: Default::default(),
             ticking: Default::default(),
             http: clients::http_client(false),
+            data_dir: data_dir.to_path_buf(),
+            qbit_sessions: Default::default(),
         }
     }
 

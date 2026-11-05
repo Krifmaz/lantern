@@ -58,6 +58,7 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 quick-xml = "0.37"
 futures-util = "0.3"
 hmac = "0.12"
+chromiumoxide = { version = "0.9", default-features = false }
 tar = "0.4"
 flate2 = "1"
 # account vault: argon2id keys, XChaCha20-Poly1305, wiped secrets, TOTP codes
@@ -65,6 +66,8 @@ argon2 = "0.5"
 chacha20poly1305 = "0.10"
 zeroize = "1"
 sha1 = "0.10"
+# account keeper: warning emails
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1", "tokio1-rustls", "ring", "webpki-roots", "hostname"] }
 # migration: Prowlarr backups are zip files
 zip = { version = "2", default-features = false, features = ["deflate"] }
 # releases: IRC announces over TLS

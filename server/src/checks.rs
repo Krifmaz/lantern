@@ -3,7 +3,9 @@
 //! - Notice `data`: the data folder can't be written (the kit's storage notice, for the one folder this app
 //!   writes to), checked every minute and on Check again. Served at `/api/notices/data` (and in `/api/notices`).
 //! - Notice `indexers`: one or more switched-on indexers failed their last search, checked every five minutes.
-//! - Diagnostics: the data folder, the database and the indexers. An app adds its own services, folders and
+//! - Notice `accounts`: an account in the vault will break its site's rule soon (the account keeper), checked
+//!   every ten minutes.
+//! - Diagnostics: the data folder, the database, the browser for Cloudflare checks and the indexers. An app adds its own services, folders and
 //!   tools here.
 
 use crate::AppState;
@@ -18,6 +20,9 @@ pub const DATA_NOTICE: &str = "data";
 
 /// The id of the failing indexers notice.
 pub const INDEXERS_NOTICE: &str = "indexers";
+
+/// The id of the accounts at risk notice.
+pub const ACCOUNTS_NOTICE: &str = "accounts";
 
 /// The failing indexers notice's sentence for `(name, error)` pairs, `None` when every indexer works.
 pub fn indexers_text(failing: &[(String, String)]) -> Option<String> {
@@ -52,7 +57,7 @@ pub fn data_notice_text(dir: &Path, why: &str) -> String {
     format!("The data folder {} is {why} – check the disk (dmesg, fsck) or the mount", dir.display())
 }
 
-/// The app's notices: the data folder, probed every minute, and the failing indexers.
+/// The app's notices: the data folder, probed every minute, the failing indexers and the accounts at risk.
 pub fn notices() -> Notices<AppState> {
     Notices::new()
         .register(
@@ -75,9 +80,19 @@ pub fn notices() -> Notices<AppState> {
             })
             .every(Duration::from_secs(300)),
         )
+        .register(
+            NoticeCheck::kept(ACCOUNTS_NOTICE, Severity::Warn, |st: AppState| async move {
+                match crate::keeper::all_risks(&st) {
+                    Ok(r) => crate::keeper::notice_text(&r).map(Notice::failing).unwrap_or_else(Notice::fine),
+                    Err(e) => Notice::failing(e.detail),
+                }
+            })
+            .every(Duration::from_secs(600)),
+        )
 }
 
-/// The Diagnostics page's checks: the data folder, the database and the indexers.
+/// The Diagnostics page's checks: the data folder, the database, the browser for Cloudflare checks and the
+/// indexers.
 pub fn diagnostics() -> Registry<AppState> {
     Registry::new()
         .check("data", |st: AppState| async move {
@@ -94,6 +109,18 @@ pub fn diagnostics() -> Registry<AppState> {
             match st.db.one("SELECT COUNT(*) n FROM users", vec![]) {
                 Ok(_) => Check::new("Database", Kind::Path, true, "OK"),
                 Err(e) => Check::new("Database", Kind::Path, false, e.detail),
+            }
+        })
+        .check("browser", |st: AppState| async move {
+            match st.solver.program() {
+                Some(p) => {
+                    let ua = st.solver.user_agent();
+                    let how = if ua.is_empty() { "starts when a site needs it".to_string() } else { ua };
+                    Check::new("Browser for Cloudflare checks", Kind::Tool, true, format!("{} · {how}", p.display()))
+                        .request(p.display().to_string())
+                }
+                None => Check::new("Browser for Cloudflare checks", Kind::Tool, false, "No Chromium found")
+                    .fix("Use the Lantern image, which has one, or set APP_CHROMIUM to a Chromium or Chrome program"),
             }
         })
         .check("indexers", |st: AppState| async move {

@@ -47,6 +47,32 @@ RUN apk add --no-cache curl tar \
     | tar -xz -C /announce --strip-components=4 --wildcards '*/internal/indexer/definitions/*.yaml' \
  && ls /announce | grep -c yaml
 
+# The browser for Cloudflare checks: Debian's Chromium headless shell and every file of the packages it needs
+# (libraries, fonts, their settings), gathered into /out to copy into the distroless image, plus every library
+# they link that Debian's base image already had (ldd). glibc is in both images already, from the same Debian
+# release, so it isn't copied.
+FROM debian:trixie-slim AS browser
+RUN dpkg-query -W -f='${Package}\n' | sort > /base.txt \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends chromium-headless-shell fonts-liberation fonts-dejavu-core \
+ && dpkg-query -W -f='${Package}\n' | sort > /all.txt \
+ && comm -13 /base.txt /all.txt > /added.txt \
+ && mkdir /out \
+ && for p in $(cat /added.txt); do dpkg -L "$p"; done | sort -u \
+    | grep -vE '^/(var|usr/share/(doc|man|locale|lintian|bug|info|bash-completion))/' \
+    | while read -r f; do if [ -f "$f" ] || [ -L "$f" ]; then cp -a --parents "$f" /out/; fi; done \
+ && shell=$(find /usr/lib/chromium -maxdepth 1 -type f -perm -u+x \( -name headless_shell -o -name 'chromium-headless-shell' \) | head -n1) \
+ && test -n "$shell" && { [ "$shell" = /usr/lib/chromium/headless_shell ] || cp -a "$shell" /out/usr/lib/chromium/headless_shell; } \
+ && rm -rf /out/usr/bin /out/usr/sbin /out/bin /out/sbin \
+ && find /out -type f \( -name '*.so*' -o -path '/out/usr/lib/chromium/*' \) -exec ldd {} \; 2>/dev/null \
+    | awk '$2 == "=>" && $3 ~ /^\// {print $3}' | sort -u \
+    | grep -vE '/(libc|libm|libdl|libpthread|librt|libresolv|libutil|ld-linux[^/]*)\.so' \
+    | while read -r lib; do lib="$(readlink -f "$(dirname "$lib")")/$(basename "$lib")"; \
+        [ -e "/out$lib" ] || cp -L --parents "$lib" /out/; done \
+ && for d in lib lib64; do if [ -d "/out/$d" ] && [ ! -L "/out/$d" ]; then \
+      mkdir -p "/out/usr/$d" && cp -a "/out/$d/." "/out/usr/$d/" && rm -rf "/out/$d"; fi; done \
+ && /usr/lib/chromium/headless_shell --version 2>/dev/null || "$shell" --version
+
 # Distroless: no shell, no package manager, only glibc and CA certificates. Runs as the image's non-root user
 # (65532) and writes only to /data, so it also runs with `docker run --read-only`.
 FROM gcr.io/distroless/cc-debian13:nonroot
@@ -57,13 +83,15 @@ COPY --from=build /app /usr/local/bin/lantern
 COPY --from=build --chown=65532:65532 /data /data
 COPY --from=ui /src/web/dist /app/static
 COPY --from=defs /defs /app/definitions
+COPY --from=browser /out/ /
 COPY --from=announce /announce /app/announce
 ARG APP_VERSION=
 LABEL org.opencontainers.image.version="${APP_VERSION}"
-ENV APP_DATA_DIR=/data APP_STATIC_DIR=/app/static APP_DEFINITIONS_DIR=/app/definitions APP_ANNOUNCE_DIR=/app/announce APP_PORT=9696
+ENV APP_DATA_DIR=/data APP_STATIC_DIR=/app/static APP_DEFINITIONS_DIR=/app/definitions APP_ANNOUNCE_DIR=/app/announce APP_PORT=9696 \
+    APP_SOLVER_PORT=8191 APP_CHROMIUM=/usr/lib/chromium/headless_shell
 USER nonroot
 VOLUME /data
-EXPOSE 9696
+EXPOSE 9696 8191
 # no curl in a distroless image: the binary asks its own /api/health
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 CMD ["/usr/local/bin/lantern", "healthcheck"]
 ENTRYPOINT ["/usr/local/bin/lantern"]

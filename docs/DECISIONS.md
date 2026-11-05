@@ -74,3 +74,30 @@ Non-obvious calls, one line each, newest last.
   seeded enough, since it can delete downloaded files. Lantern checks the seeding goals itself instead of setting
   share limits in each client, so the rules work the same for every client. Per-tracker minimums (hit-and-run
   rules) come from the account keeper when it lands.
+- 2026-11-05 — Cloudflare solving drives Debian's Chromium headless shell over the DevTools protocol (chromiumoxide),
+  copied with the files of the packages it needs into the distroless image, so the image stays distroless and
+  read-only (the browser's profile and scratch files live in `/data/browser`). It sends a person's Chrome user agent
+  ("HeadlessChrome" said as "Chrome"), and indexers send that same agent with the kept cookies, as cf_clearance asks.
+- 2026-11-05 — The FlareSolverr API listens on its own port 8191 without sign-in, as FlareSolverr does, so apps
+  switch by address only; `APP_SOLVER_PORT=0` turns it off for anyone who doesn't need it.
+- 2026-11-05 — When a site checks every plain request even with the cookies, a GET is read through the browser
+  instead (pages only; files still go through Lantern's own client).
+- 2026-11-05 — Cross-seed matches strictly: same release name (punctuation and file ending aside), size within 2 %,
+  then every file's path and size equal in the candidate's `.torrent`. Copies whose files differ are listed, never
+  added, so nothing is ever downloaded again or renamed. Magnet-only sites are skipped (no file list to compare).
+- 2026-11-05 — Cross-seed copies go into `<app category>.cross-seed` at the app's folder, tagged `lantern-xs-<grab>`,
+  so the app doesn't import them again and the hub's grab tracking never mistakes them for grabs. Each grab is
+  searched when it finishes and again weekly, four times at most, 30 s apart by default.
+- 2026-11-05 — The keeper's account numbers (ratio, upload, download, bonus) are typed in or sent through
+  `PUT /api/keeper/{id}/stats`: tracker profile pages differ per site and the Cardigann definitions don't describe them.
+  Sign-ins and activity are automatic for accounts linked to an indexer (its search, test and grab history).
+- 2026-11-05 — ntfy, Discord and email alerts live in Lantern (`keeper/alerts.rs`, email through lettre) because the kit
+  v0.2.1 has no notifier; they are generic and can move to the kit later.
+- 2026-11-05 — Keep-alive signs in every `keeper_keepalive_days` (default 3), or every third of a site's sign-in rule
+  when that is sooner, and at most once per 6 hours per account, so a failing site isn't hammered.
+- 2026-11-05 — The emulated qBittorrent identifies each app by the user name it signs in with (its password is
+  Lantern's API key), and registers it on first sign-in. Sessions live in memory: after a restart the app signs in
+  again on its own, as it does with a real qBittorrent. Calls that only tune the client (tags, priorities, share
+  limits, pause/resume) are accepted and ignored, since Lantern's own rules decide.
+- 2026-11-05 — Torrents an app uploads are kept in `<data>/grabs/` until the grab is removed, so a failed send can
+  be retried; their info hash is worked out from the file (SHA-1 of the `info` dictionary), as apps expect.

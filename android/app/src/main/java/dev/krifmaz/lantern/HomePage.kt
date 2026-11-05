@@ -77,6 +77,8 @@ fun HomePage(app: App, base: String, bugs: BugReportsHost, open: (Page) -> Unit,
     var me by remember { mutableStateOf<Me?>(null) }
     // how the indexers are doing, in one line ("" until the server says)
     var health by remember { mutableStateOf("") }
+    // how the tracker accounts are doing, in one line (admins; "" until the server says)
+    var accounts by remember { mutableStateOf("") }
     var askSignOut by remember { mutableStateOf(false) }
     var newReport by remember { mutableStateOf(false) }
     // offline mode: one /api/health check at start and on every Retry
@@ -105,6 +107,15 @@ fun HomePage(app: App, base: String, bugs: BugReportsHost, open: (Page) -> Unit,
                 throw e
             } catch (e: Exception) {
                 "The indexers couldn't be loaded: ${e.message ?: e.javaClass.simpleName}"
+            }
+            if (me?.admin != false) {
+                accounts = try {
+                    KeeperRules.summaryLine(withContext(Dispatchers.IO) { KeeperRules.accountsOf(app.server.getObject("/api/keeper")) })
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    "The accounts couldn't be loaded: ${e.message ?: e.javaClass.simpleName}"
+                }
             }
         }
     }
@@ -138,6 +149,16 @@ fun HomePage(app: App, base: String, bugs: BugReportsHost, open: (Page) -> Unit,
             SectionHead("Indexers", subtitle = health)
             EntryRow("Indexers", "How every site is doing, what went wrong and its numbers") { open(Page.Indexers(me?.admin)) }
             EntryRow("Search", "Search every indexer at once") { open(Page.Search) }
+
+            if (me?.admin != false) {
+                SectionHead("Accounts", subtitle = accounts)
+                EntryRow("Account health", "Ratio, hit-and-runs and deadlines of every tracker account") { open(Page.Accounts(me?.admin)) }
+                EntryRow("Vault", "Your tracker and Usenet logins, saved encrypted") { open(Page.Vault(me?.owner)) }
+            }
+
+            SectionHead("Downloads")
+            EntryRow("Downloads", "What Lantern downloads for your apps, as it happens") { open(Page.Downloads(me?.admin)) }
+            EntryRow("Apps", "The apps that use Lantern, their folders and downloads") { open(Page.Apps(me?.admin)) }
 
             SectionHead("Settings")
             EntryRow("What's new", "Every release's notes") { open(Page.Changelog) }
