@@ -1,0 +1,14 @@
+[
+  {
+    "propertyName": "Name",
+    "errorMessage": "'Name' must not be empty.",
+    "attemptedValue": "",
+    "severity": "error",
+    "errorCode": "NotEmptyValidator",
+    "formattedMessageArguments": [],
+    "formattedMessagePlaceholderValues": {
+      "PropertyName": "Name",
+      "PropertyValue": ""
+    }
+  }
+]

@@ -22,6 +22,11 @@
 //! GET      /api/v1/update
 //! *        /api/v1/applications[/{id}], /schema, /test, /testall, /bulk, /action/{name}
 //! *        /api/v1/appprofile[/{id}], /schema
+//! *        /api/v1/indexer[/{id}], /schema, /test, /testall, /bulk, /action/{name}, /categories
+//! GET      /api/v1/indexerstatus, /api/v1/indexerstats
+//! GET/POST /api/v1/search, POST /api/v1/search/bulk
+//! GET      /api/v1/history, /history/since, /history/indexer
+//! *        /signalr/messages (negotiate and the WebSocket of live updates)
 //! ```
 //!
 //! Every `/api/v1` route needs the API key (`?apikey=`, `X-Api-Key` or `Authorization: Bearer <key>`, as Prowlarr
@@ -32,8 +37,12 @@ pub mod commands;
 pub mod config;
 pub mod filters;
 pub mod health;
+pub mod history;
+pub mod indexers;
 pub mod localization;
 pub mod logs;
+pub mod search;
+pub mod signalr;
 pub mod system;
 pub mod tags;
 pub mod validation;
@@ -113,6 +122,10 @@ pub fn router() -> Router<AppState> {
         .merge(commands::router())
         .merge(logs::router())
         .merge(apps::router())
+        .merge(indexers::router())
+        .merge(history::router())
+        .merge(search::router())
+        .merge(signalr::router())
 }
 
 /// A request that may use the Prowlarr API: it carries the API key (`?apikey=`, then `X-Api-Key`, then
