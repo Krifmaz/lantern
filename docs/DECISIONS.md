@@ -38,6 +38,38 @@ Non-obvious calls, one line each, newest last.
   app's folder. rTorrent's XML-RPC can't delete files, so removing a grab there leaves its files on disk.
 - 2026-11-05 — rTorrent is reached over its XML-RPC address (ruTorrent's `/RPC2` or an SCGI bridge), with a small
   XML-RPC reader of Lantern's own instead of another dependency.
+- 2026-11-05 — The vault's data key is sealed with a key argon2id makes from `APP_VAULT_PASSPHRASE`, else from a random
+  `<data>/vault.key` (0600). The key file is the default so Lantern can sign in to sites unattended after a restart;
+  the passphrase is for people who don't want a copy of the data folder alone to open anything. A vault whose key is
+  missing or wrong still starts, lists its accounts and says why it is locked; it never makes a new key over old items.
+- 2026-11-05 — Only the owner (the kit's "may see saved secrets" account) can show secrets or make and restore vault
+  backups, each time after typing their password (5 wrong tries per 5 minutes). Admins can add, change and remove.
+- 2026-11-05 — Vault restore merges and never removes: new accounts are added, the backup's copy replaces one here
+  unless it changed here after the backup.
+- 2026-11-05 — Indexer logins stay in the indexer's own settings for now; moving them into the vault (sealed with the
+  same key) is its own PR after Cloudflare solving merges, since that track edits the indexer code.
+- 2026-11-05 — Imported indexers keep Prowlarr's number (`/{id}/api`) when it is free in Lantern, and Lantern takes
+  Prowlarr's API key unless told not to, so apps moving with Prowlarr's address keep working unchanged.
+- 2026-11-05 — The import never changes or removes what Lantern already has (a match by definition and name, or by
+  address, is left as it is); only an empty proxy for sites and the API key are set.
+- 2026-11-05 — Prowlarr's tagged indexer proxies are not imported: Lantern has one proxy for every site, and making a
+  per-tag proxy global would change sites Prowlarr never sent through it. Prowlarr's own proxy is imported.
+- 2026-11-05 — Imported secrets go through `migrate::Secrets`: `InVault` saves each account's logins and keys in the
+  vault (one item per account, found by name and site) and also leaves them in the indexer's settings, since indexers
+  still sign in from there. A locked vault doesn't stop the import; the plan says so. Imported apps wait in
+  `imported_apps` for app sync (Lantern pushing indexers to apps).
+- 2026-11-05 — FlareSolverr has no settings file, so its import reads pasted compose/.env/docker run text and only
+  gives steps; nothing is saved, since Lantern solves by itself.
+- 2026-11-05 — IRC/RSS releases were built in parallel with the download hub: pushes to a download client go through
+  a small `DownloadHub` trait (`releases::push`) that the hub implements. A client push is a grab of one of the hub's
+  apps (the filter names it; else an app "Releases" registered at the first push), so it gets that app's category,
+  folder, retries and callbacks. Pushing to the *arrs (`release/push`) needs no hub.
+- 2026-11-05 — Announce lines are read with autobrr's own definition files (bundled at `/app/announce` from autobrr's
+  develop branch at image build; `<data>/announce` overrides), so every tracker autobrr knows works without Lantern
+  keeping its own list. Their templates run through the Cardigann template engine.
+- 2026-11-05 — Race-friendly defaults: a filter sends at once (no delay), the torrent file is only fetched when a size
+  limit needs a size the announce didn't give, the first filter that takes a release wins (highest priority first),
+  and a release name a filter already sent is skipped. A new RSS source's first look only notes what is there.
 - 2026-11-05 — Cleanup is off by default and only ever touches grabs an app has marked imported and that have
   seeded enough, since it can delete downloaded files. Lantern checks the seeding goals itself instead of setting
   share limits in each client, so the rules work the same for every client. Per-tracker minimums (hit-and-run

@@ -24,6 +24,25 @@ ease-of-use features from the first commit.
    - API path: `/api`. API key: Lantern's.
 3. Apps made for Prowlarr also find Lantern's Prowlarr API at `http://<lantern>:9696/api/v1`.
 
+## Move from Prowlarr and FlareSolverr
+
+1. In Prowlarr, open **System → Backup**, press **Backup Now** and download the `.zip` (it keeps the logins; Prowlarr's
+   API hides passwords, so its address and API key work too but you fill those in again).
+2. In Lantern, open **Import**, choose the backup and press **Look at it**. The plan says what would be added, what is
+   already there, what is skipped and why, and what you do by hand. Nothing changes yet.
+3. Press **Import**. Indexers keep Prowlarr's numbers and Lantern takes Prowlarr's API key, so once Lantern answers at
+   Prowlarr's address, apps keep searching without changes.
+4. For FlareSolverr, paste its docker-compose service, `.env` or `docker run` command under **From FlareSolverr** to see
+   what to change; Lantern solves Cloudflare checks by itself.
+
+## Grab releases as they appear
+
+1. Open **Releases → Sources** and add a tracker's IRC announces (Lantern knows the channels of every tracker
+   autobrr knows), an RSS feed, or one of your indexers.
+2. Under **Filters**, say what to grab (names, resolution, source, group, size, freeleech, year, tags …) and send it
+   to Sonarr, Radarr, Lidarr, Readarr or Whisparr. **Check a release** shows which filter would take a name and why.
+3. **Recent** lists every release seen and what happened to it. A release goes out seconds after it is announced.
+
 ## First steps
 
 1. Make the lock files and commit them (CI and the Docker build use `--locked`):
@@ -51,7 +70,9 @@ docker run --read-only -p 9696:9696 -v lantern-data:/data lantern
 | `APP_PORT` | the port the server listens on | `9696` (Prowlarr's) |
 | `APP_DATA_DIR` | where the database and uploads live (the only folder it writes to) | `/data` |
 | `APP_STATIC_DIR` | the built web app | `/app/static` |
+| `APP_ANNOUNCE_DIR` | the IRC announce definitions (the data folder's `announce/` wins) | `/app/announce` |
 | `APP_ADMIN_USER`, `APP_ADMIN_PASSWORD` | the owner made at the first start | `admin`, a printed password |
+| `APP_VAULT_PASSPHRASE` | locks the account vault with your passphrase instead of `vault.key` in the data folder (set it before the first start; Lantern won't open the vault without it) | not set: `vault.key` |
 | `APP_NAME`, `APP_SESSION_DAYS`, `APP_API_KEY` | settings (settings.toml); set here they are locked in Settings | |
 | `APP_DOWNLOADS_DIR` | the downloads folder; each app gets `<folder>/<category>` in it. Mount it (`-v /data/downloads:/downloads`) at the same place in your download clients and apps, or set each one's own path in Lantern | `/downloads` |
 | `APP_GRAB_ATTEMPTS` | how many times a grab is sent before it fails | `5` |
@@ -91,7 +112,7 @@ answers), so that apps made for them work with Lantern unchanged:
 | [Prowlarr](https://github.com/Prowlarr/Prowlarr) | GPL-3.0 | the indexer manager API and app sync |
 | [Jackett](https://github.com/Jackett/Jackett) | GPL-2.0 | Torznab behaviour and Cardigann definitions |
 | [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) | MIT | the challenge-solving API |
-| [autobrr](https://github.com/autobrr/autobrr) | GPL-2.0 | IRC announce parsing and filters |
+| [autobrr](https://github.com/autobrr/autobrr) | GPL-2.0-or-later | IRC announce parsing and filters |
 | [cross-seed](https://github.com/cross-seed/cross-seed) | Apache-2.0 | cross-seed matching |
 | [Sonarr](https://github.com/Sonarr/Sonarr), [Radarr](https://github.com/Radarr/Radarr), [Lidarr](https://github.com/Lidarr/Lidarr), [Readarr](https://github.com/Readarr/Readarr) | GPL-3.0 | the indexer and download client APIs they expect |
 | [qBittorrent](https://github.com/qbittorrent/qBittorrent), [SABnzbd](https://github.com/sabnzbd/sabnzbd), [NZBGet](https://github.com/nzbgetcom/nzbget) | GPL-2.0+ | the download client APIs Lantern speaks and emulates |
@@ -101,6 +122,7 @@ Data files used directly:
 | Data | Source | License |
 | --- | --- | --- |
 | Indexer definitions (Cardigann YAML) | [Prowlarr/Indexers](https://github.com/Prowlarr/Indexers) | GPL-3.0 |
+| IRC announce definitions (YAML) | [autobrr](https://github.com/autobrr/autobrr/tree/develop/internal/indexer/definitions) | GPL-2.0-or-later |
 | Quality and release profiles | [TRaSH Guides](https://github.com/TRaSH-Guides/Guides) | MIT |
 
 ## License
