@@ -16,8 +16,13 @@
 //! Sources are rows of `release_sources`, filters of `release_filters`; every release seen and what happened to
 //! it is a row of `release_log`. Secrets (passkeys, NickServ passwords, API keys) are never sent back or logged.
 
+pub mod action;
 pub mod announce;
 pub mod api;
+pub mod autobrr_api;
+pub mod clients;
+pub mod downloader;
+pub mod external;
 pub mod filter;
 pub mod gotemplate;
 pub mod humanize;
@@ -29,7 +34,10 @@ pub mod release;
 pub mod releasetags;
 pub mod rls;
 pub mod rss;
+pub mod run;
 pub mod sanitize;
+pub mod shellquote;
+pub mod store;
 pub mod torrent;
 pub mod wildcard;
 
@@ -95,7 +103,8 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
             PRIMARY KEY (source_id, key)
         );",
     )
-    .map_err(|e| anyhow::anyhow!("The release tables can't be made: {}", e.detail))
+    .map_err(|e| anyhow::anyhow!("The release tables can't be made: {}", e.detail))?;
+    store::migrate(db)
 }
 
 /// A release a source just announced, before the filters see it.
@@ -168,6 +177,9 @@ impl Found {
         }
         r.protocol = if self.protocol == "usenet" { "usenet".into() } else { "torrent".into() };
         r.download_url = self.download_url.clone();
+        if self.download_url.starts_with(run::MAGNET_URI_PREFIX) {
+            r.magnet_uri = self.download_url.clone();
+        }
         r.info_url = self.info_url.clone();
         let name = r.torrent_name.clone();
         r.parse_string(&name);
@@ -270,6 +282,8 @@ pub struct Releases {
     pub settings: kit_server_settings::Store,
     hub: Arc<RwLock<Arc<dyn DownloadHub>>>,
     http: reqwest::Client,
+    /// Fetches a release's torrent for autobrr's actions and external filters.
+    downloads: Arc<dyn run::ReleaseDownloader>,
     /// The IRC connections.
     pub irc: irc::Runner,
 }
@@ -296,6 +310,7 @@ impl Releases {
             settings,
             hub: Arc::new(RwLock::new(Arc::new(push::NoHub))),
             http,
+            downloads: Arc::new(run::HttpDownloader::new()),
             irc: irc::Runner::default(),
         }
     }
@@ -307,6 +322,18 @@ impl Releases {
 
     fn hub(&self) -> Arc<dyn DownloadHub> {
         self.hub.read().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+
+    /// What runs autobrr's actions: the torrent fetcher, the download clients, the hub.
+    pub fn runner(&self) -> run::Service {
+        let me = self.clone();
+        run::Service {
+            downloads: self.downloads.clone(),
+            downloaders: Arc::new(move |id| me.downloader(id).map_err(|e| e.message().to_string())),
+            hub: self.hub(),
+            http: run::webhook_client(),
+            tmp_dir: run::default_tmp_dir(),
+        }
     }
 
     // ---- sources ----
@@ -699,14 +726,41 @@ impl Releases {
                 reasons.push((flt.name.clone(), vec!["it already took a release with this name".into()]));
                 continue;
             }
-            if flt.actions.is_empty() {
+            let autobrr_actions = self.actions_of(flt.id, true, false).unwrap_or_default();
+            if flt.actions.is_empty() && autobrr_actions.is_empty() {
                 reasons.push((flt.name.clone(), vec!["it passes, but the filter has nowhere to send it".into()]));
                 continue;
+            }
+            let mut r = r;
+            r.filter_id = flt.id;
+            r.filter_name = flt.name.clone();
+            if r.size == 0 {
+                r.size = f.size.unwrap_or(0);
+            }
+            let externals = Self::externals(flt);
+            if !externals.is_empty() {
+                let runner = self.runner();
+                let mut rr = RejectionReasons::new();
+                match external::run_external_filters(&externals, &mut r, runner.downloads.as_ref(), &runner.http, &runner.tmp_dir, &mut rr)
+                    .await
+                {
+                    Ok(true) => {}
+                    Ok(false) => {
+                        run::cleanup_temporary_files(&mut r);
+                        reasons.push((flt.name.clone(), rr.lines()));
+                        continue;
+                    }
+                    Err(e) => {
+                        run::cleanup_temporary_files(&mut r);
+                        reasons.push((flt.name.clone(), vec![e]));
+                        continue;
+                    }
+                }
             }
             if flt.delay > 0 {
                 tokio::time::sleep(Duration::from_secs(flt.delay.clamp(0, 3600) as u64)).await;
             }
-            let o = self.send(flt, &f, reasons).await;
+            let o = self.send(flt, &f, r, autobrr_actions, reasons).await;
             self.write_log(&f, &o);
             return o;
         }
@@ -725,8 +779,16 @@ impl Releases {
             .is_some()
     }
 
-    /// Sends `f` to every action of `flt` at once.
-    async fn send(&self, flt: &Filter, f: &Found, reasons: Vec<(String, Vec<String>)>) -> Outcome {
+    /// Sends `f` to every action of `flt`: Lantern's own at once, autobrr's one after another on the shared
+    /// release `rel` (so its torrent is fetched once), as autobrr's release service does.
+    async fn send(
+        &self,
+        flt: &Filter,
+        f: &Found,
+        mut rel: Release,
+        autobrr_actions: Vec<action::Action>,
+        reasons: Vec<(String, Vec<String>)>,
+    ) -> Outcome {
         let grab = |a: &filter::Action| Grab {
             title: f.title.clone(),
             download_url: f.download_url.clone(),
@@ -749,7 +811,17 @@ impl Releases {
                 r.map_err(|e| e.replace(&g.download_url, "(download link)"))
             }
         });
-        let results = futures_util::future::join_all(tries).await;
+        let mut results = futures_util::future::join_all(tries).await;
+        let runner = self.runner();
+        for a in &autobrr_actions {
+            let r = match runner.run_action(a, &mut rel).await {
+                Ok(rej) if rej.is_empty() => Ok(format!("{}: sent", a.name)),
+                Ok(rej) => Err(format!("{}: rejected: {}", a.name, rej.join(", "))),
+                Err(e) => Err(format!("{}: {e}", a.name)),
+            };
+            results.push(r.map_err(|e| e.replace(&f.download_url, "(download link)")));
+        }
+        run::cleanup_temporary_files(&mut rel);
         let ok: Vec<String> = results.iter().filter_map(|r| r.as_ref().ok().cloned()).collect();
         let bad: Vec<String> = results.iter().filter_map(|r| r.as_ref().err().cloned()).collect();
         let status = if ok.is_empty() { "failed" } else { "pushed" };

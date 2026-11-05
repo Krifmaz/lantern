@@ -201,6 +201,9 @@ pub struct Filter {
     pub skip_duplicates: bool,
     /// Lantern: where a passing release goes.
     pub actions: Vec<Action>,
+    /// autobrr's external filters: a program or web address that has the last word.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub external: Vec<super::external::FilterExternal>,
 }
 
 /// Reads indexers as ids, or as objects with an `id`.
@@ -349,6 +352,11 @@ impl Filter {
         }
         if !["", "FIXED", "ROLLING"].contains(&self.max_downloads_window_type.as_str()) {
             return Err(format!("validation: invalid max downloads window type: {}", self.max_downloads_window_type));
+        }
+        for e in self.external.iter().filter(|e| e.kind == "EXEC" && !e.exec_cmd.is_empty() && e.enabled) {
+            if let Err(err) = super::run::look_path(&e.exec_cmd) {
+                return Err(format!("could not find external exec command: {}: {err}", e.exec_cmd));
+            }
         }
         for a in &self.actions {
             match a.kind.as_str() {

@@ -17,6 +17,11 @@
   docs, GitHub or Discord. Its pages show errors where Lantern doesn't answer autobrr's API yet.
   `scripts/upstream-merge.sh --project autobrr` keeps it up to date (`ui/autobrr/`, see `UPSTREAM.md`), and
   `docs/parity/a-ui/` shows the Dashboard, Filters and Settings → IRC at desktop and phone width.
+- autobrr's actions and its filter, action and download client API (served at `/autobrr/api`): every autobrr action
+  type (qBittorrent, Deluge 1 and 2, rTorrent, Transmission, Porla, Aria2, the *arr apps, SABnzbd, NZBGet, watch
+  folder, webhook, exec and test), every action field, external exec and webhook filters, and filter notification
+  settings. A release goes through the download hub when its client is one of the hub's. Exec actions never use a
+  shell.
 - Import never skips an indexer: custom definitions in a Prowlarr backup become your custom definitions, Prowlarr's
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
   Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition
