@@ -150,12 +150,7 @@ impl Deluge {
 
     /// `call`: one JSON-RPC call, signing in again once when Deluge says the session is gone. The outer error is
     /// a failure to reach Deluge; the inner one is Deluge's own error.
-    pub fn call<'a>(
-        &'a self,
-        method: &'a str,
-        params: Value,
-        retries: u32,
-    ) -> Pin<Box<dyn Future<Output = CallResult> + Send + 'a>> {
+    pub fn call<'a>(&'a self, method: &'a str, params: Value, retries: u32) -> Pin<Box<dyn Future<Output = CallResult> + Send + 'a>> {
         Box::pin(self.call_inner(method, params, retries))
     }
 
