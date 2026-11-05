@@ -1,0 +1,298 @@
+{
+  "added": "2026-11-05T10:00:00Z",
+  "appProfileId": 1,
+  "capabilities": {
+    "bookSearchParams": [
+      "q",
+      "author",
+      "title"
+    ],
+    "categories": [
+      {
+        "id": 2000,
+        "name": "Movies",
+        "subCategories": [
+          {
+            "id": 2040,
+            "name": "Movies/HD",
+            "subCategories": []
+          }
+        ]
+      },
+      {
+        "id": 100001,
+        "name": "Movies HD",
+        "subCategories": []
+      },
+      {
+        "id": 5000,
+        "name": "TV",
+        "subCategories": [
+          {
+            "id": 5040,
+            "name": "TV/HD",
+            "subCategories": []
+          }
+        ]
+      },
+      {
+        "id": 100002,
+        "name": "TV HD",
+        "subCategories": []
+      },
+      {
+        "id": 3000,
+        "name": "Audio",
+        "subCategories": [
+          {
+            "id": 3040,
+            "name": "Audio/Lossless",
+            "subCategories": []
+          }
+        ]
+      },
+      {
+        "id": 100003,
+        "name": "Music FLAC",
+        "subCategories": []
+      },
+      {
+        "id": 7000,
+        "name": "Books",
+        "subCategories": [
+          {
+            "id": 7020,
+            "name": "Books/EBook",
+            "subCategories": []
+          }
+        ]
+      },
+      {
+        "id": 100004,
+        "name": "Books",
+        "subCategories": []
+      }
+    ],
+    "limitsDefault": 100,
+    "limitsMax": 100,
+    "movieSearchParams": [
+      "q",
+      "imdbId"
+    ],
+    "musicSearchParams": [
+      "q",
+      "artist",
+      "album"
+    ],
+    "searchParams": [
+      "q"
+    ],
+    "supportsRawSearch": false,
+    "tvSearchParams": [
+      "q",
+      "season",
+      "ep",
+      "imdbId"
+    ]
+  },
+  "configContract": "CardigannSettings",
+  "definitionName": "lantern-test",
+  "description": "A tracker that only exists in Lantern's tests",
+  "downloadClientId": 0,
+  "enable": true,
+  "encoding": "Unicode (UTF-8)",
+  "fields": [
+    {
+      "advanced": false,
+      "hidden": "hidden",
+      "isFloat": false,
+      "name": "definitionFile",
+      "order": 0,
+      "privacy": "normal",
+      "type": "textbox",
+      "value": "lantern-test"
+    },
+    {
+      "advanced": false,
+      "helpText": "Select which base url Lantern will use for requests to the site",
+      "isFloat": false,
+      "label": "Base Url",
+      "name": "baseUrl",
+      "order": 1,
+      "privacy": "normal",
+      "selectOptionsProviderAction": "getUrls",
+      "type": "select",
+      "value": "http://tracker.test/"
+    },
+    {
+      "advanced": true,
+      "helpText": "The number of max queries as specified by the respective unit that Lantern will allow to the site",
+      "isFloat": false,
+      "label": "Query Limit",
+      "name": "baseSettings.queryLimit",
+      "order": 2,
+      "privacy": "normal",
+      "type": "number"
+    },
+    {
+      "advanced": true,
+      "helpText": "The number of max grabs as specified by the respective unit that Lantern will allow to the site",
+      "isFloat": false,
+      "label": "Grab Limit",
+      "name": "baseSettings.grabLimit",
+      "order": 3,
+      "privacy": "normal",
+      "type": "number"
+    },
+    {
+      "advanced": true,
+      "helpText": "The unit of time for counting limits per indexer",
+      "isFloat": false,
+      "label": "Limits Unit",
+      "name": "baseSettings.limitsUnit",
+      "order": 4,
+      "privacy": "normal",
+      "selectOptions": [
+        {
+          "hint": "(0)",
+          "name": "Day",
+          "order": 0,
+          "value": 0
+        },
+        {
+          "hint": "(1)",
+          "name": "Hour",
+          "order": 1,
+          "value": 1
+        }
+      ],
+      "type": "select",
+      "value": 0
+    },
+    {
+      "advanced": true,
+      "helpText": "Minimum seeders required by the Applications for the indexer to grab, empty is Sync profile's default",
+      "isFloat": false,
+      "label": "Apps Minimum Seeders",
+      "name": "torrentBaseSettings.appMinimumSeeders",
+      "order": 5,
+      "privacy": "normal",
+      "type": "number"
+    },
+    {
+      "advanced": false,
+      "helpText": "The ratio a torrent should reach before stopping, empty uses the download client's default. Ratio should be at least 1.0 and follow the indexers rules",
+      "isFloat": true,
+      "label": "Seed Ratio",
+      "name": "torrentBaseSettings.seedRatio",
+      "order": 6,
+      "privacy": "normal",
+      "type": "number"
+    },
+    {
+      "advanced": true,
+      "helpText": "The time a torrent should be seeded before stopping, empty uses the download client's default",
+      "isFloat": false,
+      "label": "Seed Time",
+      "name": "torrentBaseSettings.seedTime",
+      "order": 7,
+      "privacy": "normal",
+      "type": "number",
+      "unit": "minutes"
+    },
+    {
+      "advanced": true,
+      "helpText": "The time a pack (season or discography) torrent should be seeded before stopping, empty is app's default",
+      "isFloat": false,
+      "label": "Pack Seed Time",
+      "name": "torrentBaseSettings.packSeedTime",
+      "order": 8,
+      "privacy": "normal",
+      "type": "number",
+      "unit": "minutes"
+    },
+    {
+      "advanced": true,
+      "helpText": "When enabled, this indexer will prefer the use of magnet URLs for grabs with fallback to torrent links",
+      "isFloat": false,
+      "label": "Prefer Magnet URL",
+      "name": "torrentBaseSettings.preferMagnetUrl",
+      "order": 9,
+      "privacy": "normal",
+      "type": "checkbox",
+      "value": false
+    },
+    {
+      "advanced": false,
+      "isFloat": false,
+      "label": "Username",
+      "name": "username",
+      "order": 0,
+      "privacy": "normal",
+      "type": "textbox",
+      "value": "me"
+    },
+    {
+      "advanced": false,
+      "isFloat": false,
+      "label": "Password",
+      "name": "password",
+      "order": 1,
+      "privacy": "normal",
+      "type": "password",
+      "value": "pw"
+    },
+    {
+      "advanced": false,
+      "isFloat": false,
+      "label": "Search freeleech only",
+      "name": "freeleech",
+      "order": 2,
+      "privacy": "normal",
+      "type": "checkbox",
+      "value": false
+    },
+    {
+      "advanced": false,
+      "isFloat": false,
+      "label": "Sort requested from site",
+      "name": "sort",
+      "order": 3,
+      "privacy": "normal",
+      "selectOptions": [
+        {
+          "name": "created",
+          "order": 0,
+          "value": 0
+        },
+        {
+          "name": "seeders",
+          "order": 0,
+          "value": 1
+        }
+      ],
+      "type": "select",
+      "value": 0
+    }
+  ],
+  "id": 1,
+  "implementation": "Cardigann",
+  "implementationName": "Cardigann",
+  "indexerUrls": [
+    "http://127.0.0.1:1/"
+  ],
+  "infoLink": "https://wiki.servarr.com/prowlarr/supported-indexers#lantern-test",
+  "language": "en-US",
+  "legacyUrls": [],
+  "name": "Lantern Test Tracker",
+  "priority": 25,
+  "privacy": "private",
+  "protocol": "torrent",
+  "redirect": false,
+  "sortName": "lantern test tracker",
+  "supportsPagination": false,
+  "supportsRedirect": false,
+  "supportsRss": true,
+  "supportsSearch": true,
+  "tags": []
+}

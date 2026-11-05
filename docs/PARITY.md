@@ -90,25 +90,25 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `GET /api/v1/config/downloadclient` | P-app | todo | |  |
 | `GET /api/v1/filesystem` | P-api | todo | |  |
 | `GET /api/v1/filesystem/type` | P-api | todo | |  |
-| `GET /api/v1/health` | P-api | partial | `server/tests/prowlarr_api.rs::localization_and_health` | ported answer; 4 of Prowlarr's 20 checks so far |
-| `GET /api/v1/history` | P-api | todo | |  |
-| `GET /api/v1/history/since` | P-api | todo | |  |
-| `GET /api/v1/history/indexer` | P-api | todo | |  |
+| `GET /api/v1/health` | P-api | partial | `server/tests/prowlarr_indexers.rs::sites_on_hold_show_in_status_and_health`, `server/tests/prowlarr_api.rs::localization_and_health` | ported answer; 11 of Prowlarr's 20 checks (the indexer, proxy, VIP and download client ones added) |
+| `GET /api/v1/history` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/history.rs`); no download ids, no auth events yet |
+| `GET /api/v1/history/since` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/history.rs`); no download ids, no auth events yet |
+| `GET /api/v1/history/indexer` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/history.rs`); no download ids, no auth events yet |
 | `GET /api/v1/config/host/{id}` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks`, `server/src/prowlarr/config.rs::tests` | ported (`prowlarr/config.rs`) |
 | `PUT /api/v1/config/host/{id}` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks`, `server/src/prowlarr/config.rs::tests` | ported (`prowlarr/config.rs`) |
 | `GET /api/v1/config/host` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks`, `server/src/prowlarr/config.rs::tests` | ported (`prowlarr/config.rs`) |
-| `GET /api/v1/indexer/{id}` | P-api | partial | | fresh version |
-| `PUT /api/v1/indexer/{id}` | P-api | todo | |  |
-| `DELETE /api/v1/indexer/{id}` | P-api | todo | |  |
-| `GET /api/v1/indexer` | P-api | partial | | fresh version |
-| `POST /api/v1/indexer` | P-api | todo | |  |
-| `PUT /api/v1/indexer/bulk` | P-api | todo | |  |
-| `DELETE /api/v1/indexer/bulk` | P-api | todo | |  |
-| `GET /api/v1/indexer/schema` | P-api | todo | |  |
-| `POST /api/v1/indexer/test` | P-api | todo | |  |
-| `POST /api/v1/indexer/testall` | P-api | todo | |  |
-| `POST /api/v1/indexer/action/{name}` | P-api | todo | |  |
-| `GET /api/v1/indexer/categories` | P-api | todo | |  |
+| `GET /api/v1/indexer/{id}` | P-api | done | `server/tests/prowlarr_indexers.rs::indexers_are_added_checked_changed_and_removed_as_in_prowlarr` | ported (`prowlarr/indexers.rs`); Cardigann, Newznab and Torznab (no native C# indexers); secrets masked |
+| `PUT /api/v1/indexer/{id}` | P-api | done | `server/tests/prowlarr_indexers.rs::indexers_are_added_checked_changed_and_removed_as_in_prowlarr` | ported (`prowlarr/indexers.rs`); Cardigann, Newznab and Torznab (no native C# indexers); secrets masked; kind and definition stay |
+| `DELETE /api/v1/indexer/{id}` | P-api | done | `server/tests/prowlarr_indexers.rs::indexers_are_added_checked_changed_and_removed_as_in_prowlarr` | ported (`prowlarr/indexers.rs`); Cardigann, Newznab and Torznab (no native C# indexers); secrets masked |
+| `GET /api/v1/indexer` | P-api | done | `server/tests/prowlarr_indexers.rs::indexers_are_added_checked_changed_and_removed_as_in_prowlarr` | ported (`prowlarr/indexers.rs`); Cardigann, Newznab and Torznab (no native C# indexers); secrets masked |
+| `POST /api/v1/indexer` | P-api | done | `server/tests/prowlarr_indexers.rs::indexers_are_added_checked_changed_and_removed_as_in_prowlarr` | ported (`prowlarr/indexers.rs`); Cardigann, Newznab and Torznab (no native C# indexers); secrets masked |
+| `PUT /api/v1/indexer/bulk` | P-api | done | `server/tests/prowlarr_indexers.rs::indexers_are_added_checked_changed_and_removed_as_in_prowlarr` | ported (`prowlarr/indexers.rs`); Cardigann, Newznab and Torznab (no native C# indexers); secrets masked |
+| `DELETE /api/v1/indexer/bulk` | P-api | done | `server/tests/prowlarr_indexers.rs::indexers_are_added_checked_changed_and_removed_as_in_prowlarr` | ported (`prowlarr/indexers.rs`); Cardigann, Newznab and Torznab (no native C# indexers); secrets masked |
+| `GET /api/v1/indexer/schema` | P-api | done | `server/tests/prowlarr_indexers.rs::the_schema_lists_definitions_and_presets_as_prowlarr_does` | ported: every Cardigann definition and Prowlarr's Newznab/Torznab presets (no native C# indexers) |
+| `POST /api/v1/indexer/test` | P-api | done | `server/tests/prowlarr_indexers.rs::indexers_are_added_checked_changed_and_removed_as_in_prowlarr` | ported (`prowlarr/indexers.rs`); Cardigann, Newznab and Torznab (no native C# indexers); secrets masked |
+| `POST /api/v1/indexer/testall` | P-api | done | `server/tests/prowlarr_indexers.rs::indexers_are_added_checked_changed_and_removed_as_in_prowlarr` | ported (`prowlarr/indexers.rs`); Cardigann, Newznab and Torznab (no native C# indexers); secrets masked |
+| `POST /api/v1/indexer/action/{name}` | P-api | done | `server/tests/prowlarr_indexers.rs::the_schema_lists_definitions_and_presets_as_prowlarr_does` | ported `getUrls`; other actions answer null |
+| `GET /api/v1/indexer/categories` | P-api | done | `server/tests/prowlarr_indexers.rs::the_schema_lists_definitions_and_presets_as_prowlarr_does` | ported (`ParentCats`) |
 | `GET /api/v1/indexerproxy/{id}` | P-idx | done | `server/tests/indexers_proxies.rs` `indexer_proxy_api_answers_like_prowlarr` (fixture `indexerproxy.json`, 404) | `server/src/indexers/proxies_api.rs` |
 | `PUT /api/v1/indexerproxy/{id}` | P-idx | done | `server/tests/indexers_proxies.rs` `indexer_proxy_api_answers_like_prowlarr` (test unless `forceSave`, 202, id checks) | `server/src/indexers/proxies_api.rs` |
 | `DELETE /api/v1/indexerproxy/{id}` | P-idx | done | `server/tests/indexers_proxies.rs` `indexer_proxy_api_answers_like_prowlarr` | `server/src/indexers/proxies_api.rs` |
@@ -118,8 +118,8 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `POST /api/v1/indexerproxy/test` | P-idx | done | `server/tests/indexers_proxies.rs` `indexer_proxy_api_answers_like_prowlarr`; `server/src/indexers/proxies.rs` tests | pings `https://prowlarr.servarr.com/v1/ping` through the proxy, as Prowlarr |
 | `POST /api/v1/indexerproxy/testall` | P-idx | done | `server/tests/indexers_proxies.rs` `indexer_proxy_api_answers_like_prowlarr` | `server/src/indexers/proxies_api.rs` |
 | `POST /api/v1/indexerproxy/action/{name}` | P-idx | done | `server/tests/indexers_proxies.rs` `indexer_proxy_api_answers_like_prowlarr` (answers `null`) | `server/src/indexers/proxies_api.rs` |
-| `GET /api/v1/indexerstats` | P-api | partial | | fresh version |
-| `GET /api/v1/indexerstatus` | P-api | todo | |  |
+| `GET /api/v1/indexerstats` | P-api | done | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`IndexerStatisticsService`) from the history |
+| `GET /api/v1/indexerstatus` | P-api | done | `server/tests/prowlarr_indexers.rs::sites_on_hold_show_in_status_and_health` | ported |
 | `GET /api/v1/localization` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/localization.rs::tests` | ported; Prowlarr's strings copied as data (GPL-3.0) |
 | `GET /api/v1/localization/options` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/localization.rs::tests` | ported; Prowlarr's strings copied as data (GPL-3.0) |
 | `GET /api/v1/log` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
@@ -140,9 +140,9 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `POST /api/v1/notification/action/{name}` | P-app | todo | |  |
 | `GET /ping` | P-api | done | `server/tests/prowlarr_api.rs::ping_and_status` | ported (`prowlarr/system.rs`); appName is Lantern |
 | `HEAD /ping` | P-api | done | `server/tests/prowlarr_api.rs::ping_and_status` | ported (`prowlarr/system.rs`); appName is Lantern |
-| `POST /api/v1/search` | P-api | todo | |  |
-| `GET /api/v1/search` | P-api | partial | | fresh version |
-| `POST /api/v1/search/bulk` | P-api | todo | |  |
+| `POST /api/v1/search` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported; grabs go to Lantern's download clients (Prowlarr's own download clients are not in this slice) |
+| `GET /api/v1/search` | P-api | done | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/search.rs`); releases kept 30 minutes for a grab |
+| `POST /api/v1/search/bulk` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported; grabs go to Lantern's download clients |
 | `GET /content/{path}` | P-ui | partial | `server/tests/prowlarr_ui.rs::only_content_is_open_without_signing_in`, `::the_manifest_names_the_instance_like_manifest_mapper` | the built files, open to everyone, served at `/prowlarr/Content/` for now (moves to `/` later) |
 | `GET /` | P-ui | partial | | fresh version |
 | `GET /{path}` | P-ui | partial | `server/tests/prowlarr_ui.rs::every_page_is_the_frontend_under_prowlarr`, `::the_page_gets_the_url_base_like_html_mapper_base`, `::pages_are_paths_without_a_dot_outside_content`, `::initialize_json_has_prowlarrs_fields_with_lanterns_api` | Prowlarr's frontend with its URL base set to `/prowlarr` (moves to `/` later); no `?h=` cache breaker |
@@ -153,11 +153,11 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `POST /api/v1/system/restart` | P-api | todo | |  |
 | `GET /api/v1/tag/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
 | `PUT /api/v1/tag/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
-| `DELETE /api/v1/tag/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
+| `DELETE /api/v1/tag/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details`, `server/tests/prowlarr_indexers.rs::tag_details_name_the_proxies_and_apps_using_them` | ported; a tag a proxy or application uses stays (409) |
 | `GET /api/v1/tag` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
 | `POST /api/v1/tag` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
-| `GET /api/v1/tag/detail/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
-| `GET /api/v1/tag/detail` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details` | ported (`prowlarr/tags.rs`); indexer tags are kept in step |
+| `GET /api/v1/tag/detail/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details`, `server/tests/prowlarr_indexers.rs::tag_details_name_the_proxies_and_apps_using_them` | ported; proxy and application ids filled |
+| `GET /api/v1/tag/detail` | P-api | done | `server/tests/prowlarr_api.rs::tags_and_their_details`, `server/tests/prowlarr_indexers.rs::tag_details_name_the_proxies_and_apps_using_them` | ported; proxy and application ids filled |
 | `GET /api/v1/system/task` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/system.rs`); updates come from Lantern's release notes |
 | `GET /api/v1/system/task/{id}` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/system.rs`); updates come from Lantern's release notes |
 | `PUT /api/v1/config/ui/{id}` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
@@ -174,7 +174,7 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | Newznab/Torznab `t=book` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/src/indexers/newznab_request.rs` `music_and_book_searches_take_every_prowlarr_parameter` | ported |
 | Newznab/Torznab errors (codes 100–910 as Prowlarr answers them) | P-idx | done | `server/tests/indexers_prowlarr.rs` `errors_match_prowlarr`, `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr` | ported (Prowlarr answers 200, 201, 202, 410, 429 and an empty 401) |
 | `apikey` in query or `X-Api-Key` header; `/api/v1/…` behind forms/basic/external auth | P-api | done | `server/tests/prowlarr_api.rs::the_key_or_a_session_is_needed_like_prowlarr` | ported (`prowlarr::V1`); forms means Lantern's own sign-in |
-| SignalR `/signalr/messages` (live updates the web UI listens to) | P-api | todo | | |
+| SignalR `/signalr/messages` (live updates the web UI listens to) | P-api | partial | `server/tests/prowlarr_indexers.rs::live_updates_come_over_signalr` | ported negotiate and the JSON hub over WebSockets (`prowlarr/signalr.rs`); indexer and command updates; no long polling or health pushes yet |
 
 ### Settings
 

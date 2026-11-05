@@ -1,0 +1,32 @@
+{
+  "indexers": [
+    {
+      "indexerId": 1,
+      "indexerName": "Lantern Test Tracker",
+      "averageResponseTime": 120,
+      "averageGrabResponseTime": 0,
+      "numberOfQueries": 1,
+      "numberOfGrabs": 0,
+      "numberOfRssQueries": 0,
+      "numberOfAuthQueries": 0,
+      "numberOfFailedQueries": 0,
+      "numberOfFailedGrabs": 0,
+      "numberOfFailedRssQueries": 0,
+      "numberOfFailedAuthQueries": 0
+    }
+  ],
+  "userAgents": [
+    {
+      "userAgent": "Prowlarr",
+      "numberOfQueries": 1,
+      "numberOfGrabs": 0
+    }
+  ],
+  "hosts": [
+    {
+      "host": "lantern.test",
+      "numberOfQueries": 1,
+      "numberOfGrabs": 0
+    }
+  ]
+}

@@ -17,3 +17,18 @@ The `apps_*` files are for app sync (`server/tests/prowlarr_apps.rs`):
   `BuildSonarrIndexer` and `BuildRadarrIndexer` (`SonarrIndexer` and `RadarrIndexer` written by STJson: camelCase,
   nulls left out; each field as `SonarrField` keeps it), for the tests' indexers with Prowlarr Server
   `http://lantern:9696` and API key `test-key`. `_test` is the indexer of the app's test (`Test`, id 0, turned off).
+
+The `indexer*` and `history*` files are for the indexer API (`server/tests/prowlarr_indexers.rs`):
+
+- `indexer_cardigann.json`: `GET /api/v1/indexer/1` for the test tracker (`tests/fixtures/definitions/lantern-test.yml`)
+  signed in as `me`/`pw`, from `IndexerResourceMapper.ToResource` (the standard fields through `SchemaBuilder`, the
+  definition's own settings through `MapCardigannField`: a select's value is the place of the default among the
+  options sorted by key) and `IndexerCapabilityResource`. Prowlarr sends the password in the clear; Lantern masks it.
+- `indexer_schema_newznab.json`: the NZBgeek entry of `GET /api/v1/indexer/schema` (`Newznab.DefaultDefinitions`
+  through `SetProviderCharacteristics`; `{appName}` texts say Lantern).
+- `indexer_invalid.json`: a `POST /api/v1/indexer` without a name (the shared `NotEmpty` rule, as FluentValidation
+  writes a `ValidationFailure`).
+- `indexerstatus.json`, `indexerstats.json`: `IndexerStatusResource` of a site on hold, and `IndexerStatsResource`
+  (`IndexerStatisticsService`) after one search from the web app.
+- `history.json`, `history_since.json`: `PagingResource<HistoryResource>` and the `/since` list after that search
+  (`HistoryService.Handle(IndexerQueryEvent)`: the details are text, their names camelCase).

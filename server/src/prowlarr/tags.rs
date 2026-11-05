@@ -5,7 +5,7 @@
 //!
 //! Lantern's indexers keep their tags by name (`indexers.tags`, comma separated); Prowlarr's tags have numbers.
 //! Every name an indexer uses is a tag here too (made when it is first listed), and renaming a tag renames it on
-//! the indexers that use it.
+//! the indexers that use it. Indexer proxies and applications keep tag ids, as Prowlarr does.
 
 use super::{body_json, check, created, fail, not_found, validate_id, validation, ApiResult, V1};
 use crate::AppState;
@@ -71,17 +71,38 @@ fn indexers_with(db: &SqliteDb, label: &str) -> kit_server_core::Result<Vec<i64>
         .collect())
 }
 
-/// A tag as Prowlarr's `TagDetailsResource`. Lantern has no notifications, indexer proxies or tagged
-/// applications yet, so those lists are empty.
+/// The ids of the providers in `table` (tags kept as a JSON list of tag ids) that have tag `id`; none when the
+/// table isn't there.
+fn providers_with(db: &SqliteDb, table: &str, id: i64) -> Vec<i64> {
+    db.query(&format!("SELECT id, tags FROM {table} ORDER BY id"), p![])
+        .map(|rows| {
+            rows.iter()
+                .filter(|r| serde_json::from_str::<Vec<i64>>(&r.s("tags")).unwrap_or_default().contains(&id))
+                .map(|r| r.i("id"))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// A tag as Prowlarr's `TagDetailsResource`: the indexers, indexer proxies and applications that use it (Lantern
+/// has no notifications, so that list is empty).
 fn details_json(db: &SqliteDb, tag: &(i64, String)) -> kit_server_core::Result<Value> {
     Ok(json!({
         "id": tag.0,
         "label": tag.1,
         "notificationIds": [],
         "indexerIds": indexers_with(db, &tag.1)?,
-        "indexerProxyIds": [],
-        "applicationIds": [],
+        "indexerProxyIds": providers_with(db, "indexer_proxies", tag.0),
+        "applicationIds": providers_with(db, "prowlarr_applications", tag.0),
     }))
+}
+
+/// Whether anything uses the tag (`TagDetails.InUse`).
+fn in_use(db: &SqliteDb, tag: &(i64, String)) -> kit_server_core::Result<bool> {
+    let d = details_json(db, tag)?;
+    Ok(["notificationIds", "indexerIds", "indexerProxyIds", "applicationIds"]
+        .iter()
+        .any(|k| d[*k].as_array().is_some_and(|a| !a.is_empty())))
 }
 
 /// Prowlarr's checks of a tag's label: set, and only `a-z`, `0-9` and `-`.
@@ -164,7 +185,7 @@ async fn update(State(st): State<AppState>, _: V1, Path(path_id): Path<i64>, byt
 async fn remove(State(st): State<AppState>, _: V1, Path(id): Path<i64>) -> ApiResult<Response> {
     validate_id(id)?;
     let tag = get_tag(&st.db, id)?;
-    if !indexers_with(&st.db, &tag.1)?.is_empty() {
+    if in_use(&st.db, &tag)? {
         return Err(fail(409, format!("Tag with ID {id} '{}' cannot be deleted since it's still in use", tag.1)));
     }
     st.db.execute("DELETE FROM prowlarr_tags WHERE id=?", p![id])?;
