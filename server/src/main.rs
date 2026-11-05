@@ -21,6 +21,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
     let st = server::AppState::from_env().await?;
     server::spawn_definition_updates(st.clone());
+    server::spawn_hub(st.clone());
     let addr = SocketAddr::from(([0, 0, 0, 0], server::port()));
     tracing::info!("{name} {} listening on {addr}", server::VERSION);
     let solver_port = server::solver_port();

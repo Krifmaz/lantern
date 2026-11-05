@@ -12,6 +12,7 @@ ease-of-use features from the first commit.
 | `server/` | Axum server with the kit server crates: health, changelog (What's new), notices, bug reports, diagnostics, settings |
 | `web/` | Leptos web app with the kit components and the kit's default theme, served at `/` by the server |
 | `desktop/` | Desktop app (Linux, Windows, macOS) on Iced with kit-iced: connect, app-token sign-in, every kit feature, the update notice on the app's own releases |
+| `android/` | Android app (Kotlin, Jetpack Compose) on kit-compose: indexers, their health and search on the phone; see [android/README.md](android/README.md) |
 | `docs/releases/` | one Markdown file per release: the release notes and What's new |
 
 ## Add Lantern to Sonarr, Radarr, Lidarr or Readarr
@@ -59,6 +60,20 @@ docker run --read-only -p 9696:9696 -p 8191:8191 -v lantern-data:/data lantern
 | `APP_STATIC_DIR` | the built web app | `/app/static` |
 | `APP_ADMIN_USER`, `APP_ADMIN_PASSWORD` | the owner made at the first start | `admin`, a printed password |
 | `APP_NAME`, `APP_SESSION_DAYS`, `APP_API_KEY` | settings (settings.toml); set here they are locked in Settings | |
+| `APP_DOWNLOADS_DIR` | the downloads folder; each app gets `<folder>/<category>` in it. Mount it (`-v /data/downloads:/downloads`) at the same place in your download clients and apps, or set each one's own path in Lantern | `/downloads` |
+| `APP_GRAB_ATTEMPTS` | how many times a grab is sent before it fails | `5` |
+
+### Download hub
+
+Download clients: qBittorrent (default for torrents), Transmission, Deluge, rTorrent, SABnzbd (default for Usenet)
+and NZBGet. Apps never see which one a grab went to.
+
+Apps need only Lantern's address and API key (`X-Api-Key`). They register once (`POST /api/hub/apps` with `name`,
+`media`, `import_path`, `callback_url`), search (`GET /api/hub/search?app=`), grab (`POST /api/hub/grabs` with a
+result's `token` or any `url`), and hear back through their callback address or the live stream
+(`GET /api/hub/events?app=&apikey=`) with each finished file's path as the app sees it. Webhooks carry
+`X-Lantern-Signature: sha256=<HMAC-SHA256 of the body with the API key>`. All routes are listed in
+`server/src/hub/api.rs`.
 
 ## Checks
 

@@ -1,8 +1,8 @@
 name: ci
 
 # Every pull request: the kit's checks (fmt, clippy -D warnings, tests of server/, desktop/ and web/), the Docker image
-# built (not pushed), the image's browser getting past a Cloudflare-style check, and real Sonarr, Radarr, Lidarr and
-# Readarr adding Lantern as an indexer. Required to pass before a merge.
+# built (not pushed), the image's browser getting past a Cloudflare-style check, the Android app built and unit-tested,
+# and real Sonarr, Radarr, Lidarr and Readarr adding Lantern as an indexer. Required to pass before a merge.
 on:
   pull_request:
   workflow_dispatch:
@@ -32,6 +32,13 @@ jobs:
       push: false
       platforms: linux/amd64
 
+  android:
+    needs: test
+    uses: Krifmaz/kit/.github/workflows/kit-android.yml@v0.2.1
+    with:
+      app-name: Lantern
+      project-dir: android
+      baseline-profile: true
 
   # Real Sonarr, Radarr, Lidarr and Readarr add Lantern as a Torznab indexer (scripts/contract-arrs.sh)
   contract:

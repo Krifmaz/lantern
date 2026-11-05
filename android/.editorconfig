@@ -1,0 +1,8 @@
+# ktlint (Kotlin style) for android/. Long lines, as the kit's Rust (rustfmt.toml).
+root = true
+
+[*.{kt,kts}]
+ktlint_code_style = intellij_idea
+max_line_length = 180
+ktlint_function_naming_ignore_when_annotated_with = Composable
+ktlint_standard_no-wildcard-imports = enabled

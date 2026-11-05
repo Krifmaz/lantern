@@ -8,10 +8,6 @@
 - The FlareSolverr API on port 8191 (`APP_SOLVER_PORT`), so apps that use FlareSolverr can use Lantern instead.
 - A Cloudflare checks card on the Indexers page (test any address) and a Diagnostics check for the browser.
 - CI checks the image as it ships: its browser gets past a Cloudflare-style check through the FlareSolverr API.
-
-## 0.0.2
-
-### Added
 - Indexers: every site in the Prowlarr/Indexers definitions (bundled in the image and updated daily), plus
   Newznab and Torznab indexers, with login, tests, health and hold after repeated failures.
 - Torznab/Newznab feeds per indexer and for all of them (`/{id}/api`, `/all/api`), Jackett and Prowlarr paths too,
@@ -20,6 +16,16 @@
 - Indexers and Search pages, a notice and a Diagnostics check for indexers that stop working.
 - Contract test in CI: real Sonarr, Radarr, Lidarr and Readarr add Lantern and search through it.
 - Lantern listens on port 9696 (Prowlarr's), and makes an API key at first start.
+- The Android app (`android/`, kit-compose v0.2.1, the kit's default theme): connect, sign in, What's new, updates,
+  bug reports, crash logs, Server settings and Diagnostics; built and unit-tested on every pull request.
+- Android: Indexers (how every site is doing, what went wrong, the last week's numbers, Test) and Search (every
+  indexer at once, by kind; open a result's page or copy its link), and the server's notices on the home page.
+- Download hub: qBittorrent and SABnzbd behind one download-client layer; apps register with their name, media type
+  and import path and get their own category and folder; search and grab through Lantern; progress followed, failed
+  sends tried again (5 times by default), and apps called back by webhook and a live event stream with the finished
+  files' exact paths in their own view.
+- Download hub: Transmission, Deluge, rTorrent and NZBGet join qBittorrent and SABnzbd behind the same client
+  layer (qBittorrent and SABnzbd stay the defaults).
 
 ## 0.0.1
 

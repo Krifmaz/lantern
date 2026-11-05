@@ -20,6 +20,24 @@ Non-obvious calls, one line each, newest last.
   networks); Readarr is pinned to `0.4.18-develop`, the last amd64 build after Readarr was retired.
 - 2026-11-05 — A site whose login needs a captcha asks for a browser cookie instead; Cloudflare challenges say so in
   words until the Cloudflare solving stage lands.
+- 2026-11-05 — The Android app is generated from the kit v0.2.1 template (the tag the rest of Lantern pins; kit v0.3.0
+  changed nothing under android/), with Lantern's port 9696 as the address the emulator suggests.
+- 2026-11-05 — Download hub: one folder per app, `<downloads folder>/<category>`, with paths swapped at whole folder
+  names between Lantern, each client (its own `root`) and each app (its `import_path`), so a single shared mount
+  keeps hardlinks possible. Paths are worked out when they are used, so a changed path applies to every app at once.
+- 2026-11-05 — Download hub: qBittorrent torrents are found again by the tags `lantern` and `lantern-<grab id>`
+  instead of computing the info hash, so magnets and files work the same and nothing else in the client is touched.
+- 2026-11-05 — Download hub: Lantern retries sending a grab (and a download its client failed) with waits of 30 s,
+  2, 10, 30 and 60 min, then tells the app it failed; picking another release stays the app's call.
+- 2026-11-05 — Download hub: client passwords and API keys sit in the database like indexer secrets (masked in every
+  answer) until the account vault lands, which moves them into it.
+- 2026-11-05 — Download hub: webhooks are signed with Lantern's API key (HMAC-SHA256), which the app already holds,
+  rather than a second secret per app.
+- 2026-11-05 — Download hub clients without categories get the app's folder (Transmission, rTorrent) or category
+  (NZBGet) with each download; NZBGet's DestDir must be Lantern's downloads folder so `<DestDir>/<category>` is the
+  app's folder. rTorrent's XML-RPC can't delete files, so removing a grab there leaves its files on disk.
+- 2026-11-05 — rTorrent is reached over its XML-RPC address (ruTorrent's `/RPC2` or an SCGI bridge), with a small
+  XML-RPC reader of Lantern's own instead of another dependency.
 - 2026-11-05 — Cloudflare solving drives Debian's Chromium headless shell over the DevTools protocol (chromiumoxide),
   copied with the files of the packages it needs into the distroless image, so the image stays distroless and
   read-only (the browser's profile and scratch files live in `/data/browser`). It sends a person's Chrome user agent

@@ -11,11 +11,13 @@
 //! | `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` | [`auth`] |
 //! | `/api/indexers/*`, `/api/search`, `/{id}/api` (Torznab/Newznab), `/{id}/download`, `/api/v1/*` (Prowlarr API) | [`indexers`] |
 //! | `/api/solver`, `/api/solver/test`; the FlareSolverr API on its own port ([`solver_port`]) | [`solver`] |
+//! | `/api/hub/*` (download clients, apps, search and grab, live events) | [`hub`] |
 //!
 //! Everything the app adds of its own goes into [`app`] next to them.
 
 pub mod auth;
 pub mod checks;
+pub mod hub;
 pub mod indexers;
 pub mod solver;
 
@@ -93,6 +95,8 @@ pub struct AppState {
     pub signer: indexers::LinkSigner,
     /// Gets past Cloudflare checks with a headless browser (also the FlareSolverr API).
     pub solver: solver::Solver,
+    /// The download hub: download clients, apps and their grabs.
+    pub hub: hub::Hub,
 }
 
 impl AppState {
@@ -123,6 +127,7 @@ impl AppState {
         let db = SqliteDb::open(&data.join("app.db")).map_err(|e| anyhow::anyhow!("The database can't be opened: {}", e.detail))?;
         auth::migrate(&db)?;
         indexers::migrate(&db)?;
+        hub::migrate(&db)?;
         solver::migrate(&db)?;
         let solver = solver::Solver::new(solver::find_program(env("APP_CHROMIUM").as_deref()), data, Some(db.clone()));
         let bundled = PathBuf::from(env("APP_DEFINITIONS_DIR").unwrap_or_else(|| "/app/definitions".into()));
@@ -140,6 +145,8 @@ impl AppState {
         let changelog = Arc::new(Changelog::new(&settings.str("app_name"), VERSION, changelog_gen::NOTES));
         let db_for_indexers = db.clone();
         let settings_for_indexers = settings.clone();
+        let indexers = indexers::Indexers::new(db_for_indexers, library).with_settings(settings_for_indexers).with_solver(solver.clone());
+        let hub = hub::Hub::new(db.clone(), indexers.clone(), signer.clone(), settings.clone());
         Ok(AppState {
             db,
             reports,
@@ -150,8 +157,9 @@ impl AppState {
             changelog,
             notices,
             limits: Arc::new(auth::Limits::default()),
-            indexers: indexers::Indexers::new(db_for_indexers, library).with_settings(settings_for_indexers).with_solver(solver.clone()),
+            indexers,
             signer,
+            hub,
             solver,
         })
     }
@@ -268,6 +276,7 @@ pub fn app(st: AppState) -> Router {
         .merge(auth::router())
         .merge(indexers::api::router())
         .merge(solver::api::router())
+        .merge(hub::api::router())
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))
@@ -292,6 +301,16 @@ pub fn spawn_definition_updates(st: AppState) {
             }
             first = false;
             tokio::time::sleep(std::time::Duration::from_secs(24 * 3600)).await;
+        }
+    });
+}
+
+/// Moves every grab on every three seconds: sends the queued ones, follows the downloads, calls the apps back.
+pub fn spawn_hub(st: AppState) {
+    tokio::spawn(async move {
+        loop {
+            st.hub.tick().await;
+            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
         }
     });
 }

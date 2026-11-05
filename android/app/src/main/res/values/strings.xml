@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- the app's name on the home screen, in the kit's words ("Lantern closed unexpectedly…") and requests -->
+    <string name="app_name">Lantern</string>
+</resources>
