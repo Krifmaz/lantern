@@ -1,0 +1,44 @@
+[
+ {
+  "name": "test_1",
+  "args": {
+   "tags": [
+    "CD",
+    "FLAC",
+    "Lossless"
+   ],
+   "__type": "args"
+  },
+  "want": {
+   "Audio": [
+    "FLAC",
+    "Lossless"
+   ],
+   "AudioBitrate": "Lossless",
+   "AudioFormat": "FLAC",
+   "Source": "CD",
+   "__type": "ReleaseTags"
+  }
+ },
+ {
+  "name": "test_2",
+  "args": {
+   "tags": [
+    "MP4",
+    "2160p",
+    "BluRay",
+    "DV"
+   ],
+   "__type": "args"
+  },
+  "want": {
+   "Source": "BluRay",
+   "Resolution": "2160p",
+   "Container": "mp4",
+   "HDR": [
+    "DV"
+   ],
+   "__type": "ReleaseTags"
+  }
+ }
+]

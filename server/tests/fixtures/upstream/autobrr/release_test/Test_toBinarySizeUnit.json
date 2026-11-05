@@ -1,0 +1,38 @@
+[
+ {
+  "size": "7.63 GB",
+  "want": "7.63 GiB"
+ },
+ {
+  "size": "716.22MB",
+  "want": "716.22MiB"
+ },
+ {
+  "size": "1.2 tb",
+  "want": "1.2 tiB"
+ },
+ {
+  "size": "7.63 GB ",
+  "want": "7.63 GiB"
+ },
+ {
+  "size": "512 KB",
+  "want": "512 KiB"
+ },
+ {
+  "size": "1.27 GiB",
+  "want": "1.27 GiB"
+ },
+ {
+  "size": "700 B",
+  "want": "700 B"
+ },
+ {
+  "size": "700 bytes",
+  "want": "700 bytes"
+ },
+ {
+  "size": "",
+  "want": ""
+ }
+]

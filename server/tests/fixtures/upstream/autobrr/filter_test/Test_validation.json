@@ -1,0 +1,44 @@
+[
+ {
+  "name": "empty name",
+  "filter": {
+   "__type": "Filter"
+  },
+  "valid": false
+ },
+ {
+  "name": "empty filter, with name",
+  "filter": {
+   "Name": "test",
+   "__type": "Filter"
+  },
+  "valid": true
+ },
+ {
+  "name": "valid size limit",
+  "filter": {
+   "Name": "test",
+   "MaxSize": "12MB",
+   "__type": "Filter"
+  },
+  "valid": true
+ },
+ {
+  "name": "gibberish max size limit",
+  "filter": {
+   "Name": "test",
+   "MaxSize": "asdf",
+   "__type": "Filter"
+  },
+  "valid": false
+ },
+ {
+  "name": "gibberish min size limit",
+  "filter": {
+   "Name": "test",
+   "MinSize": "qwerty",
+   "__type": "Filter"
+  },
+  "valid": false
+ }
+]

@@ -1,0 +1,54 @@
+[
+ {
+  "name": "empty",
+  "fields": {
+   "data": [],
+   "__type": "fields"
+  },
+  "want": ""
+ },
+ {
+  "name": "non_empty",
+  "fields": {
+   "data": [
+    {
+     "key": "resolution",
+     "got": "1080p",
+     "want": "2160p"
+    },
+    {
+     "key": "match hdr",
+     "got": [
+      "HDR10"
+     ],
+     "want": [
+      "DV"
+     ]
+    }
+   ],
+   "__type": "fields"
+  },
+  "want": "[resolution] not matching: got 1080p want: 2160p, [match hdr] not matching: got [HDR10] want: [DV]"
+ },
+ {
+  "name": "formatted",
+  "fields": {
+   "data": [
+    {
+     "key": "max downloads",
+     "format": "[%[1]s] %[3]s",
+     "got": "Period: 10",
+     "want": "reached 10 per MONTH"
+    },
+    {
+     "key": "release size",
+     "format": "release size %[2]d bytes is larger than filter max size %[3]d bytes",
+     "got": 8192650117,
+     "want": 8000000000
+    }
+   ],
+   "__type": "fields"
+  },
+  "want": "[max downloads] reached 10 per MONTH, release size 8192650117 bytes is larger than filter max size 8000000000 bytes"
+ }
+]

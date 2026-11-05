@@ -174,14 +174,14 @@ fn found_of(st: &AppState, body: &Value) -> Result<Found> {
     let size = match body.get("size") {
         Some(Value::Number(n)) => n.as_u64(),
         Some(Value::String(t)) if !t.trim().is_empty() => Some(
-            super::filter::parse_size(t)
-                .ok_or_else(|| err(400, format!("The size \"{t}\" can't be read. Write it like 700 MB or 1.5 GB")))?,
+            super::humanize::parse_bytes(t.trim())
+                .map_err(|_| err(400, format!("The size \"{t}\" can't be read. Write it like 700 MB or 1.5 GB")))?,
         ),
         _ => None,
     };
     let tags = match body.get("tags") {
         Some(Value::Array(a)) => a.iter().filter_map(Value::as_str).map(str::to_string).collect(),
-        Some(Value::String(t)) => super::filter::list(t),
+        Some(Value::String(t)) => t.split(',').map(|x| x.trim().to_string()).filter(|x| !x.is_empty()).collect(),
         _ => Vec::new(),
     };
     Ok(Found {
@@ -198,12 +198,18 @@ fn found_of(st: &AppState, body: &Value) -> Result<Found> {
         uploader: s("uploader"),
         tags,
         year: body.get("year").and_then(Value::as_u64).map(|y| y as u32),
+        ..Found::default()
     })
 }
 
 async fn check(State(st): State<AppState>, _: SignedIn, Json(body): Json<Value>) -> Result<Json<Value>> {
     let f = found_of(&st, &body)?;
-    let name = super::name::Name::parse(&f.title);
+    let r = f.release();
+    let name = json!({
+        "type": r.r#type.as_str(), "title": r.title, "year": r.year, "season": r.season, "episode": r.episode,
+        "resolution": r.resolution, "source": r.source, "codec": r.codec, "hdr": r.hdr, "audio": r.audio,
+        "group": r.group, "website": r.website, "other": r.other, "normalized_hash": r.normalized_hash,
+    });
     Ok(Json(json!({ "name": name, "filters": st.releases.dry_run(&f)? })))
 }
 

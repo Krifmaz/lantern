@@ -1,0 +1,266 @@
+[
+ {
+  "name": "1",
+  "fields": {
+   "TorrentName": "That.Movie.2023.2160p.BluRay.DTS-HD.5.1.x265-GROUP",
+   "__type": "fields"
+  },
+  "want": "833e6c4c78e960ccbce4ef68f6564082"
+ },
+ {
+  "name": "2",
+  "fields": {
+   "TorrentName": "That Movie 2023 2160p BluRay DTS-HD 5.1 x265-GROUP",
+   "__type": "fields"
+  },
+  "want": "833e6c4c78e960ccbce4ef68f6564082"
+ },
+ {
+  "name": "3",
+  "fields": {
+   "TorrentName": "That Movie 2023 2160p BluRay DTS-HD 5 1 x265-GROUP",
+   "__type": "fields"
+  },
+  "want": "833e6c4c78e960ccbce4ef68f6564082"
+ },
+ {
+  "name": "4",
+  "fields": {
+   "TorrentName": "That Movie 2023 1080p Remux DTS-HD 5 1 AVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "ee15fe3c926a5b40370aec970f6b4c43"
+ },
+ {
+  "name": "5",
+  "fields": {
+   "TorrentName": "That Movie 2023 Bluray 1080p Remux DTS-HD 5.1 AVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "ee15fe3c926a5b40370aec970f6b4c43"
+ },
+ {
+  "name": "6",
+  "fields": {
+   "TorrentName": "That Movie 2023 Theatrical Cut Bluray 1080p Remux DTS-HD 5.1 AVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "db7e55fb3471e76ba27bf8a2e1e59236"
+ },
+ {
+  "name": "7",
+  "fields": {
+   "TorrentName": "That Movie 2023 Directors Cut Bluray 1080p Remux DTS-HD 5.1 AVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "bccfe6762b34cbc3a54784351b5424fd"
+ },
+ {
+  "name": "8",
+  "fields": {
+   "TorrentName": "That Show 2023 S01 Bluray 1080p Remux DTS-HD 5.1 AVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "d1c74c33e1c36f3545d06aa8857610b1"
+ },
+ {
+  "name": "9",
+  "fields": {
+   "TorrentName": "That Show 2023 S01 Bluray 1080p Remux DTS-HD 5.1 AVC-GROUP2",
+   "__type": "fields"
+  },
+  "want": "29e228f705f070041e72ebaa7b29239e"
+ },
+ {
+  "name": "10",
+  "fields": {
+   "TorrentName": "That Show 2023 S1 Bluray 1080p Remux DTS-HD 5.1 AVC-GROUP2",
+   "__type": "fields"
+  },
+  "want": "29e228f705f070041e72ebaa7b29239e"
+ },
+ {
+  "name": "11",
+  "fields": {
+   "TorrentName": "That Show 2023 S2 Bluray 1080p Remux DTS-HD 5.1 AVC-GROUP2",
+   "__type": "fields"
+  },
+  "want": "cbc67f4eec93428361eddf040654e077"
+ },
+ {
+  "name": "12",
+  "fields": {
+   "TorrentName": "That Show 2023 S01E01 2160p WEB-DL DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "806240c76cc32413efd5bcf033abf512"
+ },
+ {
+  "name": "13",
+  "fields": {
+   "TorrentName": "That Show 2023 S01E01 This is the start 2160p WEB-DL DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "33c866b898a59d255a09c10bd23a5e3f"
+ },
+ {
+  "name": "14",
+  "fields": {
+   "TorrentName": "That Show 2023 REPACK S01E01 This is the start 2160p WEB-DL DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "7be5ebeee948820f53f24091054fc7cd"
+ },
+ {
+  "name": "15",
+  "fields": {
+   "TorrentName": "That Show 2023 REPACK2 S01E01 This is the start 2160p WEB-DL DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "84e3e70f6c983f96f10cba50213a338d"
+ },
+ {
+  "name": "16",
+  "fields": {
+   "TorrentName": "That Show 2023 PROPER S01E01 This is the start 2160p WEB-DL DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "52d5d1a28a340bc5a836c0244c206c3b"
+ },
+ {
+  "name": "17",
+  "fields": {
+   "TorrentName": "That Show 2023 S01E01 This is the start 2160p WEB-DL DV DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "5e196039d426649ab5221c3e87ed108d"
+ },
+ {
+  "name": "18",
+  "fields": {
+   "TorrentName": "That Show 2023 S01E01 This is the start 2160p WEB-DL DoVi DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "5e196039d426649ab5221c3e87ed108d"
+ },
+ {
+  "name": "19",
+  "fields": {
+   "TorrentName": "That Show 2023 S01E01 This is the start 2160p WEB-DL DoVi HDR10 DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "f52a9a2f26e94c90bdaa8eaca2136cc3"
+ },
+ {
+  "name": "20",
+  "fields": {
+   "TorrentName": "That Show 2023 S01E01 This is the start 2160p WEB-DL DV HDR10 DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "f52a9a2f26e94c90bdaa8eaca2136cc3"
+ },
+ {
+  "name": "21",
+  "fields": {
+   "TorrentName": "that show 2023 S01E01 this is the start 2160p WEB-DL DV HDR10 DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "f52a9a2f26e94c90bdaa8eaca2136cc3"
+ },
+ {
+  "name": "22",
+  "fields": {
+   "TorrentName": "That Show 2023 S01E01 This is the start 2160p HYBRID WEB-DL DV HDR10 DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "414f792a345148ed4c8e070ef77340ff"
+ },
+ {
+  "name": "23",
+  "fields": {
+   "TorrentName": "That Movie 2008 1080p GBR Blu-ray AVC TrueHD 5.1",
+   "__type": "fields"
+  },
+  "want": "70bb23ff5da4209419b6d83628310a43"
+ },
+ {
+  "name": "24",
+  "fields": {
+   "TorrentName": "That Movie 2008 1080p GER Blu-ray AVC TrueHD 5.1",
+   "__type": "fields"
+  },
+  "want": "369ba9f92fb7819e0d07791fddf3c85f"
+ },
+ {
+  "name": "25",
+  "fields": {
+   "TorrentName": "That Show 2023 PROPER S01E01 This is the start 2160p AMZN WEB-DL DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "28e215fee790fbad3957383162f7c5a6"
+ },
+ {
+  "name": "26",
+  "fields": {
+   "TorrentName": "That Show 2023 PROPER S01E01 This is the start 2160p DSNP WEB-DL DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "6a26cd652170d0efc4b0e0320fbd38c1"
+ },
+ {
+  "name": "27",
+  "fields": {
+   "TorrentName": "That Other Show 2023 S01E01 2160p WEB-DL DV HDR10 DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "544c2fc4024ece5664c0f623a5feaeab"
+ },
+ {
+  "name": "28",
+  "fields": {
+   "TorrentName": "That Other Show 2023 S01E01 2160p WEB-DL DV HDR10+ DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "63b5d87abe5fb49131785de426708d31"
+ },
+ {
+  "name": "29",
+  "fields": {
+   "TorrentName": "That Other Show 2023 S01E01 2160p WEB-DL DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "2b4fbd68007c73664cdf9c1abb33fba9"
+ },
+ {
+  "name": "30",
+  "fields": {
+   "TorrentName": "That Other Show 2023 S01E01 2160p ATVP WEB-DL DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "a1ad6c5ef96a50e5c3df434ec118185a"
+ },
+ {
+  "name": "31",
+  "fields": {
+   "TorrentName": "That Other Show 2023 S01E01 2160p MA WEB-DL DTS-HD 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "d2976631b738bcd974e02af2c0b680a1"
+ },
+ {
+  "name": "32",
+  "fields": {
+   "TorrentName": "That Other Show 2023 S01E01 2160p DSNP WEB-DL DTS-HD MA 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "aff58872541a8050146375ca76ea9fe7"
+ },
+ {
+  "name": "33",
+  "fields": {
+   "TorrentName": "That Other Show 2023 S01E01 2160p MA WEB-DL DTS-HD MA 5.1 HEVC-GROUP",
+   "__type": "fields"
+  },
+  "want": "6d97a50010e7532478f8f4f9c469b885"
+ }
+]

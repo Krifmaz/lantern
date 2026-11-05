@@ -1,0 +1,499 @@
+[
+ {
+  "name": "test_ok",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "TorrentTmpFile": "/tmp/a-temporary-file.torrent",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "Print mee {{.TorrentPathName}}",
+   "__type": "args"
+  },
+  "want": "Print mee /tmp/a-temporary-file.torrent",
+  "wantErr": false
+ },
+ {
+  "name": "test_bad",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "TorrentTmpFile": "/tmp/a-temporary-file.torrent",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "Print mee {{TorrentPathName}}",
+   "__type": "args"
+  },
+  "want": "",
+  "wantErr": true
+ },
+ {
+  "name": "test_program_arg",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "TorrentTmpFile": "/tmp/a-temporary-file.torrent",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "add {{.TorrentPathName}} --category test",
+   "__type": "args"
+  },
+  "want": "add /tmp/a-temporary-file.torrent --category test",
+  "wantErr": false
+ },
+ {
+  "name": "test_program_arg_bad",
+  "release": {
+   "TorrentTmpFile": "/tmp/a-temporary-file.torrent",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "add {{.TorrenttPathName}} --category test",
+   "__type": "args"
+  },
+  "want": "",
+  "wantErr": true
+ },
+ {
+  "name": "test_program_arg",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "TorrentTmpFile": "/tmp/a-temporary-file.torrent",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "add {{.TorrentPathName}} --category test --other {{.TorrentName}}",
+   "__type": "args"
+  },
+  "want": "add /tmp/a-temporary-file.torrent --category test --other This movie 2021",
+  "wantErr": false
+ },
+ {
+  "name": "test_args_long",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "DownloadURL": "https://some.site/download/fakeid",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "{{.TorrentName}} {{.TorrentUrl}} SOME_LONG_TOKEN",
+   "__type": "args"
+  },
+  "want": "This movie 2021 https://some.site/download/fakeid SOME_LONG_TOKEN",
+  "wantErr": false
+ },
+ {
+  "name": "test_args_long_1",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "DownloadURL": "https://some.site/download/fakeid",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "{{.Indexer}} {{.TorrentName}} {{.TorrentUrl}} SOME_LONG_TOKEN",
+   "__type": "args"
+  },
+  "want": "mock1 This movie 2021 https://some.site/download/fakeid SOME_LONG_TOKEN",
+  "wantErr": false
+ },
+ {
+  "name": "test_args_category",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "DownloadURL": "https://some.site/download/fakeid",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "{{.Indexer}}-race",
+   "__type": "args"
+  },
+  "want": "mock1-race",
+  "wantErr": false
+ },
+ {
+  "name": "test_args_category_year",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "DownloadURL": "https://some.site/download/fakeid",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "{{.Indexer}}-{{.CurrentYear}}-race",
+   "__type": "args"
+  },
+  "want": {
+   "__call": "fmt.Sprintf",
+   "args": [
+    "mock1-%v-race",
+    {
+     "__call": "currentTime.Year",
+     "args": []
+    }
+   ]
+  },
+  "wantErr": false
+ },
+ {
+  "name": "test_args_category_year",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "DownloadURL": "https://some.site/download/fakeid",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "Resolution": "2160p",
+   "HDR": [
+    "DV"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "text": "movies-{{.Resolution}}{{ if .HDR }}-{{.HDR}}{{ end }}",
+   "__type": "args"
+  },
+  "want": "movies-2160p-DV",
+  "wantErr": false
+ },
+ {
+  "name": "test_args_category_and_if",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "DownloadURL": "https://some.site/download/fakeid",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "Resolution": "2160p",
+   "HDR": [
+    "HDR"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "text": "movies-{{.Resolution}}{{ if .HDR }}-{{.HDR}}{{ end }}",
+   "__type": "args"
+  },
+  "want": "movies-2160p-HDR",
+  "wantErr": false
+ },
+ {
+  "name": "test_release_year_1",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "DownloadURL": "https://some.site/download/fakeid",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "Resolution": "2160p",
+   "HDR": [
+    "HDR"
+   ],
+   "Year": 2021,
+   "__type": "Release"
+  },
+  "args": {
+   "text": "movies-{{.Year}}",
+   "__type": "args"
+  },
+  "want": "movies-2021",
+  "wantErr": false
+ },
+ {
+  "name": "test_size_formating",
+  "release": {
+   "Size": 3834225472,
+   "__type": "Release"
+  },
+  "args": {
+   "text": "{{printf \"%.2f GB\" (divf .Size 1073741824)}}",
+   "__type": "args"
+  },
+  "want": "3.57 GB",
+  "wantErr": false
+ },
+ {
+  "name": "test_size_string",
+  "release": {
+   "Size": 3834225472,
+   "__type": "Release"
+  },
+  "args": {
+   "text": "Size: {{ .SizeString }}",
+   "__type": "args"
+  },
+  "want": "Size: 3.8 GB",
+  "wantErr": false
+ },
+ {
+  "name": "test_text_manipulation",
+  "release": {
+   "TorrentName": "Title Name 2 - Keyword [Blu-ray][MKV][h264 10-bit][1080p][FLAC 2.0][Dual Audio][Softsubs (Sub Group)][Freeleech]",
+   "__type": "Release"
+  },
+  "args": {
+   "text": "{{join \"\" (regexSplit \"^.+- Keyword \" .TorrentName -1)}}",
+   "__type": "args"
+  },
+  "want": "[Blu-ray][MKV][h264 10-bit][1080p][FLAC 2.0][Dual Audio][Softsubs (Sub Group)][Freeleech]",
+  "wantErr": false
+ },
+ {
+  "name": "test_info_url",
+  "release": {
+   "InfoURL": "https://test.local/this/page",
+   "__type": "Release"
+  },
+  "args": {
+   "text": "InfoUrl: {{ .InfoUrl }}",
+   "__type": "args"
+  },
+  "want": "InfoUrl: https://test.local/this/page",
+  "wantErr": false
+ },
+ {
+  "name": "test_download_url",
+  "release": {
+   "DownloadURL": "https://test.local/this/page/1001",
+   "__type": "Release"
+  },
+  "args": {
+   "text": "DownloadUrl: {{ .DownloadUrl }}",
+   "__type": "args"
+  },
+  "want": "DownloadUrl: https://test.local/this/page/1001",
+  "wantErr": false
+ },
+ {
+  "name": "test_group",
+  "release": {
+   "TorrentName": "This movie 2021",
+   "DownloadURL": "https://some.site/download/fakeid",
+   "Group": "thisgrp",
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "Year": 2021,
+   "__type": "Release"
+  },
+  "args": {
+   "text": "movies-{{.Group}}",
+   "__type": "args"
+  },
+  "want": "movies-thisgrp",
+  "wantErr": false
+ },
+ {
+  "name": "test_type",
+  "release": {
+   "Type": {
+    "__const": "rls.Episode"
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "Type: {{ .Type }}",
+   "__type": "args"
+  },
+  "want": "Type: episode",
+  "wantErr": false
+ },
+ {
+  "name": "test_filter_id",
+  "release": {
+   "FilterID": 1,
+   "__type": "Release"
+  },
+  "args": {
+   "text": "FilterID: {{ .FilterID }}",
+   "__type": "args"
+  },
+  "want": "FilterID: 1",
+  "wantErr": false
+ },
+ {
+  "name": "test_tags",
+  "release": {
+   "Tags": [
+    "country",
+    "rock"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "text": "Tags: {{ .Tags }}",
+   "__type": "args"
+  },
+  "want": "Tags: country, rock",
+  "wantErr": false
+ },
+ {
+  "name": "test_artists",
+  "release": {
+   "Artists": "Jon Boy",
+   "__type": "Release"
+  },
+  "args": {
+   "text": "Artists: {{ .Artists }}",
+   "__type": "args"
+  },
+  "want": "Artists: Jon Boy",
+  "wantErr": false
+ },
+ {
+  "name": "test_args_indexer",
+  "release": {
+   "Indexer": {
+    "__type": "IndexerMinimal",
+    "__pos": [
+     0,
+     "Mock Indexer",
+     "mock1",
+     "Mock Indexer"
+    ]
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "indexer={{.IndexerName}}",
+   "__type": "args"
+  },
+  "want": "indexer=Mock Indexer",
+  "wantErr": false
+ },
+ {
+  "name": "test_release_tags",
+  "release": {
+   "ReleaseTags": "WEB-DL",
+   "__type": "Release"
+  },
+  "args": {
+   "text": "tags: {{.ReleaseTags}}",
+   "__type": "args"
+  },
+  "want": "tags: WEB-DL",
+  "wantErr": false
+ },
+ {
+  "name": "test_raw_vars",
+  "release": {
+   "ReleaseTags": "WEB-DL",
+   "RawVars": {
+    "__map": {
+     "releaseName": "Servant S01 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-FLUX",
+     "custom": "test"
+    }
+   },
+   "__type": "Release"
+  },
+  "args": {
+   "text": "release: \"{{.RawVars.releaseName}}\" custom: {{.RawVars.custom}}",
+   "__type": "args"
+  },
+  "want": "release: \"Servant S01 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-FLUX\" custom: test",
+  "wantErr": false
+ }
+]

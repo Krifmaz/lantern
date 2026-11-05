@@ -1,0 +1,696 @@
+[
+ {
+  "name": "1",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "2",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "tv",
+   "Freeleech": true,
+   "FreeleechPercent": 100,
+   "Bonus": [
+    "Freeleech"
+   ],
+   "Uploader": "Anon",
+   "Size": 10000000000,
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "category": "tv",
+     "freeleech": "freeleech",
+     "uploader": "Anon",
+     "torrentSize": "10GB"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "3",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "tv",
+   "Freeleech": true,
+   "FreeleechPercent": 100,
+   "Bonus": [
+    "Freeleech",
+    "Freeleech100"
+   ],
+   "Uploader": "Anon",
+   "Size": 10000000000,
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "category": "tv",
+     "freeleechPercent": "100%",
+     "uploader": "Anon",
+     "torrentSize": "10GB"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "4",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "tv",
+   "Freeleech": true,
+   "FreeleechPercent": 50,
+   "Bonus": [
+    "Freeleech",
+    "Freeleech50"
+   ],
+   "Uploader": "Anon",
+   "Size": 10000000000,
+   "Tags": [
+    "foreign",
+    "tv"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "category": "tv",
+     "freeleechPercent": "50%",
+     "uploader": "Anon",
+     "torrentSize": "10GB",
+     "tags": "foreign,tv"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "5",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "tv",
+   "Freeleech": true,
+   "FreeleechPercent": 100,
+   "Bonus": [
+    "Freeleech",
+    "Freeleech100"
+   ],
+   "Uploader": "Anon",
+   "Size": 10000000000,
+   "Tags": [
+    "foreign",
+    "tv"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "category": "tv",
+     "freeleechPercent": "100%",
+     "uploader": "Anon",
+     "torrentSize": "10GB",
+     "tags": "foreign,tv"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "6",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "tv",
+   "Year": 2020,
+   "Freeleech": true,
+   "FreeleechPercent": 100,
+   "Bonus": [
+    "Freeleech",
+    "Freeleech100"
+   ],
+   "Uploader": "Anon",
+   "Size": 10000000000,
+   "Tags": [
+    "foreign",
+    "tv"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "category": "tv",
+     "year": "2020",
+     "freeleechPercent": "100%",
+     "uploader": "Anon",
+     "torrentSize": "10GB",
+     "tags": "foreign, tv"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "7",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "tv",
+   "Year": 2020,
+   "Freeleech": true,
+   "FreeleechPercent": 25,
+   "Bonus": [
+    "Freeleech",
+    "Freeleech25"
+   ],
+   "Uploader": "Anon",
+   "Size": 10000000000,
+   "Tags": [
+    "hip.hop",
+    "rhythm.and.blues",
+    "2000s"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "category": "tv",
+     "year": "2020",
+     "freeleechPercent": "25%",
+     "uploader": "Anon",
+     "torrentSize": "10GB",
+     "tags": "hip.hop,rhythm.and.blues, 2000s"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "8",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "tv",
+   "Year": 2020,
+   "Freeleech": true,
+   "FreeleechPercent": 100,
+   "Bonus": [
+    "Freeleech",
+    "Freeleech100"
+   ],
+   "Uploader": "Anon",
+   "Size": 10000000000,
+   "Tags": [
+    "hip.hop",
+    "rhythm.and.blues",
+    "2000s"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "category": "tv",
+     "year": "2020",
+     "freeleechPercent": "100%",
+     "uploader": "Anon",
+     "torrentSize": "10000",
+     "tags": "hip.hop,rhythm.and.blues, 2000s"
+    }
+   },
+   "forceSizeUnit": "MB",
+   "__type": "args"
+  }
+ },
+ {
+  "name": "9",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Greatest Anime Ever",
+   "Year": 2022,
+   "Group": "GROUP1",
+   "Tags": [
+    "comedy",
+    "fantasy",
+    "school.life",
+    "shounen",
+    "slice.of.life"
+   ],
+   "Uploader": "Tester",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Greatest Anime Ever",
+     "year": "2022",
+     "releaseGroup": "GROUP1",
+     "tags": "comedy, fantasy, school.life, shounen, slice.of.life",
+     "uploader": "Tester"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "10",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Greatest Anime Ever",
+   "Year": 2022,
+   "Group": "GROUP1",
+   "Tags": [
+    "comedy",
+    "fantasy",
+    "school.life",
+    "shounen",
+    "slice.of.life"
+   ],
+   "Uploader": "Tester",
+   "Freeleech": true,
+   "FreeleechPercent": 100,
+   "Bonus": [
+    "Freeleech"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Greatest Anime Ever",
+     "year": "2022",
+     "releaseGroup": "GROUP1",
+     "tags": "comedy, fantasy, school.life, shounen, slice.of.life",
+     "uploader": "Tester",
+     "freeleech": "VIP"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "11",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Category": "tv",
+   "Freeleech": true,
+   "FreeleechPercent": 100,
+   "Bonus": [
+    "Freeleech"
+   ],
+   "Uploader": "Anon",
+   "Size": 10000000000,
+   "Tags": [
+    "comedy",
+    "science fiction",
+    "fantasy",
+    "school.life",
+    "shounen",
+    "slice.of.life"
+   ],
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "category": "tv",
+     "tags": "comedy, science fiction, fantasy, school.life, shounen, slice.of.life",
+     "freeleech": "freeleech",
+     "uploader": "Anon",
+     "torrentSize": "10GB"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "downloadVolumeFactor maps charged fraction to freeleech percent",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Freeleech": true,
+   "FreeleechPercent": 75,
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "downloadVolumeFactor": "0.25"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "downloadVolumeFactor below range is ignored",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "downloadVolumeFactor": "-0.1"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "downloadVolumeFactor above range is ignored",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "downloadVolumeFactor": "1.1"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "imdb id is prefixed with tt",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "MetaIMDB": "tt0133093",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "imdb": "0133093"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "imdb id already prefixed is kept as is",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "MetaIMDB": "tt0133093",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "imdb": "tt0133093"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "imdb id without leading zeros is padded",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "MetaIMDB": "tt0084827",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "imdb": "84827"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "zero meta ids are ignored",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "imdb": "0",
+     "tmdb": "0",
+     "tvdb": "0",
+     "igdb": "0"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "meta ids",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "MetaIMDB": "tt38545732",
+   "MetaTMDB": 299054,
+   "MetaTVDB": 468034,
+   "MetaIGDB": 403731,
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "imdb": "38545732",
+     "tmdb": "299054",
+     "tvdb": "468034",
+     "igdb": "403731"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "negative meta ids are ignored",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "tmdb": "-1",
+     "tvdb": "-1",
+     "igdb": "-1"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "meta ids with surrounding spaces",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "MetaTMDB": 299054,
+   "MetaTVDB": 468034,
+   "MetaIGDB": 403731,
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "tmdb": " 299054 ",
+     "tvdb": " 468034 ",
+     "igdb": " 403731 "
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "empty imdb id from unmatched optional group is ignored",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "imdb": ""
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "tvdb id",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "MetaTVDB": 42932,
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "tvdb": "42932"
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "empty tvdb id from unmatched optional group is ignored",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "tvdb": ""
+    }
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "decimal size label read as binary",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Size": 8192650117,
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "torrentSize": "7.63 GB"
+    }
+   },
+   "sizeUnits": {
+    "__const": "SizeUnitsBinary"
+   },
+   "__type": "args"
+  }
+ },
+ {
+  "name": "forced size unit read as binary",
+  "fields": {
+   "__type": "Release"
+  },
+  "want": {
+   "TorrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+   "Size": 10485760000,
+   "__type": "Release"
+  },
+  "args": {
+   "varMap": {
+    "__map": {
+     "torrentName": "Good show S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP2",
+     "torrentSize": "10000"
+    }
+   },
+   "forceSizeUnit": "MB",
+   "sizeUnits": {
+    "__const": "SizeUnitsBinary"
+   },
+   "__type": "args"
+  }
+ }
+]
