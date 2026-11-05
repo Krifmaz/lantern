@@ -65,6 +65,8 @@ argon2 = "0.5"
 chacha20poly1305 = "0.10"
 zeroize = "1"
 sha1 = "0.10"
+# migration: Prowlarr backups are zip files
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [build-dependencies]
 kit-server-settings = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1", default-features = false, features = ["toml"] }

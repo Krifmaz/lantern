@@ -27,6 +27,10 @@
 - Android: the Vault page. Every saved account with its plain values and which secrets are saved; the owner sees
   the secrets and the 2FA code after typing their password again, for two minutes, with screenshots blocked. Every
   value can be copied, secrets marked sensitive on the clipboard.
+- Import from Prowlarr (a backup, its database or its API) and FlareSolverr (its settings pasted in), on a new
+  Import page: a dry run first that says line by line what would be added, skipped or left to you, then Import.
+  Indexers keep their logins (also saved in the vault) and Prowlarr's numbers, Lantern can take Prowlarr's API key and proxy, and the apps
+  Prowlarr synced to are kept for app sync.
 
 ## 0.0.1
 

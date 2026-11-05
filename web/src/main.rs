@@ -8,11 +8,13 @@
 //! | `#/indexers` | the indexers: add, edit, test and remove sites, update the definitions |
 //! | `#/search` | search every indexer at once |
 //! | `#/vault` | the account vault (admins): tracker and Usenet logins, Show with the password, Back up and Restore |
+//! | `#/import` | move from Prowlarr and FlareSolverr: look first, then import |
 //! | `#/bug-reports` | the account's bug reports and the New report sheet |
 //! | `#/settings?s=<page>` | the server settings form from the server's schema, Diagnostics and What's new |
 //!
 //! The app's own pages go next to [`Home`], one component each, with a link in [`Shell`].
 
+mod import;
 mod indexers;
 mod pages;
 mod vault;
@@ -180,6 +182,7 @@ fn Shell(me: Value) -> impl IntoView {
             "/indexers" => view! { <indexers::Indexers admin=admin/> }.into_any(),
             "/search" => view! { <indexers::Search/> }.into_any(),
             "/vault" if admin => view! { <vault::Vault owner=owner/> }.into_any(),
+            "/import" => view! { <import::Import admin=admin/> }.into_any(),
             "/bug-reports" => view! { <pages::BugReports/> }.into_any(),
             "/settings" => view! { <pages::Settings page=r.param("s")/> }.into_any(),
             _ => view! { <pages::Home/> }.into_any(),
@@ -194,6 +197,7 @@ fn Shell(me: Value) -> impl IntoView {
                     <NavLink href="/indexers" label="Indexers" route=route/>
                     <NavLink href="/search" label="Search" route=route/>
                     {admin.then(|| view! { <NavLink href="/vault" label="Vault" route=route/> })}
+                    {admin.then(|| view! { <NavLink href="/import" label="Import" route=route/> })}
                 </nav>
                 <nav class="nav nav-under">
                     <NavLink href="/bug-reports" label="Bug reports" route=route/>
