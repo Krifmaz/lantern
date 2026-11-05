@@ -303,3 +303,43 @@ unit = "days"
 min = 1
 max = 365
 advanced = true
+[groups.soulseek]
+section = "downloads"
+title = "Soulseek"
+desc = "Music from Soulseek through slskd (a free Soulseek client). Music searches also search Soulseek; finished downloads are linked into the app's folder."
+
+[keys.soulseek_url]
+env = "APP_SOULSEEK_URL"
+default = ""
+group = "soulseek"
+label = "slskd's address"
+help = "Like http://slskd:5030. Empty: Soulseek is off."
+type = "url"
+
+[keys.soulseek_api_key]
+env = "APP_SOULSEEK_API_KEY"
+default = ""
+secret = true
+group = "soulseek"
+label = "slskd's API key"
+help = "One of the keys under web.authentication.api_keys in slskd's settings."
+type = "password"
+
+[keys.soulseek_downloads]
+env = "APP_SOULSEEK_DOWNLOADS"
+default = ""
+group = "soulseek"
+label = "slskd's downloads folder"
+help = "Where Lantern sees slskd's downloads folder. Empty: soulseek inside the downloads folder. On the same file system as the downloads folder, files are hardlinked instead of copied."
+type = "text"
+
+[keys.soulseek_search_secs]
+env = "APP_SOULSEEK_SEARCH_SECS"
+default = 15
+group = "soulseek"
+label = "Search for (seconds)"
+help = "How long Soulseek searches wait for answers from other users."
+type = "number"
+unit = "seconds"
+min = 3
+max = 60

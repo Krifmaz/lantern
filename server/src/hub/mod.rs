@@ -25,6 +25,7 @@ pub mod emulate;
 pub mod events;
 pub mod grabs;
 pub mod paths;
+pub mod soulseek;
 pub mod torrent;
 
 use crate::indexers::release::Protocol;

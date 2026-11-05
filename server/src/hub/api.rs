@@ -16,7 +16,7 @@
 //!   PUT    /api/hub/apps/{id}             change {media, import_path, callback_url}
 //!   DELETE /api/hub/apps/{id}             remove (its downloads stay in the clients)
 //! Searching and grabbing:
-//!   GET    /api/hub/search?app=&q=&type=&cat=   search every indexer: releases with a grab `token`
+//!   GET    /api/hub/search?app=&q=&type=&cat=   search every indexer (and Soulseek for music): releases with a grab `token`
 //!   POST   /api/hub/grabs                 grab {app, token | url, title, protocol}
 //!   GET    /api/hub/grabs?app=&state=&limit=    the newest grabs
 //!   GET    /api/hub/grabs/{id}            one
@@ -24,6 +24,8 @@
 //!   POST   /api/hub/grabs/{id}/imported   the app has its files: clean up once seeded (the `cleanup` setting)
 //!   DELETE /api/hub/grabs/{id}?delete_files=    stop it and remove it from its client
 //!   GET    /api/hub/events?app=           the live event stream (server-sent events)
+//! Soulseek:
+//!   POST   /api/hub/soulseek/test         reach slskd with its key: {ok, message}
 //! ```
 
 use super::apps::App;
@@ -51,6 +53,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/hub/grabs/{id}/retry", post(retry))
         .route("/api/hub/grabs/{id}/imported", post(imported))
         .route("/api/hub/events", get(events))
+        .route("/api/hub/soulseek/test", post(test_soulseek))
         .merge(super::emulate::qbittorrent::router())
         .merge(super::emulate::sabnzbd::router())
         .merge(super::emulate::nzbget::router())
@@ -136,8 +139,15 @@ async fn search(State(st): State<AppState>, _: SignedIn, Q(mut q): Q<HashMap<Str
     let query = crate::indexers::api::query_of(&q).map_err(|(_, m)| err(400, m))?;
     let ids: Vec<i64> = q.get("ids").map(|s| s.split(',').filter_map(|x| x.trim().parse().ok()).collect()).unwrap_or_default();
     let source = app.as_ref().map(|a| a.name.clone()).unwrap_or_else(|| "Lantern".into());
-    let (releases, failed) = st.indexers.search(&ids, &query, &source).await?;
-    let results: Vec<Value> = releases
+    let words = soulseek_words(&st, app.as_ref(), &q);
+    let (found, slsk) = tokio::join!(st.indexers.search(&ids, &query, &source), async {
+        match &words {
+            Some(w) => Some(st.hub.search_soulseek(w).await),
+            None => None,
+        }
+    });
+    let (releases, failed) = found?;
+    let mut results: Vec<Value> = releases
         .iter()
         .map(|r| {
             let link = if r.link.is_empty() { &r.magnet } else { &r.link };
@@ -150,8 +160,30 @@ async fn search(State(st): State<AppState>, _: SignedIn, Q(mut q): Q<HashMap<Str
             })
         })
         .collect();
-    let failed: Vec<Value> = failed.iter().map(|(n, e)| json!({ "indexer": n, "error": e })).collect();
+    let mut failed: Vec<Value> = failed.iter().map(|(n, e)| json!({ "indexer": n, "error": e })).collect();
+    match slsk {
+        Some(Ok(more)) => results.extend(more),
+        Some(Err(e)) => failed.push(json!({ "indexer": "Soulseek", "error": e })),
+        None => {}
+    }
     Ok(Json(json!({ "results": results, "failed": failed })))
+}
+
+/// The words to search Soulseek for, when this search should: Soulseek is set up, the search has words, and it
+/// is for music (a music app, `t` or `type` music, or `soulseek=1`); `soulseek=0` leaves it out.
+fn soulseek_words(st: &AppState, app: Option<&App>, q: &HashMap<String, String>) -> Option<String> {
+    let asked = q.get("soulseek").map(String::as_str);
+    let music =
+        app.is_some_and(|a| a.media == "music") || q.get("t").or_else(|| q.get("type")).is_some_and(|t| t == "music") || asked == Some("1");
+    if asked == Some("0") || !music || !st.hub.soulseek_on() {
+        return None;
+    }
+    let words: Vec<&str> = ["q", "artist", "album"].iter().filter_map(|k| q.get(*k)).map(|w| w.trim()).filter(|w| !w.is_empty()).collect();
+    (!words.is_empty()).then(|| words.join(" "))
+}
+
+async fn test_soulseek(State(st): State<AppState>, _: Admin) -> Json<Value> {
+    Json(st.hub.test_soulseek().await)
 }
 
 async fn grab(State(st): State<AppState>, _: Admin, Json(body): Json<Value>) -> Result<Json<Value>> {
