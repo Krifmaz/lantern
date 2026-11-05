@@ -22,13 +22,22 @@ Work hands-off: make your own calls (log non-obvious ones in docs/DECISIONS.md),
 
 ## Rules added 2026-11-05 (as given)
 
-- Use the original apps (source, docs, real API responses) as reference only; write everything fresh in Rust. Reuse data files directly (indexer YAML definitions, TRaSH Guides profiles). License the repo GPL-3.0 and credit the original projects and data sources in README.md.
+- ~~Use the original apps (source, docs, real API responses) as reference only; write everything fresh in Rust.~~
+  (Replaced by "Change of approach" below.) Reuse data files directly (indexer YAML definitions, TRaSH Guides profiles). License the repo GPL-3.0 and credit the original projects and data sources in README.md.
 - Support qBittorrent, rTorrent, Deluge and Transmission for torrents, and SABnzbd and NZBGet for Usenet, all behind one download-client layer; apps never see which client is used. Default to qBittorrent + SABnzbd.
 - Universal: any app can use Lantern, not only mine.
   - Indexer side: Prowlarr-compatible API plus Torznab/Newznab endpoints per indexer and an aggregate one, so every *arr, Jackett/Prowlarr-style client and Kodi/other tools can search through it; FlareSolverr-compatible API for apps that call a solver.
   - Download side: emulate the qBittorrent Web API and the SABnzbd API (and NZBGet's JSON-RPC), so any app that supports those clients can add Lantern as its download client. Lantern routes each grab to the real client (qBittorrent, rTorrent, Deluge, Transmission, SABnzbd, NZBGet), applies its own categories, paths, seeding and cleanup rules, and reports status back in the format the app expects.
   - Every connected app (native or emulated) shows up in one Apps page: what it requested, where it went, live status, and its own category and folders.
   - Contract tests with real Sonarr, Radarr, Lidarr and Readarr talking to Lantern as both indexer and download client.
+
+## Change of approach (2026-11-05, as given)
+
+Change of approach: port, don't reimagine. The app is missing basic features of the originals.
+- Fork the originals as the starting point (Prowlarr, autobrr, cross-seed; record upstream versions in UPSTREAM.lock like Photovault). Port their backend logic module by module into Rust, keeping behaviour, settings and edge cases; GPL-3.0 with full credits.
+- Web UI: use Prowlarr's and autobrr's own web frontends, forked and rethemed to the Encore look (keep their layouts, mobile behaviour and every page), running against Lantern's compatible APIs. Strip branding/links we don't want. Our own pages only where the merge needs them (download hub, account vault and keeper, Cloudflare solving).
+- Write docs/PARITY.md: every API endpoint, setting, page, action and background job of each original, with a status column; each row is done only with a test or a screenshot proving it works like the original. Work through it in parallel tracks.
+- No new features until parity is complete; then layer our improvements on top.
 
 ## Build order
 

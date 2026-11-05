@@ -1,0 +1,51 @@
+# The upstream projects Lantern ports, one section each, at the version every port and every row of
+# docs/PARITY.md is checked against. Change a pin only in its own PR, which also updates docs/PARITY.md.
+# Pins are the latest stable release of each project (no pre-releases).
+
+[prowlarr]
+repo = "https://github.com/Prowlarr/Prowlarr"
+ref = "v2.7.0.5723"
+commit = "0dc20d8495bad9951c3fafe53f32b6e1c70fcf3b"
+commit_date = "2026-10-26T18:31:22+01:00"
+license = "GPL-3.0"
+dirs = "src frontend"
+
+[autobrr]
+repo = "https://github.com/autobrr/autobrr"
+ref = "v1.90.0"
+commit = "4c1bf93d3397055de8e78ce136cf1e239e568d92"
+commit_date = "2026-11-01T21:07:54+01:00"
+license = "GPL-2.0-or-later"
+dirs = "internal pkg cmd web"
+
+[cross-seed]
+repo = "https://github.com/cross-seed/cross-seed"
+ref = "v6.13.9"
+commit = "2dec12f1c674cbca00df45fdae2047aa987ed406"
+commit_date = "2026-10-21T21:48:57-07:00"
+license = "Apache-2.0"
+dirs = "src"
+
+[flaresolverr]
+repo = "https://github.com/FlareSolverr/FlareSolverr"
+ref = "v3.5.2"
+commit = "93125d6ea6956906c8dfa29e169b2dc67d993dc3"
+commit_date = "2026-09-12T02:23:16+01:00"
+license = "MIT"
+dirs = "src"
+
+# Data files, used as they are and refreshed on purpose (not pinned to a commit).
+
+[data.indexer-definitions]
+repo = "https://github.com/Prowlarr/Indexers"
+ref = "master"
+dirs = "definitions/v11"
+license = "GPL-3.0"
+updates = "bundled at image build, then daily into the data folder"
+
+[data.announce-definitions]
+repo = "https://github.com/autobrr/autobrr"
+ref = "develop"
+dirs = "internal/indexer/definitions"
+license = "GPL-2.0-or-later"
+updates = "bundled at image build"

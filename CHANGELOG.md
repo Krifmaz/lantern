@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Lantern now ports Prowlarr, autobrr, cross-seed and FlareSolverr instead of rewriting them: `UPSTREAM.lock` pins
+  the versions it follows and `docs/PARITY.md` lists everything each one does, with what Lantern already matches.
 - First-run setup: a new Lantern asks for "Create your account" (username, password twice, optional email) on the
   web, desktop and Android apps, instead of making `admin` with a printed password. The screen needs the one-time
   setup code Lantern prints in its log at start, so nobody else on the network can claim it first; the code stops
