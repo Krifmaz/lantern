@@ -38,6 +38,8 @@ pub enum Action {
     Manual,
     /// Lantern does this by itself; nothing to bring over.
     NothingNeeded,
+    /// Added turned off: it needs a person's help (a definition) before it can search.
+    NeedsHelp,
 }
 
 /// One line of a plan.
@@ -49,6 +51,9 @@ pub struct Step {
     pub what: String,
     /// What happens to it.
     pub action: Action,
+    /// The path it took into Lantern (`Lantern's definition 1337x`, `Answered as Torznab at …`), "" for none.
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub how: String,
     /// The reason or the thing to do, in a plain sentence.
     pub detail: String,
     /// The names of the secrets brought over with it (never their values).
@@ -60,7 +65,15 @@ pub struct Step {
 impl Step {
     /// A step with no secrets and nothing missing.
     pub fn new(name: impl Into<String>, what: impl Into<String>, action: Action, detail: impl Into<String>) -> Step {
-        Step { name: name.into(), what: what.into(), action, detail: detail.into(), secrets: Vec::new(), missing: Vec::new() }
+        Step {
+            name: name.into(),
+            what: what.into(),
+            action,
+            how: String::new(),
+            detail: detail.into(),
+            secrets: Vec::new(),
+            missing: Vec::new(),
+        }
     }
 }
 
@@ -71,6 +84,8 @@ pub struct Plan {
     pub from: String,
     /// Whether this was only a look (nothing saved).
     pub dry_run: bool,
+    /// The custom definitions brought over (Prowlarr's `Definitions/Custom`).
+    pub definitions: Vec<Step>,
     /// The indexers.
     pub indexers: Vec<Step>,
     /// The apps (Sonarr, Radarr …) the old app synced to.
@@ -86,7 +101,7 @@ pub struct Plan {
 impl Plan {
     /// Every step of the plan.
     pub fn steps(&self) -> impl Iterator<Item = &Step> {
-        self.indexers.iter().chain(&self.apps).chain(&self.settings)
+        self.definitions.iter().chain(&self.indexers).chain(&self.apps).chain(&self.settings)
     }
 
     /// How many steps do `action`.
@@ -108,6 +123,10 @@ impl Plan {
         }
         if skip > 0 {
             parts.push(format!("{skip} {} skipped", plural(skip, "is", "are")));
+        }
+        let help = n(Action::NeedsHelp);
+        if help > 0 {
+            parts.push(format!("{help} {} your help (added turned off)", plural(help, "indexer needs", "indexers need")));
         }
         if manual > 0 {
             parts.push(format!("{manual} {} for you to do", plural(manual, "step is", "steps are")));
@@ -311,6 +330,8 @@ pub struct SourceIndexer {
     pub base_url: String,
     /// Every other setting, by the old app's name for it.
     pub fields: BTreeMap<String, Value>,
+    /// Torrent (`Some(true)`) or Usenet (`Some(false)`), when Prowlarr's settings say.
+    pub torrent: Option<bool>,
 }
 
 /// An app (Sonarr, Radarr …) the old app pushed its indexers to.
@@ -396,6 +417,8 @@ pub struct Source {
     pub download_clients: Vec<String>,
     /// How many notification connections it had.
     pub notifications: usize,
+    /// Its custom Cardigann definitions (`Definitions/Custom/*.yml`): (file name, YAML).
+    pub definitions: Vec<(String, String)>,
 }
 
 /// The table that keeps the imported apps until app sync takes them over.

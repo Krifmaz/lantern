@@ -1,9 +1,10 @@
 //! `#/import`: moving from Prowlarr (a backup, or a running Prowlarr's address and API key) and FlareSolverr (its
 //! settings pasted in). Every import is looked at first (the server's dry run); the plan shows what would happen
-//! line by line, and Import does it after a confirm.
+//! line by line (with the path each indexer took), and Import does it after a confirm. Indexers that no path worked
+//! for are listed under Needs your help, each with a Create definition editor.
 
 use kit_leptos::api;
-use kit_leptos::modal;
+use kit_leptos::modal::{self, ModalOpts};
 use kit_leptos::toasts::toast;
 use leptos::prelude::*;
 use serde_json::{json, Value};
@@ -21,6 +22,7 @@ pub fn action_badge(action: &str) -> (&'static str, &'static str) {
         "already_there" => ("Already in Lantern", ""),
         "skip" => ("Skipped", "warn"),
         "manual" => ("For you to do", "info"),
+        "needs_help" => ("Needs your help", "warn"),
         _ => ("Nothing needed", ""),
     }
 }
@@ -78,6 +80,7 @@ pub fn Import(admin: bool) -> impl IntoView {
         <h1>"Import"</h1>
         <p class="muted">"Bring your indexers, apps and settings over. Lantern looks first and shows what it would do; nothing changes until you press Import."</p>
         <ProwlarrCard/>
+        <NeedsHelpCard/>
         <FlareSolverrCard/>
     }
     .into_any()
@@ -163,6 +166,83 @@ fn ProwlarrCard() -> impl IntoView {
     }
 }
 
+/// The Needs your help card: imported indexers that no path worked for, turned off, each with Create definition.
+#[component]
+fn NeedsHelpCard() -> impl IntoView {
+    let (list, set_list) = signal(Vec::<Value>::new());
+    let reload = move || {
+        kit_leptos::rt::spawn(async move {
+            if let Ok(v) = api::get("/import/needs-help").await {
+                set_list.set(v.get("indexers").and_then(Value::as_array).cloned().unwrap_or_default());
+            }
+        });
+    };
+    reload();
+    view! {
+        <Show when=move || !list.get().is_empty()>
+            <div class="card flat mt" id="import-needs-help">
+                <h2 style="margin-top:0">"Needs your help"</h2>
+                <p class="small muted">"Lantern has no definition for these yet and couldn't reach them as Newznab or Torznab, so they were added turned off. Create a definition to turn one on: Lantern starts it from the site's address and settings."</p>
+                <div class="table-wrap"><table class="table">
+                    <thead><tr><th>"Name"</th><th>"Why"</th><th></th></tr></thead>
+                    <tbody>{move || list.get().into_iter().map(|ix| {
+                        let row = ix.clone();
+                        view! {
+                            <tr>
+                                <td style="font-weight:650">{s(&ix, "name")}<div class="small faint">{s(&ix, "base_url")}</div></td>
+                                <td class="small">{s(&ix, "reason")}</td>
+                                <td><button class="btn" on:click=move |_| open_definition(row.clone(), reload)>"Create definition"</button></td>
+                            </tr>
+                        }
+                    }).collect_view()}</tbody>
+                </table></div>
+            </div>
+        </Show>
+    }
+}
+
+/// The Create definition dialog for indexer `ix` (one that needs help), its YAML started from the site's address
+/// and settings; Save turns the indexer on with it.
+fn open_definition(ix: Value, reload: impl Fn() + Copy + Send + Sync + 'static) {
+    let id = ix.get("id").and_then(Value::as_i64).unwrap_or(0);
+    let yaml = s(&ix, "yaml");
+    let (busy, set_busy) = signal(false);
+    let (error, set_error) = signal(None::<String>);
+    let holder: StoredValue<Option<modal::Modal>, LocalStorage> = StoredValue::new_local(None);
+    let body = move || {
+        let yaml = yaml.clone();
+        view! {
+            <p class="small muted">"This is a Cardigann definition, as Prowlarr and Jackett use. Lantern filled in the name, address and settings; fill in the search and the rows the site answers with."</p>
+            <label class="field"><span>"Definition"</span><textarea class="input mono" rows="22" spellcheck="false" data-f="yaml">{yaml}</textarea></label>
+            {move || error.get().map(|e| view! { <div class="error-box mt">{e}</div> })}
+        }
+    };
+    let save = move |_| {
+        set_busy.set(true);
+        set_error.set(None);
+        kit_leptos::rt::spawn(async move {
+            let Some(m) = holder.get_value() else { return };
+            let yaml = m
+                .qs("[data-f=yaml]")
+                .and_then(|e| wasm_bindgen::JsCast::dyn_into::<web_sys::HtmlTextAreaElement>(e).ok())
+                .map(|t| t.value())
+                .unwrap_or_default();
+            match api::post(&format!("/import/needs-help/{id}/definition"), json!({ "yaml": yaml })).await {
+                Ok(v) => {
+                    toast(&format!("{} is turned on with its new definition.", s(&v, "name")), "success");
+                    reload();
+                    m.close();
+                }
+                Err(e) => set_error.set(Some(e.message)),
+            }
+            set_busy.set(false);
+        });
+    };
+    let footer = move || view! { <button class="btn primary" disabled=busy on:click=save>{move || if busy.get() { "Saving…" } else { "Save and turn on" }}</button> };
+    let m = modal::open(ModalOpts::with_view(&format!("Create definition: {}", s(&ix, "name")), body).footer_view(footer).wide(true));
+    holder.set_value(Some(m));
+}
+
 /// The FlareSolverr card: its settings pasted in, then the steps.
 #[component]
 fn FlareSolverrCard() -> impl IntoView {
@@ -197,7 +277,7 @@ fn PlanView(plan: Value) -> impl IntoView {
             view! {
                 <h3>{title}</h3>
                 <div class="table-wrap"><table class="table">
-                    <thead><tr><th>"Name"</th><th>"What"</th><th>""</th><th>"Details"</th></tr></thead>
+                    <thead><tr><th>"Name"</th><th>"What"</th><th>"How"</th><th>""</th><th>"Details"</th></tr></thead>
                     <tbody>{steps.into_iter().map(|st| {
                         let (words, style) = action_badge(&s(&st, "action"));
                         let extra = extra_words(&st);
@@ -205,6 +285,7 @@ fn PlanView(plan: Value) -> impl IntoView {
                             <tr>
                                 <td style="font-weight:650">{s(&st, "name")}</td>
                                 <td class="small">{s(&st, "what")}</td>
+                                <td class="small">{s(&st, "how")}</td>
                                 <td><span class=format!("badge {style}")>{words}</span></td>
                                 <td class="small">{s(&st, "detail")}{(!extra.is_empty()).then(|| view! { <div class="faint">{extra}</div> })}</td>
                             </tr>
@@ -218,6 +299,7 @@ fn PlanView(plan: Value) -> impl IntoView {
     view! {
         <div class="mt" data-plan="">
             <p style="font-weight:650">{s(&plan, "summary")}</p>
+            {part("Custom definitions", "definitions")}
             {part("Indexers", "indexers")}
             {part("Apps", "apps")}
             {part("Settings and steps", "settings")}
@@ -236,6 +318,7 @@ mod tests {
     fn plan_lines_read_as_words() {
         assert_eq!(action_badge("add"), ("Add", "ok"));
         assert_eq!(action_badge("manual"), ("For you to do", "info"));
+        assert_eq!(action_badge("needs_help"), ("Needs your help", "warn"));
         assert_eq!(action_badge("nothing_needed").0, "Nothing needed");
         let st = json!({ "secrets": ["password"], "missing": ["API key", "Cookie"] });
         assert_eq!(extra_words(&st), "Brings over: password. Fill in again: API key, Cookie.");

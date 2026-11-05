@@ -22,6 +22,14 @@ use std::sync::Arc;
 /// The most a database inside a backup may unpack to (a backup holding more is refused).
 const MAX_DB_BYTES: u64 = 4 << 30;
 
+/// The most a custom definition file may hold.
+const MAX_DEFINITION_BYTES: u64 = 1 << 20;
+
+/// Whether a path in a backup is one of Prowlarr's custom definitions (`Definitions/Custom/<name>.yml`).
+pub fn custom_definition_path(lower: &str) -> bool {
+    (lower.ends_with(".yml") || lower.ends_with(".yaml")) && lower.contains("definitions/custom/")
+}
+
 /// What an upload is, by its first bytes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Upload {
@@ -66,10 +74,15 @@ pub fn read_backup(zip_path: &Path, scratch: &Path) -> Result<Source> {
     let mut zip = zip::ZipArchive::new(file).map_err(|e| bad(&e))?;
     let mut config = String::new();
     let mut db_entry = None;
+    let mut definitions = Vec::new();
     for i in 0..zip.len() {
-        let name = zip.by_index(i).map_err(|e| bad(&e))?.name().to_lowercase();
+        let name = zip.by_index(i).map_err(|e| bad(&e))?.name().replace('\\', "/").to_lowercase();
         let base = name.rsplit('/').next().unwrap_or(&name).to_string();
-        if base == "prowlarr.db" {
+        if custom_definition_path(&name) {
+            let mut text = String::new();
+            zip.by_index(i).map_err(|e| bad(&e))?.take(MAX_DEFINITION_BYTES).read_to_string(&mut text).map_err(|e| bad(&e))?;
+            definitions.push((base, text));
+        } else if base == "prowlarr.db" {
             db_entry = Some(i);
         } else if base == "config.xml" {
             zip.by_index(i).map_err(|e| bad(&e))?.take(1 << 20).read_to_string(&mut config).map_err(|e| bad(&e))?;
@@ -87,6 +100,7 @@ pub fn read_backup(zip_path: &Path, scratch: &Path) -> Result<Source> {
         std::io::copy(&mut (&mut entry).take(MAX_DB_BYTES), &mut out).map_err(|e| bad(&e))?;
     }
     let mut src = read_db(scratch, "a Prowlarr backup")?;
+    src.definitions = definitions;
     let cfg = config_xml(&config);
     src.api_key = cfg.api_key.or(src.api_key);
     src.port = cfg.port.or(src.port);
@@ -195,6 +209,7 @@ pub fn indexer_from(
 ) -> SourceIndexer {
     let mut fields = BTreeMap::new();
     let mut extra = Map::new();
+    let mut torrent = None;
     if let Value::Object(m) = settings {
         for (k, v) in m {
             match k.as_str() {
@@ -204,7 +219,10 @@ pub fn indexer_from(
                     }
                 }
                 // query and grab limits, seed goals: Lantern has no such settings per indexer yet
-                "baseSettings" | "torrentBaseSettings" => {}
+                "baseSettings" => {}
+                "torrentBaseSettings" => torrent = Some(true),
+                "protocol" => torrent = v.as_str().map(|p| p.eq_ignore_ascii_case("torrent")).or(torrent),
+                k if k.starts_with("torrentBaseSettings.") => torrent = Some(true),
                 k if k.contains('.') => {}
                 _ => {
                     fields.insert(k, v);
@@ -229,6 +247,7 @@ pub fn indexer_from(
         tags,
         base_url,
         fields,
+        torrent,
     }
 }
 
@@ -345,6 +364,9 @@ pub async fn read_api(url: &str, key: &str) -> Result<Source> {
     let mut src = Source { from: format!("Prowlarr at {base}"), ..Default::default() };
     for ix in list(get("/api/v1/indexer").await?) {
         let mut fields = fields_of(&ix);
+        if let Some(p) = ix.get("protocol").and_then(Value::as_str) {
+            fields.insert("protocol".into(), json!(p));
+        }
         if text(&ix, "implementation") == "Cardigann" && fields.get("definitionFile").and_then(Value::as_str).unwrap_or("").is_empty() {
             fields.insert("definitionFile".into(), json!(text(&ix, "definitionName")));
         }
@@ -424,6 +446,10 @@ pub struct Mapped {
     pub missing: Vec<String>,
     /// What it is, in words.
     pub what: String,
+    /// The path it took into Lantern, in words (`Lantern's definition 1337x`).
+    pub how: String,
+    /// Why it needs a person's help (it is added turned off), when it does.
+    pub needs_help: Option<String>,
 }
 
 /// The value of `name` in `fields`, matching case only when needed (`apiKey` for `apikey`).
@@ -463,8 +489,8 @@ pub fn setting_text(set: &Setting, v: &Value) -> Option<String> {
     }
 }
 
-/// The settings of definition `def` from Prowlarr's fields of `s`.
-fn cardigann(def: &Definition, s: &SourceIndexer) -> Mapped {
+/// The settings of definition `def` from Prowlarr's fields of `s`; `how` says which definition it is.
+pub fn cardigann(def: &Definition, s: &SourceIndexer, how: String) -> Mapped {
     let mut settings = BTreeMap::new();
     let (mut secrets, mut missing) = (Vec::new(), Vec::new());
     for set in def.settings.iter().filter(|x| !x.is_info()) {
@@ -494,79 +520,351 @@ fn cardigann(def: &Definition, s: &SourceIndexer) -> Mapped {
         secrets,
         missing,
         what: what.into(),
+        how,
+        needs_help: None,
     }
 }
 
-/// The definition for Prowlarr's definition file or built-in indexer `id` (named `name`): the same id, the one that
-/// replaced it, or one of the same name.
-fn find_definition(lib: &Library, id: &str, name: &str) -> Option<Arc<Definition>> {
+/// Custom definitions read from an import, by id.
+pub type Custom = BTreeMap<String, Arc<Definition>>;
+
+/// The definition for Prowlarr's definition file or built-in indexer `id` (named `name`): Lantern's own of the same
+/// id (or the one that replaced it, or one of the same name), else a custom one from the import; with the words for
+/// the path it took.
+fn find_definition(lib: &Library, custom: &Custom, id: &str, name: &str) -> Option<(Arc<Definition>, String)> {
     let id = id.trim().to_lowercase();
     if id.is_empty() {
         return None;
     }
-    lib.get(&id).or_else(|| {
-        let all = lib.all();
-        all.iter()
-            .find(|d| d.replaces.iter().any(|r| r.eq_ignore_ascii_case(&id)))
-            .or_else(|| all.iter().find(|d| d.name.eq_ignore_ascii_case(&id) || (!name.is_empty() && d.name.eq_ignore_ascii_case(name))))
-            .cloned()
-    })
+    let from_custom = |d: &Arc<Definition>| (d.clone(), format!("Custom definition {} from the backup", d.id));
+    if let Some(d) = custom.get(&id) {
+        return Some(from_custom(d));
+    }
+    if let Some(d) = lib.get(&id) {
+        let how = if lib.custom_text(&d.id).is_some() {
+            format!("Your custom definition {}", d.id)
+        } else {
+            format!("Lantern's definition {}", d.id)
+        };
+        return Some((d, how));
+    }
+    let all = lib.all();
+    all.iter()
+        .find(|d| d.replaces.iter().any(|r| r.eq_ignore_ascii_case(&id)))
+        .or_else(|| all.iter().find(|d| d.name.eq_ignore_ascii_case(&id) || (!name.is_empty() && d.name.eq_ignore_ascii_case(name))))
+        .map(|d| (d.clone(), format!("Lantern's definition {}", d.id)))
+        .or_else(|| {
+            custom
+                .values()
+                .find(|d| d.name.eq_ignore_ascii_case(&id) || (!name.is_empty() && d.name.eq_ignore_ascii_case(name)))
+                .map(from_custom)
+        })
 }
 
-/// How Lantern would add Prowlarr indexer `s`, or why it can't.
-pub fn map_indexer(lib: &Library, s: &SourceIndexer) -> std::result::Result<Mapped, String> {
-    match s.implementation.as_str() {
-        "Cardigann" => {
-            if s.definition.is_empty() {
-                return Err("Prowlarr didn't say which site definition it uses.".into());
-            }
-            let def = find_definition(lib, &s.definition, "").ok_or_else(|| {
-                format!("Lantern has no definition called {} (it may be a custom one in Prowlarr). Add the site by hand.", s.definition)
-            })?;
-            Ok(cardigann(&def, s))
-        }
-        "Newznab" | "Torznab" => {
-            let kind = s.implementation.to_lowercase();
-            if s.base_url.is_empty() {
-                return Err("Prowlarr has no address for it.".into());
-            }
-            let text = |k: &str| field(&s.fields, k).and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
-            let mut settings = BTreeMap::new();
-            let (mut secrets, mut missing) = (Vec::new(), Vec::new());
-            let key = text("apiKey");
-            if masked(&key) {
-                missing.push("API key".to_string());
-            } else if !key.is_empty() {
-                settings.insert("apikey".to_string(), key);
-                secrets.push("apikey".to_string());
-            }
-            let path = text("apiPath");
-            settings.insert("api_path".to_string(), if path.is_empty() { "/api".to_string() } else { path });
-            let extra = text("additionalParameters");
-            if !extra.is_empty() {
-                settings.insert("extra".to_string(), extra);
-            }
-            let url = s.base_url.trim_end_matches('/');
-            let definition = if kind == "newznab" { newznab::preset_at(url).map(|p| p.id.to_string()) } else { None };
-            Ok(Mapped {
-                what: if kind == "newznab" { "Usenet indexer".into() } else { "Torznab indexer".into() },
-                kind,
-                definition: definition.unwrap_or_default(),
-                name: s.name.clone(),
-                base_url: url.to_string(),
-                settings,
-                secrets,
-                missing,
-            })
-        }
-        "" => Err("Prowlarr didn't say what kind of indexer it is.".into()),
-        built_in => {
-            let def = find_definition(lib, built_in, &s.name).ok_or_else(|| {
-                format!("Prowlarr has {built_in} built in, and Lantern has no definition for it yet. Add it by hand when one appears.")
-            })?;
-            Ok(cardigann(&def, s))
+/// A Prowlarr built-in indexer that speaks Newznab or Torznab underneath: (implementation, name, kind, address, API
+/// path, API key it always sends, whether it signs in with HTTP basic).
+const UNDERNEATH: &[(&str, &str, &str, &str, &str, &str, bool)] =
+    &[("Headphones", "Headphones VIP", "newznab", "https://indexer.codeshy.com", "/api", "964d601959918a578a670984bdee9357", true)];
+
+/// Lantern's Usenet preset for `s`: the one at its address, else the one named like its implementation
+/// (`built_in`, when it has one) or like the indexer.
+fn usenet_preset(s: &SourceIndexer, built_in: &str) -> Option<&'static newznab::Preset> {
+    let same = |p: &&newznab::Preset, n: &str| {
+        let n = n.trim();
+        !n.is_empty() && (p.id.eq_ignore_ascii_case(n) || p.name.eq_ignore_ascii_case(n))
+    };
+    (!s.base_url.is_empty())
+        .then(|| newznab::preset_at(&s.base_url))
+        .flatten()
+        .or_else(|| newznab::PRESETS.iter().find(|p| same(p, built_in) || same(p, &s.definition) || same(p, &s.name)))
+}
+
+/// Text of `fields[k]` ("" when missing).
+fn text_of(fields: &BTreeMap<String, Value>, k: &str) -> String {
+    match field(fields, k) {
+        Some(Value::String(s)) => s.trim().to_string(),
+        Some(Value::Number(n)) => n.to_string(),
+        _ => String::new(),
+    }
+}
+
+/// `s` as a Newznab/Torznab indexer of `kind` at `url` with API path `path`; `how` says why.
+fn api_indexer(s: &SourceIndexer, kind: &str, url: &str, path: &str, fixed_key: &str, basic: bool, how: String) -> Mapped {
+    let mut settings = BTreeMap::new();
+    let (mut secrets, mut missing) = (Vec::new(), Vec::new());
+    let key = text_of(&s.fields, "apiKey");
+    let key = if key.is_empty() { fixed_key.to_string() } else { key };
+    if masked(&key) {
+        missing.push("API key".to_string());
+    } else if !key.is_empty() {
+        settings.insert("apikey".to_string(), key);
+        secrets.push("apikey".to_string());
+    }
+    let p = text_of(&s.fields, "apiPath");
+    settings.insert("api_path".to_string(), if p.is_empty() { path.to_string() } else { p });
+    let extra = text_of(&s.fields, "additionalParameters");
+    if !extra.is_empty() {
+        settings.insert("extra".to_string(), extra);
+    }
+    if let Some(Value::Array(c)) = field(&s.fields, "categories") {
+        let cats: Vec<String> = c.iter().filter_map(Value::as_i64).map(|n| n.to_string()).collect();
+        if !cats.is_empty() {
+            settings.insert("categories".to_string(), cats.join(","));
         }
     }
+    if basic {
+        for (k, label) in [("username", "Username"), ("password", "Password")] {
+            let v = text_of(&s.fields, k);
+            if masked(&v) {
+                missing.push(label.to_string());
+            } else if !v.is_empty() {
+                if k == "password" {
+                    secrets.push(k.to_string());
+                }
+                settings.insert(k.to_string(), v);
+            }
+        }
+    }
+    let url = url.trim_end_matches('/');
+    let definition = if kind == "newznab" { newznab::preset_at(url).map(|p| p.id.to_string()) } else { None };
+    Mapped {
+        what: if kind == "newznab" { "Usenet indexer".into() } else { "Torznab indexer".into() },
+        kind: kind.to_string(),
+        definition: definition.unwrap_or_default(),
+        name: s.name.clone(),
+        base_url: url.to_string(),
+        settings,
+        secrets,
+        missing,
+        how,
+        needs_help: None,
+    }
+}
+
+/// Whether a field's name is a secret's (passwords, cookies, keys, tokens).
+fn secret_name(k: &str) -> bool {
+    let n = k.to_lowercase();
+    super::vault_field(k).is_some() || ["pass", "cookie", "key", "token", "secret", "pin"].iter().any(|w| n.contains(w))
+}
+
+/// The address for an indexer whose address isn't known (it can't be searched until it gets a definition).
+pub const NO_ADDRESS: &str = "https://address-unknown.invalid";
+
+/// `s` added turned off, keeping everything Prowlarr had in its settings, because no path worked: `why`.
+fn needs_help(s: &SourceIndexer, why: String) -> Mapped {
+    let mut settings = BTreeMap::new();
+    let (mut secrets, mut missing) = (Vec::new(), Vec::new());
+    for (k, v) in &s.fields {
+        let t = match v {
+            Value::String(x) => x.trim().to_string(),
+            Value::Null => continue,
+            Value::Array(a) => {
+                a.iter().map(|x| x.as_str().map(str::to_string).unwrap_or_else(|| x.to_string())).collect::<Vec<_>>().join(",")
+            }
+            other => other.to_string(),
+        };
+        if t.is_empty() {
+            continue;
+        }
+        if masked(&t) {
+            missing.push(k.clone());
+            continue;
+        }
+        if secret_name(k) {
+            secrets.push(k.clone());
+        }
+        settings.insert(k.clone(), t);
+    }
+    settings.insert(NEEDS_HELP.into(), why.clone());
+    settings.insert("prowlarr_implementation".into(), s.implementation.clone());
+    if !s.definition.is_empty() {
+        settings.insert("prowlarr_definition".into(), s.definition.clone());
+    }
+    let usenet = s.torrent == Some(false);
+    Mapped {
+        kind: if usenet { "newznab".into() } else { "torznab".into() },
+        definition: String::new(),
+        name: s.name.clone(),
+        base_url: if s.base_url.is_empty() { NO_ADDRESS.to_string() } else { s.base_url.trim_end_matches('/').to_string() },
+        settings,
+        secrets,
+        missing,
+        what: if usenet { "Usenet indexer".into() } else { "Torrent site".into() },
+        how: "Needs your help".into(),
+        needs_help: Some(why),
+    }
+}
+
+/// The setting that marks an indexer added turned off because it needs a definition, with the reason.
+pub const NEEDS_HELP: &str = "needs_help";
+
+/// What probing an address found: the API path that answered Newznab/Torznab capabilities.
+pub type Probes = HashMap<i64, String>;
+
+/// How Lantern would add Prowlarr indexer `s`, trying in order: a definition (Lantern's or a custom one from the
+/// backup), Newznab/Torznab (Prowlarr's own kinds and the built-ins that speak it underneath), an address that
+/// answered as Newznab/Torznab when probed (`probes`), and last, added turned off with what it needs.
+pub fn map_indexer(lib: &Library, custom: &Custom, probes: &Probes, s: &SourceIndexer) -> Mapped {
+    let imp = s.implementation.as_str();
+    match imp {
+        "Cardigann" => {
+            if s.definition.is_empty() {
+                return needs_help(s, "Prowlarr didn't say which site definition it uses.".into());
+            }
+            if let Some((def, how)) = find_definition(lib, custom, &s.definition, "") {
+                return cardigann(&def, s, how);
+            }
+        }
+        "Newznab" | "Torznab" => {
+            let kind = imp.to_lowercase();
+            let preset = if kind == "newznab" { usenet_preset(s, "") } else { None };
+            if let Some(p) = preset {
+                let url = if s.base_url.is_empty() { p.url } else { s.base_url.as_str() };
+                return api_indexer(s, &kind, url, p.api_path, "", false, format!("Lantern's Usenet preset {}", p.name));
+            }
+            if !s.base_url.is_empty() {
+                return api_indexer(s, &kind, &s.base_url, "/api", "", false, imp.to_string());
+            }
+        }
+        "" => {}
+        built_in => {
+            if let Some((def, how)) = find_definition(lib, custom, built_in, &s.name) {
+                return cardigann(&def, s, how);
+            }
+            if let Some((_, label, kind, url, path, key, basic)) = UNDERNEATH.iter().find(|u| u.0.eq_ignore_ascii_case(built_in)) {
+                let url = if s.base_url.is_empty() { *url } else { s.base_url.as_str() };
+                return api_indexer(s, kind, url, path, key, *basic, format!("{label}: Newznab underneath"));
+            }
+            if let Some(p) = usenet_preset(s, built_in) {
+                let url = if s.base_url.is_empty() { p.url } else { s.base_url.as_str() };
+                let has_login = !text_of(&s.fields, "username").is_empty();
+                return api_indexer(
+                    s,
+                    "newznab",
+                    url,
+                    p.api_path,
+                    "",
+                    has_login,
+                    format!("{built_in}: Lantern's Usenet preset {}", p.name),
+                );
+            }
+            let path = text_of(&s.fields, "apiPath");
+            if !s.base_url.is_empty() && !path.is_empty() {
+                let kind = if s.torrent == Some(false) { "newznab" } else { "torznab" };
+                let has_login = !text_of(&s.fields, "username").is_empty();
+                return api_indexer(
+                    s,
+                    kind,
+                    &s.base_url,
+                    &path,
+                    "",
+                    has_login,
+                    format!("{built_in}: {} underneath", if kind == "newznab" { "Newznab" } else { "Torznab" }),
+                );
+            }
+        }
+    }
+    if let Some(path) = probes.get(&s.id) {
+        let kind = if s.torrent == Some(false) { "newznab" } else { "torznab" };
+        let words = if kind == "newznab" { "Newznab" } else { "Torznab" };
+        return api_indexer(
+            s,
+            kind,
+            &s.base_url,
+            path,
+            "",
+            false,
+            format!("Answered as {words} at {}{path}", s.base_url.trim_end_matches('/')),
+        );
+    }
+    let why = match imp {
+        "Cardigann" => format!(
+            "Lantern has no definition called {}, and the backup had no custom definition of that name. Create its definition to turn it on.",
+            s.definition
+        ),
+        "Newznab" | "Torznab" => "Prowlarr has no address for it. Enter its address to turn it on.".to_string(),
+        "" => "Prowlarr didn't say what kind of indexer it is. Create its definition to turn it on.".to_string(),
+        other if s.base_url.is_empty() => {
+            format!("Prowlarr has {other} built in, Lantern has no definition for it yet, and Prowlarr didn't say its address. Create its definition to turn it on.")
+        }
+        other => format!(
+            "Prowlarr has {other} built in, Lantern has no definition for it yet, and {} didn't answer as a Newznab or Torznab API. Create its definition to turn it on.",
+            s.base_url.trim_end_matches('/')
+        ),
+    };
+    needs_help(s, why)
+}
+
+/// Whether `s` would only be added turned off unless its address answers as Newznab/Torznab: the ones to probe.
+fn worth_probing(lib: &Library, custom: &Custom, s: &SourceIndexer) -> bool {
+    !s.base_url.is_empty() && map_indexer(lib, custom, &Probes::new(), s).needs_help.is_some()
+}
+
+/// Asks `base` for its Newznab/Torznab capabilities at the usual API paths (with the API key from `fields`); the path
+/// that answered.
+pub async fn probe(base: &str, fields: &BTreeMap<String, Value>) -> Option<String> {
+    let http = reqwest::Client::builder().timeout(std::time::Duration::from_secs(10)).build().ok()?;
+    let key = text_of(fields, "apiKey");
+    for path in ["/api", "/api/torznab/api", "/torznab/api"] {
+        let mut url = format!("{}{path}?t=caps", base.trim_end_matches('/'));
+        if !key.is_empty() && !masked(&key) {
+            url.push_str(&format!("&apikey={}", url::form_urlencoded::byte_serialize(key.as_bytes()).collect::<String>()));
+        }
+        let Ok(r) = http.get(&url).send().await else { continue };
+        if !r.status().is_success() {
+            continue;
+        }
+        let body = r.text().await.unwrap_or_default();
+        if body.contains("<caps") {
+            return Some(path.to_string());
+        }
+    }
+    None
+}
+
+/// Probes, all at once, the indexers of `src` that no other path takes.
+async fn probe_all(lib: &Library, custom: &Custom, src: &Source) -> Probes {
+    let jobs =
+        src.indexers.iter().filter(|s| worth_probing(lib, custom, s)).map(|s| async move { (s.id, probe(&s.base_url, &s.fields).await) });
+    futures_util::future::join_all(jobs).await.into_iter().filter_map(|(id, p)| p.map(|p| (id, p))).collect()
+}
+
+/// A starting point for a site's definition, from what Prowlarr knew of it: its name, address and settings. It reads
+/// as a valid definition; the search and the rows are the parts a person fills in.
+pub fn skeleton(name: &str, url: &str, settings: &BTreeMap<String, String>) -> String {
+    let id: String = name
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect::<String>()
+        .split('-')
+        .filter(|p| !p.is_empty())
+        .collect::<Vec<_>>()
+        .join("-");
+    let id = if id.is_empty() { "my-site".to_string() } else { id };
+    let url =
+        if url.is_empty() || url == NO_ADDRESS { "https://example.com/".to_string() } else { format!("{}/", url.trim_end_matches('/')) };
+    let q = |s: &str| serde_json::to_string(s).unwrap_or_else(|_| "\"\"".into());
+    let mut out = format!(
+        "---\n# Made by Lantern's import from what Prowlarr knew of this site. Fill in the search and the rows,\n# then Save: the indexer turns on with the settings below.\nid: {id}\nname: {}\ndescription: {}\nlanguage: en-US\ntype: private\nencoding: UTF-8\nlinks:\n  - {}\n\ncaps:\n  categorymappings:\n    - {{id: 1, cat: Movies, desc: \"Movies\"}}\n    - {{id: 2, cat: TV, desc: \"TV\"}}\n  modes:\n    search: [q]\n    tv-search: [q, season, ep]\n    movie-search: [q]\n\nsettings:\n",
+        q(name),
+        q(&format!("{name}, imported from Prowlarr")),
+        q(&url)
+    );
+    let skip = [NEEDS_HELP, "prowlarr_implementation", "prowlarr_definition", "apiPath", "categories", "additionalParameters"];
+    let mut any = false;
+    for k in settings.keys().filter(|k| !skip.contains(&k.as_str())) {
+        let kind = if secret_name(k) { "password" } else { "text" };
+        out.push_str(&format!("  - name: {k}\n    type: {kind}\n    label: {}\n", q(k)));
+        any = true;
+    }
+    if !any {
+        out.push_str("  - name: cookie\n    type: text\n    label: Cookie\n");
+    }
+    out.push_str(
+        "\nsearch:\n  paths:\n    - path: \"search?q={{ .Keywords }}\"\n  rows:\n    selector: \"table tbody tr\"\n  fields:\n    title:\n      selector: \"a.title\"\n    download:\n      selector: \"a[href*=\\\"download\\\"]\"\n      attribute: href\n    size:\n      selector: \"td.size\"\n    seeders:\n      selector: \"td.seeders\"\n    leechers:\n      selector: \"td.leechers\"\n    date:\n      text: now\n    category:\n      text: 1\n",
+    );
+    out
 }
 
 /// Whether Lantern's indexer `e` is the one `m` would add.
@@ -574,36 +872,75 @@ fn same(e: &Indexer, m: &Mapped) -> bool {
     e.kind == m.kind
         && match m.kind.as_str() {
             "cardigann" => e.definition == m.definition && e.name.eq_ignore_ascii_case(&m.name),
-            _ => e.name.eq_ignore_ascii_case(&m.name) || e.base_url.trim_end_matches('/').eq_ignore_ascii_case(&m.base_url),
+            _ => {
+                e.name.eq_ignore_ascii_case(&m.name)
+                    || (m.base_url != NO_ADDRESS && e.base_url.trim_end_matches('/').eq_ignore_ascii_case(&m.base_url))
+            }
         }
+}
+
+/// The custom definitions of `src`, read: (file, definition or why it can't be read).
+fn read_custom(src: &Source) -> Vec<(String, std::result::Result<Definition, String>)> {
+    src.definitions.iter().map(|(f, y)| (f.clone(), Definition::parse(y))).collect()
 }
 
 /// Matches `src` against Lantern and, unless `opts` says it is a dry run, adds what is new. Nothing in Lantern is
 /// changed or removed, except the API key and the proxy for sites when they are empty (or `opts` asks for the key).
 pub async fn run(st: &AppState, src: &Source, opts: Options, secrets: &dyn Secrets) -> Result<Plan> {
     let mut plan = Plan { from: src.from.clone(), dry_run: opts.dry_run, ..Default::default() };
+    let lib = &st.indexers.library;
+    // 1. the custom definitions in the backup
+    let mut custom = Custom::new();
+    for ((file, parsed), (_, yaml)) in read_custom(src).into_iter().zip(&src.definitions) {
+        match parsed {
+            Err(why) => plan.definitions.push(Step::new(&file, "Custom definition", Action::Skip, why)),
+            Ok(d) => {
+                if lib.custom_text(&d.id).is_some_and(|t| t.trim() == yaml.trim()) {
+                    plan.definitions.push(Step::new(
+                        &file,
+                        "Custom definition",
+                        Action::AlreadyThere,
+                        format!("Lantern has {} already, the same.", d.id),
+                    ));
+                    continue;
+                }
+                let mut step =
+                    Step::new(&file, "Custom definition", Action::Add, format!("Saved as your custom definition {} ({}).", d.id, d.name));
+                if !opts.dry_run {
+                    if let Err(why) = lib.save_custom(yaml) {
+                        step.action = Action::Skip;
+                        step.detail = why;
+                        plan.definitions.push(step);
+                        continue;
+                    }
+                }
+                plan.definitions.push(step);
+                custom.insert(d.id.clone(), Arc::new(d));
+            }
+        }
+    }
+    // 2–3. the indexers, probing the addresses no other path takes
+    let probes = probe_all(lib, &custom, src).await;
     let mut existing = st.indexers.list()?;
     let mut indexers: Vec<&SourceIndexer> = src.indexers.iter().collect();
     indexers.sort_by_key(|s| s.id);
     for s in indexers {
-        let what = if s.implementation.is_empty() { "Indexer".to_string() } else { s.implementation.clone() };
-        let m = match map_indexer(&st.indexers.library, s) {
-            Ok(m) => m,
-            Err(why) => {
-                plan.indexers.push(Step::new(&s.name, what, Action::Skip, why));
-                continue;
-            }
-        };
+        let m = map_indexer(lib, &custom, &probes, s);
         if let Some(e) = existing.iter().find(|e| same(e, &m)) {
             let detail = format!("Lantern has it already, as {}. It was left as it is.", e.name);
-            plan.indexers.push(Step::new(&s.name, &m.what, Action::AlreadyThere, detail));
+            let mut step = Step::new(&s.name, &m.what, Action::AlreadyThere, detail);
+            step.how = m.how.clone();
+            plan.indexers.push(step);
             continue;
         }
-        let mut step = Step::new(&s.name, &m.what, Action::Add, "");
+        let mut step = Step::new(&s.name, &m.what, if m.needs_help.is_some() { Action::NeedsHelp } else { Action::Add }, "");
+        step.how = m.how.clone();
         step.secrets = m.secrets.clone();
         step.missing = m.missing.clone();
         let mut words = Vec::new();
-        if !s.enabled {
+        if let Some(why) = &m.needs_help {
+            words.push(format!("Added turned off: {why} Open Import → Needs your help → Create definition."));
+        } else if !s.enabled {
             words.push("It was turned off in Prowlarr and stays off.".to_string());
         }
         if !step.missing.is_empty() {
@@ -659,16 +996,19 @@ pub async fn run(st: &AppState, src: &Source, opts: Options, secrets: &dyn Secre
 }
 
 /// Adds `m` (from `s`) to Lantern with its secrets kept by `secrets`, under Prowlarr's number when it is free; the
-/// new id and whether Prowlarr's number was kept.
+/// new id and whether Prowlarr's number was kept. One that needs help is added turned off.
 fn add(st: &AppState, s: &SourceIndexer, m: &Mapped, secrets: &dyn Secrets) -> Result<(i64, bool)> {
     let mut settings = m.settings.clone();
     let username = settings.get("username").cloned().unwrap_or_default();
-    let owner = Owner {
-        kind: if m.kind == "newznab" { "usenet_indexer" } else { "tracker" },
-        name: &m.name,
-        site: if m.kind == "cardigann" { &m.definition } else { &m.base_url },
-        username: &username,
+    let site = if m.kind == "cardigann" {
+        m.definition.clone()
+    } else if m.base_url == NO_ADDRESS {
+        s.name.to_lowercase()
+    } else {
+        m.base_url.clone()
     };
+    let owner =
+        Owner { kind: if m.kind == "newznab" { "usenet_indexer" } else { "tracker" }, name: &m.name, site: &site, username: &username };
     for k in &m.secrets {
         if let Some(v) = settings.get(k).cloned() {
             settings.insert(k.clone(), secrets.keep(&owner, k, &v)?);
@@ -680,16 +1020,80 @@ fn add(st: &AppState, s: &SourceIndexer, m: &Mapped, secrets: &dyn Secrets) -> R
         "name": m.name,
         "base_url": m.base_url,
         "settings": settings,
-        "enabled": s.enabled,
+        "enabled": s.enabled && m.needs_help.is_none(),
         "priority": s.priority.clamp(1, 50),
         "tags": s.tags.join(","),
     });
     let id = st.indexers.add(&body)?;
+    if let Some(why) = &m.needs_help {
+        st.indexers.db.execute("UPDATE indexers SET last_error=? WHERE id=?", p![format!("Needs your help: {why}"), id])?;
+    }
     if s.id > 0 && s.id != id && st.indexers.get(s.id).is_err() {
         st.indexers.db.execute("UPDATE indexers SET id=? WHERE id=?", p![s.id, id])?;
         return Ok((s.id, true));
     }
     Ok((id, s.id == id))
+}
+
+/// The indexers added turned off because they need a definition: `{id, name, reason, implementation, yaml}`, the
+/// YAML a starting point for the Create definition editor.
+pub fn needing_help(st: &AppState) -> Result<Vec<Value>> {
+    Ok(st
+        .indexers
+        .list()?
+        .into_iter()
+        .filter_map(|ix| {
+            let why = ix.settings.get(NEEDS_HELP)?.clone();
+            let base = if ix.base_url == NO_ADDRESS { String::new() } else { ix.base_url.clone() };
+            Some(json!({
+                "id": ix.id,
+                "name": ix.name,
+                "reason": why,
+                "implementation": ix.settings.get("prowlarr_implementation").cloned().unwrap_or_default(),
+                "base_url": base,
+                "yaml": skeleton(&ix.name, &base, &ix.settings),
+            }))
+        })
+        .collect())
+}
+
+/// Saves `yaml` as a custom definition and turns indexer `id` (one that needs help) into a site of that definition,
+/// with the settings Prowlarr had, under the same number and turned on. The indexer as the API lists it.
+pub fn create_definition(st: &AppState, id: i64, yaml: &str) -> Result<Value> {
+    let ix = st.indexers.get(id)?;
+    if !ix.settings.contains_key(NEEDS_HELP) {
+        return Err(kit_server_core::err(409, format!("{} doesn't need a definition: it already works.", ix.name)));
+    }
+    let def = st.indexers.library.save_custom(yaml).map_err(|e| kit_server_core::err(400, e))?;
+    let src = SourceIndexer {
+        id,
+        name: ix.name.clone(),
+        implementation: "Cardigann".into(),
+        definition: def.id.clone(),
+        enabled: true,
+        priority: ix.priority,
+        tags: ix.tags.split(',').map(str::trim).filter(|t| !t.is_empty()).map(String::from).collect(),
+        base_url: if ix.base_url == NO_ADDRESS { String::new() } else { ix.base_url.clone() },
+        fields: ix.settings.iter().map(|(k, v)| (k.clone(), json!(v))).collect(),
+        torrent: Some(true),
+    };
+    let m = cardigann(&def, &src, format!("Your custom definition {}", def.id));
+    st.indexers.remove(id)?;
+    let new_id = st.indexers.add(&json!({
+        "kind": "cardigann",
+        "definition": m.definition,
+        "name": m.name,
+        "base_url": m.base_url,
+        "settings": m.settings,
+        "enabled": true,
+        "priority": src.priority,
+        "tags": ix.tags,
+    }))?;
+    if new_id != id {
+        st.indexers.db.execute("UPDATE indexers SET id=? WHERE id=?", p![id, new_id])?;
+    }
+    tracing::info!("Import: {} now uses the custom definition {}", m.name, def.id);
+    Ok(st.indexers.public(&st.indexers.get(id)?))
 }
 
 /// The apps' lines: each is kept for app sync, its API key through `secrets`.
@@ -933,15 +1337,103 @@ mod tests {
             vec![],
             json!({"baseUrl": "https://api.nzbgeek.info/", "apiPath": "/api", "apiKey": "k"}),
         );
-        let m = map_indexer(&lib, &s).unwrap();
+        let (none, no_probes) = (Custom::new(), Probes::new());
+        let m = map_indexer(&lib, &none, &no_probes, &s);
         assert_eq!((m.kind.as_str(), m.definition.as_str(), m.base_url.as_str()), ("newznab", "nzbgeek", "https://api.nzbgeek.info"));
         assert_eq!(m.settings.get("apikey").map(String::as_str), Some("k"));
         assert_eq!(m.secrets, vec!["apikey".to_string()]);
         s.fields.insert("apiKey".into(), json!("********"));
-        let m = map_indexer(&lib, &s).unwrap();
+        let m = map_indexer(&lib, &none, &no_probes, &s);
         assert_eq!(m.missing, vec!["API key".to_string()]);
         assert!(!m.settings.contains_key("apikey"));
-        let unknown = indexer_from(2, "X", "SomeBuiltIn", true, 25, vec![], json!({}));
-        assert!(map_indexer(&lib, &unknown).unwrap_err().contains("SomeBuiltIn built in"));
+        // a built-in with nothing to go on is added turned off, with what it needs
+        let unknown = indexer_from(2, "X", "SomeBuiltIn", true, 25, vec![], json!({"cookie": "c=1"}));
+        let m = map_indexer(&lib, &none, &no_probes, &unknown);
+        assert!(m.needs_help.as_deref().unwrap().contains("SomeBuiltIn built in"));
+        assert_eq!((m.kind.as_str(), m.base_url.as_str()), ("torznab", NO_ADDRESS));
+        assert_eq!(m.settings.get("cookie").map(String::as_str), Some("c=1"));
+        assert_eq!(m.secrets, vec!["cookie".to_string()]);
+        // the same with an address that answered the probe becomes Torznab
+        let mut probed =
+            indexer_from(3, "Y", "SomeBuiltIn", true, 25, vec![], json!({"baseUrl": "https://y.test/", "torrentBaseSettings": {}}));
+        probed.torrent = Some(true);
+        let probes: Probes = [(3, "/api".to_string())].into_iter().collect();
+        let m = map_indexer(&lib, &none, &probes, &probed);
+        assert_eq!((m.kind.as_str(), m.how.as_str()), ("torznab", "Answered as Torznab at https://y.test/api"));
+    }
+
+    #[test]
+    fn usenet_presets_fill_what_prowlarr_left_out() {
+        let lib = Library::new(None, &std::env::temp_dir().join("lantern-migrate-unit-presets"));
+        // a Newznab indexer Prowlarr kept without an address, named like a preset
+        let s = indexer_from(4, "DrunkenSlug", "Newznab", true, 25, vec![], json!({"apiKey": "k"}));
+        let m = map_indexer(&lib, &Custom::new(), &Probes::new(), &s);
+        assert_eq!(
+            (m.kind.as_str(), m.definition.as_str(), m.base_url.as_str(), m.how.as_str()),
+            ("newznab", "drunkenslug", "https://drunkenslug.com", "Lantern's Usenet preset DrunkenSlug")
+        );
+        assert!(m.needs_help.is_none());
+        // a built-in named like a preset takes its address and API path
+        let s = indexer_from(5, "Tabula Rasa", "TabulaRasa", true, 25, vec![], json!({"apiKey": "k"}));
+        let m = map_indexer(&lib, &Custom::new(), &Probes::new(), &s);
+        assert_eq!(
+            (m.base_url.as_str(), m.settings.get("api_path").map(String::as_str)),
+            ("https://www.tabula-rasa.pw", Some("/api/v1/api"))
+        );
+        assert_eq!(m.how, "TabulaRasa: Lantern's Usenet preset Tabula Rasa");
+    }
+
+    #[test]
+    fn headphones_vip_is_newznab_with_its_sign_in() {
+        let lib = Library::new(None, &std::env::temp_dir().join("lantern-migrate-unit-hp"));
+        let s = indexer_from(
+            5,
+            "Headphones VIP",
+            "Headphones",
+            true,
+            25,
+            vec![],
+            json!({"baseUrl": "https://indexer.codeshy.com", "apiPath": "/api", "apiKey": "964d601959918a578a670984bdee9357", "username": "me", "password": "pw"}),
+        );
+        assert_eq!(s.torrent, None);
+        let m = map_indexer(&lib, &Custom::new(), &Probes::new(), &s);
+        assert_eq!(
+            (m.kind.as_str(), m.base_url.as_str(), m.how.as_str()),
+            ("newznab", "https://indexer.codeshy.com", "Headphones VIP: Newznab underneath")
+        );
+        assert_eq!(m.settings.get("username").map(String::as_str), Some("me"));
+        assert_eq!(m.settings.get("password").map(String::as_str), Some("pw"));
+        assert_eq!(m.settings.get("apikey").map(String::as_str), Some("964d601959918a578a670984bdee9357"));
+        assert!(m.needs_help.is_none());
+        // another built-in with an address and an API path is taken as Newznab/Torznab too
+        let other = indexer_from(
+            6,
+            "Z",
+            "OtherApi",
+            true,
+            25,
+            vec![],
+            json!({"baseUrl": "https://z.test", "apiPath": "/api/v2", "torrentBaseSettings": {}}),
+        );
+        let m = map_indexer(&lib, &Custom::new(), &Probes::new(), &other);
+        assert_eq!((m.kind.as_str(), m.settings.get("api_path").map(String::as_str)), ("torznab", Some("/api/v2")));
+    }
+
+    #[test]
+    fn the_definition_skeleton_reads_as_a_definition() {
+        let mut settings = BTreeMap::new();
+        settings.insert("username".to_string(), "me".to_string());
+        settings.insert("password".to_string(), "pw".to_string());
+        settings.insert(NEEDS_HELP.to_string(), "why".to_string());
+        let y = skeleton("My Site: Two", "https://my.site/", &settings);
+        let d = Definition::parse(&y).unwrap();
+        assert_eq!((d.id.as_str(), d.name.as_str()), ("my-site-two", "My Site: Two"));
+        assert_eq!(d.links, vec!["https://my.site/".to_string()]);
+        assert_eq!(
+            d.settings.iter().map(|x| (x.name.as_str(), x.kind.as_str())).collect::<Vec<_>>(),
+            vec![("password", "password"), ("username", "text")]
+        );
+        assert!(custom_definition_path("prowlarr/definitions/custom/my-site.yml"));
+        assert!(!custom_definition_path("definitions/v11/1337x.yml"));
     }
 }

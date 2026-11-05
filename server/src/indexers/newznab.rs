@@ -103,11 +103,26 @@ pub struct Newznab {
     pub protocol: Protocol,
     /// Extra query parameters (`&attrs=…`).
     pub extra: String,
+    /// A user name and password the API also wants as HTTP basic sign-in (Headphones VIP), when it does.
+    pub basic: Option<(String, String)>,
     /// The HTTP client.
     pub http: Http,
 }
 
 impl Newznab {
+    /// A GET of `url`, with the basic sign-in when the API wants one (only to the API's own address).
+    fn get(&self, url: &str) -> Fetch {
+        let f = Fetch::get(url);
+        match &self.basic {
+            Some((u, p)) if url.starts_with(&format!("{}/", self.base.trim_end_matches('/'))) => {
+                use base64::Engine;
+                let token = base64::engine::general_purpose::STANDARD.encode(format!("{u}:{p}"));
+                f.headers(vec![("Authorization".into(), format!("Basic {token}"))])
+            }
+            _ => f,
+        }
+    }
+
     /// The API address with `params` and the key.
     fn url(&self, params: &[(&str, String)]) -> String {
         let mut u = format!("{}{}", self.base.trim_end_matches('/'), if self.api_path.is_empty() { "/api" } else { &self.api_path });
@@ -129,7 +144,7 @@ impl Newznab {
 
     /// Checks the API answers its capabilities.
     pub async fn test(&self) -> Result<(), String> {
-        let page = self.http.fetch(Fetch::get(&self.url(&[("t", "caps".into())]))).await?;
+        let page = self.http.fetch(self.get(&self.url(&[("t", "caps".into())]))).await?;
         if let Some(e) = api_error(&page.text) {
             return Err(format!("{}: {e}", self.name));
         }
@@ -169,7 +184,7 @@ impl Newznab {
         if q.offset > 0 {
             params.push(("offset", q.offset.to_string()));
         }
-        let page = self.http.fetch(Fetch::get(&self.url(&params))).await?;
+        let page = self.http.fetch(self.get(&self.url(&params))).await?;
         if let Some(e) = api_error(&page.text) {
             return Err(format!("{}: {e}", self.name));
         }
@@ -178,7 +193,7 @@ impl Newznab {
 
     /// A release's NZB or torrent.
     pub async fn grab(&self, link: &str) -> Result<Vec<u8>, String> {
-        let page = self.http.fetch(Fetch::get(link)).await?;
+        let page = self.http.fetch(self.get(link)).await?;
         if let Some(e) = api_error(&page.text) {
             return Err(format!("{}: {e}", self.name));
         }
