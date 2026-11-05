@@ -8,7 +8,6 @@ import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/solid";
 import { Trans, useTranslation } from "react-i18next";
 
 import { ReleaseTable } from "./releases/ReleaseTable";
-import { ExternalLink } from "@components/ExternalLink";
 
 const Code = ({ children }: { children: React.ReactNode }) => (
   <code className="rounded-md inline-block mb-1 px-1 py-0.5 border bg-gray-100 border-gray-300 dark:bg-gray-800 dark:border-gray-700">
@@ -113,16 +112,7 @@ export const Releases = () => {
 
               <br /><br />
 
-              {t("releaseSearch.docsPrefix")}
-              {" "}
-              <ExternalLink
-                href="https://autobrr.com/usage/search/"
-                className="text-gray-700 dark:text-gray-200 underline font-semibold underline-offset-2 decoration-purple-500 decoration-2 hover:text-black dark:hover:text-gray-100"
-              >
-                {t("releaseSearch.docsLink")}
-              </ExternalLink>
-              {" "}
-              {t("releaseSearch.docsSuffix")}
+              {/* LANTERN: no link to autobrr's search docs */}
             </div>
           </div>
         ) : null}

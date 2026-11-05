@@ -7,17 +7,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <link rel="icon" href="/favicon.ico"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="theme-color" content="#18181B">
-  <meta name="description" content="autobrr"/>
-  <link rel="preload" href="/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin="use-credentials">
-  <link rel="apple-touch-icon" href="/logo192.png"/>
-  <link rel="apple-touch-icon" href="/apple-touch-icon-iphone-60x60.png"/>
-  <link rel="apple-touch-icon" sizes="60x60" href="/apple-touch-icon-ipad-76x76.png"/>
-  <link rel="apple-touch-icon" sizes="114x114" href="/apple-touch-icon-iphone-retina-120x120.png"/>
-  <link rel="apple-touch-icon" sizes="144x144" href="/apple-touch-icon-ipad-retina-152x152.png"/>
-  <title>autobrr</title>
+  <!-- LANTERN: Lantern's name and the kit's Encore page colour; no Inter font (the kit uses the system's);
+       no autobrr icons -->
+  <meta name="theme-color" content="#161617">
+  <meta name="description" content="Lantern"/>
+  <title>Lantern</title>
   <!-- <base href="{{.BaseUrl}}"> -->
   <style>
       @font-face {
@@ -34,9 +29,8 @@
       }
 
       :root {
-          font-family: "Inter Var", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-          "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-          sans-serif;
+          /* LANTERN: the kit's fonts (kit-leptos' kit.css): the system's own */
+          font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
       }
@@ -44,6 +38,8 @@
   <script>
       window.APP = {};
       window.APP.baseUrl = "{{.BaseUrl}}";
+      // LANTERN: the instance name the header shows (Lantern's app_name setting), put in by Lantern's server
+      window.APP.instanceName = "{{.InstanceName}}";
 
       // Update the base tag dynamically
       const base = document.createElement('base');
@@ -53,6 +49,8 @@
       const browserPrefers = !(window.matchMedia !== undefined && window.matchMedia("(prefers-color-scheme: light)").matches);
       const {darkTheme = browserPrefers} = JSON.parse(localStorage.getItem("settings")) || {};
       document.documentElement.classList.toggle("dark", darkTheme);
+      // LANTERN: the kit's tokens follow data-theme: none is Encore (dark mode), "light" the light theme
+      if (!darkTheme) document.documentElement.dataset.theme = "light";
   </script>
 </head>
 <body class="bg-color">

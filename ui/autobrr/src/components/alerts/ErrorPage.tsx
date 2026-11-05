@@ -7,7 +7,6 @@ import { lazy, Suspense } from "react";
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import { useTranslation } from "react-i18next";
 
-import { ExternalLink } from "@components/ExternalLink";
 
 declare global {
   interface Window {
@@ -44,24 +43,7 @@ export const ErrorPage = ({ error, reset }: ErrorPageProps) => {
         <h1 className="text-3xl font-bold leading-6 text-gray-900 dark:text-gray-200 mt-4 mb-3">
           {pageTitle}
         </h1>
-        <h3 className="text-xl leading-6 text-gray-700 dark:text-gray-400 mb-4">
-          {t("errorPage.reportPrefix")}
-          {" "}
-          <ExternalLink
-            href="https://github.com/autobrr/autobrr"
-            className="text-gray-700 dark:text-gray-200 underline font-semibold underline-offset-2 decoration-sky-500 hover:decoration-2 hover:text-black dark:hover:text-gray-100"
-          >
-            {t("errorPage.github")}
-          </ExternalLink>
-          {" "}{t("errorPage.reportMiddle")}{" "}
-          <ExternalLink
-            href="https://discord.autobrr.com"
-            className="text-gray-700 dark:text-gray-200 underline font-semibold underline-offset-2 decoration-purple-500 hover:decoration-2 hover:text-black dark:hover:text-gray-100"
-          >
-            {t("errorPage.discord")}
-          </ExternalLink>
-          .
-        </h3>
+        {/* LANTERN: no links to autobrr's GitHub and Discord; Lantern has its own bug reports */}
         <div
           id="alert-additional-content-2"
           className="px-4 pt-4 pb-3 m-auto bg-red-100 rounded-lg dark:bg-red-200 shadow-lg"

@@ -20,6 +20,9 @@ export const ExternalLink = ({ href, className, children }: ExternalLinkProps) =
   </a>
 );
 
-export const DocsLink = ({ href }: { href: string; }) => (
+// LANTERN: no links to autobrr's own site (its docs); other sites' links stay
+const isAutobrrSite = (href: string) => /^https:\/\/(www\.)?autobrr\.com(\/|$)/.test(href);
+
+export const DocsLink = ({ href }: { href: string; }) => (isAutobrrSite(href) ? null :
   <ExternalLink href={href} className="text-blue-700 dark:text-blue-400 visited:text-blue-700 dark:visited:text-blue-400">{href}</ExternalLink>
 );

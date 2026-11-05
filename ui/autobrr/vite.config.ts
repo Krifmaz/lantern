@@ -40,38 +40,14 @@ export default ({ mode }: ConfigEnv) => {
         "favicon.ico"
       ],
       manifest: {
-        name: "autobrr",
-        short_name: "autobrr",
+        // LANTERN: Lantern's name and the kit's Encore page colour (--bg)
+        name: "Lantern",
+        short_name: "Lantern",
         description: "Automation for downloads.",
-        theme_color: "#141415",
-        background_color: "#141415",
-        icons: [
-          {
-            src: "logo192.png",
-            sizes: "192x192",
-            type: "image/png"
-          },
-          {
-            src: "apple-touch-icon-iphone-60x60.png",
-            sizes: "60x60",
-            type: "image/png"
-          },
-          {
-            src: "apple-touch-icon-ipad-76x76.png",
-            sizes: "76x76",
-            type: "image/png"
-          },
-          {
-            src: "apple-touch-icon-iphone-retina-120x120.png",
-            sizes: "120x120",
-            type: "image/png"
-          },
-          {
-            src: "apple-touch-icon-ipad-retina-152x152.png",
-            sizes: "152x152",
-            type: "image/png"
-          }
-        ],
+        theme_color: "#161617",
+        background_color: "#161617",
+        // LANTERN: no autobrr icons
+        icons: [],
         start_url: "{{.BaseUrl}}",
         scope: "{{.BaseUrl}}",
         display: "standalone"

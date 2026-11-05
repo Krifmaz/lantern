@@ -5,9 +5,9 @@
 
 import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { ExternalLink } from "@components/ExternalLink";
 
-import Logo from "@app/logo.svg?react";
+// LANTERN: the instance name in place of autobrr's logo (src/lantern/Wordmark.tsx)
+import Logo from "@app/lantern/Wordmark";
 
 export const NotFound = () => {
   const { t } = useTranslation("common");
@@ -23,27 +23,7 @@ export const NotFound = () => {
       <h1 className="text-3xl text-center font-bold text-gray-900 dark:text-gray-200 my-8 px-2">
         {t("notFound.title")}
       </h1>
-      <h3 className="text-xl text-center text-gray-700 dark:text-gray-400 mb-1 px-2">
-        {t("notFound.bugPrefix")}
-      </h3>
-      <h3 className="text-xl text-center text-gray-700 dark:text-gray-400 mb-1 px-2">
-        {t("notFound.reportPrefix")}
-        {" "}
-        <ExternalLink
-          href="https://github.com/autobrr/autobrr"
-          className="text-gray-700 dark:text-gray-200 underline font-semibold underline-offset-2 decoration-sky-500 hover:decoration-2 hover:text-black dark:hover:text-gray-100"
-        >
-          {t("notFound.github")}
-        </ExternalLink>
-        {" "}{t("notFound.reportMiddle")}{" "}
-        <ExternalLink
-          href="https://discord.autobrr.com"
-          className="text-gray-700 dark:text-gray-200 underline font-semibold underline-offset-2 decoration-purple-500 hover:decoration-2 hover:text-black dark:hover:text-gray-100"
-        >
-          {t("notFound.discord")}
-        </ExternalLink>
-        .
-      </h3>
+      {/* LANTERN: no links to autobrr's GitHub and Discord; Lantern has its own bug reports */}
       <h3 className="text-xl text-center leading-6 text-gray-700 dark:text-gray-400 mb-8 px-2">
         {t("notFound.backOnTrack")}
       </h3>

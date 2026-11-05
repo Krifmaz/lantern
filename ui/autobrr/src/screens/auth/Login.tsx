@@ -19,7 +19,8 @@ import Toast from "@components/notifications/Toast";
 import { Tooltip } from "@components/tooltips/Tooltip";
 import { OpenIdIcon } from "@components/Icons";
 
-import Logo from "@app/logo.svg?react";
+// LANTERN: the instance name in place of autobrr's logo (src/lantern/Wordmark.tsx)
+import Logo from "@app/lantern/Wordmark";
 import { AuthContext, AuthInfo } from "@utils/Context";
 import { classNames } from "@utils";
 import { useToggle } from "@hooks/hooks";
@@ -129,9 +130,7 @@ export const Login = () => {
         <div className="flex min-h-full flex-1 flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
                 <Logo className="mx-auto h-12 w-auto"/>
-                <h2 className="mt-6 text-center text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-200">
-                    {t("title")}
-                </h2>
+                {/* LANTERN: the instance name above is the title; no "autobrr" under it */}
             </div>
 
             {/* Wait for OIDC config to load before rendering any login forms */}

@@ -8,14 +8,12 @@
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from "react-i18next";
 
-import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/solid";
-
 import { classNames } from "@utils";
 
 import { NAV_ROUTES } from "./_shared";
-import { ExternalLink } from "@components/ExternalLink";
 
-import Logo from "@app/logo.svg?react";
+// LANTERN: the instance name in place of autobrr's logo (src/lantern/Wordmark.tsx)
+import Logo from "@app/lantern/Wordmark";
 
 export const LeftNav = () => {
   const { t } = useTranslation("common");
@@ -52,19 +50,7 @@ export const LeftNav = () => {
               }}
             </Link>
           ))}
-          <ExternalLink
-            href="https://autobrr.com"
-            className={classNames(
-              "text-gray-600 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-2xl text-sm font-medium",
-              "transition-colors duration-200 flex items-center justify-center"
-            )}
-          >
-            {t("nav.docs")}
-            <ArrowTopRightOnSquareIcon
-              className="inline ml-1 h-5 w-5"
-              aria-hidden="true"
-            />
-          </ExternalLink>
+          {/* LANTERN: no link to autobrr's docs */}
         </div>
       </div>
     </div>

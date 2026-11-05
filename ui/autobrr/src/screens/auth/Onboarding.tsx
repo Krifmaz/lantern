@@ -15,7 +15,8 @@ import { TextField, PasswordField } from "@components/inputs";
 
 import { UserPlusIcon } from "@heroicons/react/24/outline";
 
-import Logo from "@app/logo.svg?react";
+// LANTERN: the instance name in place of autobrr's logo (src/lantern/Wordmark.tsx)
+import Logo from "@app/lantern/Wordmark";
 
 interface InputValues {
   username: string;
@@ -79,9 +80,7 @@ export const Onboarding = () => {
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md mb-6">
         <Logo className="mx-auto h-12" />
-        <h1 className="text-center text-gray-900 dark:text-gray-200 font-bold pt-2 text-2xl">
-          autobrr
-        </h1>
+        {/* LANTERN: the instance name above is the title; no "autobrr" under it */}
       </div>
       <div className="mx-auto w-full max-w-md rounded-2xl shadow-lg">
         <div className="px-8 pt-8 pb-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-150 dark:border-gray-775">
