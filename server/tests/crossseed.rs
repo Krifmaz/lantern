@@ -103,25 +103,48 @@ async fn qbit_delete(State(s): State<Shared>, Form(f): Form<HashMap<String, Stri
     "".into_response()
 }
 
-async fn qbit_info(State(s): State<Shared>) -> Response {
+/// The form of a request: the query of a GET, the body of a POST (empty when there is none).
+fn form_of(f: Result<Form<HashMap<String, String>>, axum::extract::rejection::FormRejection>) -> HashMap<String, String> {
+    f.map(|Form(f)| f).unwrap_or_default()
+}
+
+/// `torrents/info`, all of them or those of `hashes`, read by Lantern's hub (GET) and cross-seed's client (POST).
+async fn qbit_info(State(s): State<Shared>, f: Result<Form<HashMap<String, String>>, axum::extract::rejection::FormRejection>) -> Response {
+    let f = form_of(f);
+    let wanted: Option<Vec<String>> = f.get("hashes").map(|h| h.split('|').map(str::to_lowercase).collect());
     let list: Vec<Value> = s
         .lock()
         .unwrap()
         .torrents
         .iter()
+        .filter(|t| wanted.as_ref().is_none_or(|w| w.contains(&t.0)))
         .map(|(hash, name, cat, save, tags)| {
-            json!({ "hash": hash, "name": name, "category": cat, "save_path": save, "content_path": format!("{save}/{name}"),
-                    "tags": tags, "state": "uploading", "progress": 1.0, "size": 1500, "dlspeed": 0, "eta": 8640000, "ratio": 0.5, "seeding_time": 60 })
+            json!({ "hash": hash, "infohash_v1": hash, "name": name, "category": cat, "save_path": save, "content_path": format!("{save}/{name}"),
+                    "tags": tags, "state": "uploading", "progress": 1.0, "size": 1500, "total_size": 1500, "amount_left": 0, "auto_tmm": false,
+                    "tracker": "https://tracker.a/announce", "dlspeed": 0, "eta": 8640000, "ratio": 0.5, "seeding_time": 60 })
         })
         .collect();
     axum::Json(Value::Array(list)).into_response()
 }
 
-async fn qbit_files(State(s): State<Shared>, Query(q): Query<HashMap<String, String>>) -> Response {
+async fn qbit_files(
+    State(s): State<Shared>,
+    f: Result<Form<HashMap<String, String>>, axum::extract::rejection::FormRejection>,
+) -> Response {
+    let q = form_of(f);
     let s = s.lock().unwrap();
     let Some(t) = s.torrents.iter().find(|t| t.0 == q["hash"]) else { return StatusCode::NOT_FOUND.into_response() };
     let list: Vec<Value> = FILES.iter().map(|(f, size)| json!({ "name": format!("{}/{f}", t.1), "size": size })).collect();
     axum::Json(Value::Array(list)).into_response()
+}
+
+/// `torrents/trackers`: qBittorrent's own three lines, then the site's.
+async fn qbit_trackers() -> Response {
+    axum::Json(json!([
+        { "url": "** [DHT] **", "tier": "" }, { "url": "** [PeX] **", "tier": "" }, { "url": "** [LSD] **", "tier": "" },
+        { "url": "https://tracker.a/announce", "tier": 0 }
+    ]))
+    .into_response()
 }
 
 async fn fakes() -> (String, Shared) {
@@ -130,13 +153,15 @@ async fn fakes() -> (String, Shared) {
         .route("/{site}/api", get(site))
         .route("/{site}/file", get(file))
         .route("/qbit/api/v2/auth/login", post(qbit_login))
-        .route("/qbit/api/v2/app/version", get(|| async { "v5.0.0" }))
+        .route("/qbit/api/v2/app/version", get(|| async { "v5.0.0" }).post(|| async { "v5.0.0" }))
+        .route("/qbit/api/v2/torrents/createTags", post(|| async { "" }))
+        .route("/qbit/api/v2/torrents/trackers", get(qbit_trackers).post(qbit_trackers))
         .route("/qbit/api/v2/torrents/createCategory", post(qbit_category))
         .route("/qbit/api/v2/torrents/editCategory", post(qbit_category))
         .route("/qbit/api/v2/torrents/add", post(qbit_add))
-        .route("/qbit/api/v2/torrents/info", get(qbit_info))
+        .route("/qbit/api/v2/torrents/info", get(qbit_info).post(qbit_info))
         .route("/qbit/api/v2/torrents/delete", post(qbit_delete))
-        .route("/qbit/api/v2/torrents/files", get(qbit_files))
+        .route("/qbit/api/v2/torrents/files", get(qbit_files).post(qbit_files))
         .with_state(shared.clone());
     let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let url = format!("http://{}", l.local_addr().unwrap());
@@ -206,15 +231,15 @@ async fn a_finished_torrent_seeds_on_the_other_sites_that_have_the_same_files() 
     assert_eq!((v["candidates"].as_i64(), v["injected"].as_i64()), (Some(3), Some(1)), "{v}");
     assert_eq!(v["message"], "Seeding on 1 more site now, from the same files");
 
-    // site B's copy is in qBittorrent next to the files, in a category the app doesn't watch
+    // site B's copy is in qBittorrent next to the files
     {
         let f = fake.lock().unwrap();
         assert_eq!(f.torrents.len(), 2);
         let b = &f.torrents[1];
         assert_eq!(b.0, torrent::parse(&torrent_of("b")).unwrap().info_hash);
-        assert_eq!((b.2.as_str(), b.3.as_str()), ("sonarr.cross-seed", "/downloads/sonarr"));
-        assert!(b.4.contains("lantern-xs-1"), "{}", b.4);
-        assert_eq!(f.categories.get("sonarr.cross-seed").map(String::as_str), Some("/downloads/sonarr"));
+        // as cross-seed adds it: the searchee's category and folder, tagged cross-seed
+        assert_eq!((b.2.as_str(), b.3.as_str(), b.4.as_str()), ("sonarr", "/downloads/sonarr", "cross-seed"));
+        assert!(f.categories.is_empty(), "no category of its own unless duplicateCategories is on");
     }
 
     // what happened to each candidate
@@ -319,8 +344,8 @@ async fn the_cross_seed_api_answers_as_cross_seed_does() {
         assert_eq!(f.torrents[1].0, torrent::parse(&torrent_of("b")).unwrap().info_hash);
         assert_eq!(
             (f.torrents[1].2.as_str(), f.torrents[1].3.as_str()),
-            ("cross-seed", "/downloads/tv"),
-            "not from a grab, so under cross-seed's own category"
+            ("tv", "/downloads/tv"),
+            "as cross-seed does: in the searchee's category, next to its files"
         );
     }
     let recent = st.cross_seed.recent(100).unwrap();

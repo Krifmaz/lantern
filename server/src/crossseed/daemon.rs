@@ -367,15 +367,7 @@ async fn webhook(xs: CrossSeed, body: &str) -> Response {
 async fn search_path(xs: &CrossSeed, path: &str, o: &Override, ignore_cross_seeds: bool) -> kit_server_core::Result<Option<usize>> {
     let mut s = super::searchee::create_searchee_from_path(std::path::Path::new(path)).map_err(|e| kit_server_core::err(400, e))?;
     s.label = super::searchee::Label::Webhook;
-    let client = xs.hub.clients()?.into_iter().find(|c| c.enabled && c.protocol() == crate::indexers::release::Protocol::Torrent);
-    let target = Target {
-        client_id: client.map(|c| c.id).unwrap_or(0),
-        save_path: super::searchee::dirname(path),
-        category: String::new(),
-        grab_id: 0,
-        indexer_id: 0,
-        complete: true,
-    };
+    let target = Target::default();
     let opts = super::prefilter::ContentOptions { ignore_cross_seeds, allow_season_pack_episodes: true, block_list_only: false };
     let out = xs.search_searchee(&s, &target, o, opts).await?;
     Ok(if out.filtered.is_some() { None } else { Some(out.matches) })
@@ -504,7 +496,7 @@ pub fn announce_schema(v: &Value) -> Result<Candidate, Vec<Issue>> {
 /// `determineResponse`: the status for an announce's outcome; `None` for an outcome cross-seed calls unexpected.
 pub fn determine_response(decision: Option<Decision>, result: Option<InjectionResult>) -> Option<(u16, &'static str)> {
     let injected = result == Some(InjectionResult::Success);
-    let added = injected || result == Some(InjectionResult::Failure);
+    let added = injected || result == Some(InjectionResult::Failure) || result == Some(InjectionResult::Saved);
     let exists = decision == Some(Decision::InfoHashAlreadyExists) || result == Some(InjectionResult::AlreadyExists);
     let incomplete = result == Some(InjectionResult::TorrentNotComplete);
     if added {

@@ -1571,6 +1571,7 @@ dependencies = [
  "kit-server-settings",
  "kit-server-setup",
  "lettre",
+ "libc",
  "md-5",
  "percent-encoding",
  "quick-xml",

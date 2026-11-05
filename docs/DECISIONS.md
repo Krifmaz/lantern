@@ -85,7 +85,7 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — Cross-seed matches strictly: same release name (punctuation and file ending aside), size within 2 %,
   then every file's path and size equal in the candidate's `.torrent`. Copies whose files differ are listed, never
   added, so nothing is ever downloaded again or renamed. Magnet-only sites are skipped (no file list to compare).
-- 2026-11-05 — Cross-seed copies go into `<app category>.cross-seed` at the app's folder, tagged `lantern-xs-<grab>`,
+- 2026-11-05 — (Replaced below: copies now follow cross-seed's categories and tags.) Cross-seed copies went into `<app category>.cross-seed` at the app's folder, tagged `lantern-xs-<grab>`,
   so the app doesn't import them again and the hub's grab tracking never mistakes them for grabs. Each grab is
   searched when it finishes and again weekly, four times at most, 30 s apart by default.
 - 2026-11-05 — The keeper's account numbers (ratio, upload, download, bonus) are typed in or sent through
@@ -200,8 +200,23 @@ Non-obvious calls, one line each, newest last.
   `files_differ`, ...), which the hub's cleanup reads; cross-seed's decision and injection result are new columns
   (`match_decision`, `result`). Search times move to cross-seed's per-indexer `timestamp` table, and
   `cross_seed_again_days` gives way to `excludeOlder` and `excludeRecentSearch`.
-- 2026-11-05 — A torrent searched by the webhook that isn't one of Lantern's grabs goes under the category
-  `cross-seed`, since the clients don't tell Lantern a torrent's category (a grab's copies keep `<category>.cross-seed`).
+- 2026-11-05 — ~~A torrent searched by the webhook that isn't one of Lantern's grabs goes under the category
+  `cross-seed`, since the clients don't tell Lantern a torrent's category (a grab's copies keep `<category>.cross-seed`).~~
+  Replaced: cross-seed's own clients now read each torrent's category, so copies follow cross-seed exactly: the
+  same category, tagged `cross-seed`, `<category>.cross-seed` only with `duplicateCategories`, `linkCategory` for
+  linked files. The hub's cleanup still keeps a grab's files while a copy seeds from them (by the `cross_seeds`
+  table, not by tags).
+- 2026-11-05 — cross-seed's torrent clients (`server/src/crossseed/clients/`) are a port of its own, apart from the
+  hub's download clients, so the requests are cross-seed's to the letter. `torrentClients` (`cross_seed_torrent_clients`,
+  secret, one per line) left empty uses Lantern's enabled qBittorrent, rTorrent, Transmission and Deluge clients
+  in priority order, written as cross-seed's entries (`/transmission/rpc`, `/RPC2` and `/json` added).
+- 2026-11-05 — As in cross-seed, the clients' folders must be valid on Lantern's machine for linking and for the
+  link-folder choice; Lantern writes only into the link folders you set and `cross-seeds/` in the data folder.
+- 2026-11-05 — qBittorrent forms are URL-encoded (cross-seed sends them unencoded); qBittorrent reads the same
+  values. Transmission's "409, new session id" answer is retried a bounded number of times (cross-seed recurses
+  without a limit). Requests carry Lantern's own User-Agent.
+- 2026-11-05 — Reflinks use Linux's `FICLONE` (the `libc` crate, Linux only); elsewhere `reflink` fails as on a
+  file system without them, and `reflinkOrCopy` copies.
 - 2026-11-05 — Announces pick the client torrents to compare by cross-seed's keys (title with season, episode,
   year) and its title comparison, without cross-seed's torrent cache and data folders (a later slice).
 - 2026-11-05 — File paths are sorted by an approximation of JavaScript's `localeCompare` (punctuation, then digits,
