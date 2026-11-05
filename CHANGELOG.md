@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- Indexer logins, API keys and session cookies are sealed with the vault's key at rest; ones saved earlier are
+  sealed at the next start. With the vault locked, an indexer says why instead of signing in with nothing.
 - Cloudflare solving: a headless Chromium (in the image) gets past Cloudflare and DDoS-Guard checks by itself when an
   indexer meets one; the site's cookies are kept and reused, so most requests need no browser.
 - The FlareSolverr API on port 8191 (`APP_SOLVER_PORT`), so apps that use FlareSolverr can use Lantern instead.

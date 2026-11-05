@@ -287,3 +287,38 @@ async fn a_missing_key_or_wrong_passphrase_locks_the_vault_in_words() {
     let (s, v, _) = call(&app, owner("POST", &format!("/api/vault/items/{id}/reveal"), Some(json!({ "password": PASSWORD })))).await;
     assert_eq!((s, v["fields"]["username"].as_str()), (StatusCode::OK, Some("azule")));
 }
+
+#[tokio::test]
+async fn indexer_logins_and_cookies_are_sealed_at_rest() {
+    let dir = folder("indexers");
+    let (app, st) = server_on(&dir, None).await;
+    let body =
+        json!({ "kind": "newznab", "name": "Usenet", "base_url": "http://127.0.0.1:9", "settings": { "apikey": "apikey-9c1d-secret" } });
+    let (s, v, _) = call(&app, owner("POST", "/api/indexers", Some(body))).await;
+    assert_eq!(s, StatusCode::OK, "{v}");
+    let id = v["id"].as_i64().unwrap();
+    assert_eq!(st.indexers.get(id).unwrap().settings.get("apikey").map(String::as_str), Some("apikey-9c1d-secret"));
+    // one saved before Lantern sealed them is sealed at the next start
+    use kit_server_core::Db;
+    st.db.execute_batch(
+        "INSERT INTO indexers (kind, definition, name, base_url, settings, cookies, added) VALUES ('newznab','','Old','http://127.0.0.1:9','{\"apikey\":\"old-apikey-secret\"}','uid=1; pass=old-cookie-secret',0)",
+    )
+    .unwrap();
+    let (_, st) = server_on(&dir, None).await;
+    let old = st.indexers.list().unwrap().into_iter().find(|i| i.name == "Old").unwrap();
+    assert_eq!(old.settings.get("apikey").map(String::as_str), Some("old-apikey-secret"));
+    assert_eq!(old.cookies, "uid=1; pass=old-cookie-secret");
+    for f in std::fs::read_dir(dir.join("data")).unwrap() {
+        let bytes = std::fs::read(f.unwrap().path()).unwrap();
+        for secret in ["apikey-9c1d-secret", "old-apikey-secret", "old-cookie-secret"] {
+            assert!(!bytes.windows(secret.len()).any(|w| w == secret.as_bytes()), "{secret} on disk");
+        }
+    }
+    // with the vault locked, the indexer says why instead of signing in with nothing
+    std::fs::remove_file(dir.join("data/vault.key")).unwrap();
+    let (app, st) = server_on(&dir, None).await;
+    assert!(!st.indexers.get(id).unwrap().locked.is_empty());
+    let (_, v, _) = call(&app, owner("POST", &format!("/api/indexers/{id}/test"), None)).await;
+    assert_eq!(v["ok"], false);
+    assert!(v["message"].as_str().unwrap().starts_with("Usenet's saved login can't be opened: The vault key file"), "{v}");
+}
