@@ -547,11 +547,7 @@ pub fn map_indexer(lib: &Library, s: &SourceIndexer) -> std::result::Result<Mapp
                 settings.insert("extra".to_string(), extra);
             }
             let url = s.base_url.trim_end_matches('/');
-            let definition = if kind == "newznab" {
-                newznab::PRESETS.iter().find(|(_, _, u)| u.trim_end_matches('/').eq_ignore_ascii_case(url)).map(|(id, _, _)| id.to_string())
-            } else {
-                None
-            };
+            let definition = if kind == "newznab" { newznab::preset_at(url).map(|p| p.id.to_string()) } else { None };
             Ok(Mapped {
                 what: if kind == "newznab" { "Usenet indexer".into() } else { "Torznab indexer".into() },
                 kind,

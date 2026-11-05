@@ -8,6 +8,10 @@
   setup code Lantern prints in its log at start, so nobody else on the network can claim it first; the code stops
   working once the owner exists. `APP_ADMIN_USER` and `APP_ADMIN_PASSWORD` still make the owner for unattended
   installs. Built on the kit's new first-run setup (kit v0.8.0, up from v0.2.1).
+- Indexers → Add is one searchable list of every torrent site and Usenet indexer, filtered by torrent or Usenet,
+  privacy (private, semi-private, public) and language, and it says how many sites there are. Usenet indexers like
+  Prowlarr's (NZBgeek, DrunkenSlug, NZBPlanet, NinjaCentral, DOGnzb, NZBFinder, altHUB, Tabula Rasa, abNZB and more)
+  come with their address, API path and categories filled in, so only the API key is needed.
 - Indexer logins, API keys and session cookies are sealed with the vault's key at rest; ones saved earlier are
   sealed at the next start. With the vault locked, an indexer says why instead of signing in with nothing.
 - Cloudflare solving: a headless Chromium (in the image) gets past Cloudflare and DDoS-Guard checks by itself when an
