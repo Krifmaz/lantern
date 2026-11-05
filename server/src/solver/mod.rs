@@ -192,24 +192,34 @@ struct Inner {
 }
 
 /// The places a Chromium is looked for when `APP_CHROMIUM` doesn't name one: the image's, then the usual
-/// system ones.
+/// system ones, real programs before the launchers that may stand in their place.
 pub const PROGRAMS: [&str; 7] = [
     "/usr/lib/chromium/headless_shell",
     "/usr/lib/chromium/chromium",
-    "/usr/bin/chromium",
-    "/usr/bin/chromium-browser",
-    "/usr/bin/chromium-headless-shell",
+    "/opt/google/chrome/chrome",
     "/usr/bin/google-chrome",
     "/usr/bin/google-chrome-stable",
+    "/usr/bin/chromium-headless-shell",
+    "/usr/bin/chromium",
 ];
 
-/// The browser program: `named` when it is a file, otherwise the first of [`PROGRAMS`] that is there.
+/// Whether `p` is a program that can be run as the browser itself: a file that isn't a launcher script (a
+/// script may start a sandboxed copy, such as Ubuntu's snap, which can't run here).
+fn runnable(p: &Path) -> bool {
+    let Ok(mut f) = std::fs::File::open(p) else { return false };
+    let mut head = [0u8; 2];
+    use std::io::Read;
+    p.is_file() && f.read_exact(&mut head).is_ok() && &head != b"#!"
+}
+
+/// The browser program: `named` when it is a file, otherwise the first of [`PROGRAMS`] that is a program
+/// itself (not a launcher script).
 pub fn find_program(named: Option<&str>) -> Option<PathBuf> {
     if let Some(n) = named.map(str::trim).filter(|n| !n.is_empty()) {
         let p = PathBuf::from(n);
         return p.is_file().then_some(p);
     }
-    PROGRAMS.iter().map(PathBuf::from).find(|p| p.is_file())
+    PROGRAMS.iter().map(PathBuf::from).find(|p| runnable(p))
 }
 
 /// The user agent a person's Chrome of the same version sends: the browser's own with "HeadlessChrome" said as
@@ -707,6 +717,18 @@ fn uuid_like() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn launcher_scripts_arent_taken_for_the_browser() {
+        let dir = std::env::temp_dir().join(format!("lantern-programs-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let script = dir.join("chromium");
+        std::fs::write(&script, "#!/bin/sh\nexec /snap/bin/chromium \"$@\"\n").unwrap();
+        let program = dir.join("chrome");
+        std::fs::write(&program, b"\x7fELF").unwrap();
+        assert!(!runnable(&script) && runnable(&program) && !runnable(&dir.join("missing")));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn agents_hosts_and_domains() {
