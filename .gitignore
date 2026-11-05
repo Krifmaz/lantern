@@ -3,3 +3,8 @@
 /data
 
 target/
+/android/.gradle
+/android/build
+/android/*/build
+/android/.kotlin
+/android/local.properties
