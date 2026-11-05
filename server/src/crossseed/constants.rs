@@ -208,7 +208,27 @@ pub enum Action {
     Inject,
 }
 
-/// `InjectionResult`: how adding a match to the client went.
+impl Action {
+    /// The action named `s` (`save` or `inject`).
+    pub fn parse(s: &str) -> Option<Action> {
+        match s {
+            "save" => Some(Action::Save),
+            "inject" => Some(Action::Inject),
+            _ => None,
+        }
+    }
+
+    /// cross-seed's name for it.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Action::Save => "save",
+            Action::Inject => "inject",
+        }
+    }
+}
+
+/// `ActionResult`: how adding a match to the client went (`InjectionResult`), or that it was only saved
+/// (`SaveResult.SAVED`, action `save`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InjectionResult {
     /// Added.
@@ -219,6 +239,8 @@ pub enum InjectionResult {
     AlreadyExists,
     /// The torrent it comes from isn't finished.
     TorrentNotComplete,
+    /// `SaveResult.SAVED`: the `.torrent` was saved (action `save`).
+    Saved,
 }
 
 impl InjectionResult {
@@ -229,6 +251,7 @@ impl InjectionResult {
             InjectionResult::Failure => "FAILURE",
             InjectionResult::AlreadyExists => "ALREADY_EXISTS",
             InjectionResult::TorrentNotComplete => "TORRENT_NOT_COMPLETE",
+            InjectionResult::Saved => "SAVED",
         }
     }
 }
@@ -390,6 +413,16 @@ pub enum LinkType {
 }
 
 impl LinkType {
+    /// cross-seed's name for it.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            LinkType::Symlink => "symlink",
+            LinkType::Hardlink => "hardlink",
+            LinkType::Reflink => "reflink",
+            LinkType::ReflinkOrCopy => "reflinkOrCopy",
+        }
+    }
+
     /// The link type named `s`.
     pub fn parse(s: &str) -> Option<LinkType> {
         match s {

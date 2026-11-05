@@ -1,0 +1,62 @@
+{
+  "about": "The requests cross-seed v6.13.9 sends to each torrent client (src/clients/QBittorrent.ts, Transmission.ts, Deluge.ts, RTorrent.ts), in order, for: signing in (validateConfig), listing the client's torrents twice (getClientSearchees, the second time from the cache), adding a MATCH next to the searchee's files (inject), and, for qBittorrent, adding a MATCH_PARTIAL from linked files with a recheck, resuming it (resumeInjection) and signing in again after a 403. <H> is the searchee's info hash, <HU> the same in capitals, <B> the match's, <C> the partial match's, <F> the .torrent file name cross-seed gives, <T> the torrent in base64.",
+  "qbittorrent": [
+    "POST /qbit/api/v2/auth/login username=admin&password=p%40ss",
+    "POST /qbit/api/v2/app/version ",
+    "POST /qbit/api/v2/torrents/createTags tags=cross-seed",
+    "POST /qbit/api/v2/torrents/info ",
+    "POST /qbit/api/v2/torrents/files hash=<H>",
+    "POST /qbit/api/v2/torrents/trackers hash=<H>",
+    "POST /qbit/api/v2/torrents/info ",
+    "POST /qbit/api/v2/torrents/info ",
+    "POST /qbit/api/v2/torrents/info hashes=<H>",
+    "POST /qbit/api/v2/torrents/add torrents=<F>|downloadPath=/downloads/tv|savepath=/downloads/tv|autoTMM=false|category=tv|tags=cross-seed|contentLayout=Original|skip_checking=true|stopped=false|foo=bar",
+    "POST /qbit/api/v2/torrents/info hashes=<B>",
+    "POST /qbit/api/v2/torrents/info ",
+    "POST /qbit/api/v2/torrents/info hashes=<H>",
+    "POST /qbit/api/v2/torrents/add torrents=<F>|downloadPath=/links/Site C|savepath=/links/Site C|autoTMM=false|category=cross-seed-link|tags=cross-seed|contentLayout=Original|skip_checking=false|stopped=true|foo=bar",
+    "POST /qbit/api/v2/torrents/info hashes=<C>",
+    "POST /qbit/api/v2/torrents/stop hashes=<C>",
+    "POST /qbit/api/v2/torrents/recheck hashes=<C>",
+    "POST /qbit/api/v2/torrents/info hashes=<C>",
+    "POST /qbit/api/v2/torrents/start hashes=<C>",
+    "POST /qbit/api/v2/torrents/info 403",
+    "POST /qbit/api/v2/auth/login username=admin&password=p%40ss",
+    "POST /qbit/api/v2/app/version ",
+    "POST /qbit/api/v2/torrents/info "
+  ],
+  "transmission": [
+    { "session": false, "method": "session-get", "arguments": {} },
+    { "session": true, "method": "session-get", "arguments": {} },
+    { "session": true, "method": "torrent-get", "arguments": { "fields": ["hashString", "name", "files", "totalSize", "downloadDir", "labels", "trackers"] } },
+    { "session": true, "method": "torrent-get", "arguments": { "fields": ["hashString", "name", "files", "totalSize", "downloadDir", "labels", "trackers"] } },
+    { "session": true, "method": "torrent-get", "arguments": { "fields": ["hashString"] } },
+    { "session": true, "method": "torrent-get", "arguments": { "fields": ["downloadDir", "percentDone"], "ids": ["<H>"] } },
+    { "session": true, "method": "torrent-add", "arguments": { "download-dir": "/downloads/tv", "metainfo": "<T>", "paused": false, "labels": ["cross-seed"] } },
+    { "session": true, "method": "torrent-get", "arguments": { "fields": ["leftUntilDone", "name", "status"], "ids": ["<B>"] } },
+    { "session": true, "method": "torrent-start", "arguments": { "ids": ["<B>"] } }
+  ],
+  "deluge": [
+    { "method": "auth.login", "params": ["p@ss"], "cookie": false },
+    { "method": "web.connected", "params": [], "cookie": true },
+    { "method": "core.get_enabled_plugins", "params": [], "cookie": true },
+    { "method": "web.update_ui", "params": [["name", "label", "save_path", "total_size", "files", "trackers"], {}], "cookie": true },
+    { "method": "web.update_ui", "params": [["name", "label", "save_path", "total_size", "files", "trackers"], {}], "cookie": true },
+    { "method": "web.update_ui", "params": [[], {}], "cookie": true },
+    { "method": "web.update_ui", "params": [["name", "state", "progress", "save_path", "label", "total_remaining"], { "hash": "<H>" }], "cookie": true },
+    { "method": "core.add_torrent_file", "params": ["<F>", "<T>", { "add_paused": false, "seed_mode": true, "download_location": "/downloads/tv" }], "cookie": true },
+    { "method": "label.get_labels", "params": [], "cookie": true },
+    { "method": "label.set_torrent", "params": ["<B>", "tv"], "cookie": true }
+  ],
+  "rtorrent": [
+    "download_list",
+    "download_list",
+    "system.multicall d.name(<HU>) d.size_bytes(<HU>) d.directory(<HU>) d.is_multi_file(<HU>) d.custom1(<HU>) f.multicall(<HU>,,f.path=,f.size_bytes=) t.multicall(<HU>,,t.url=,t.group=)",
+    "download_list",
+    "system.multicall d.name(<HU>) d.size_bytes(<HU>) d.directory(<HU>) d.is_multi_file(<HU>) d.custom1(<HU>) f.multicall(<HU>,,f.path=,f.size_bytes=) t.multicall(<HU>,,t.url=,t.group=)",
+    "download_list",
+    "system.multicall d.name(<HU>) d.directory(<HU>) d.left_bytes(<HU>) d.hashing(<HU>) d.complete(<HU>) d.is_multi_file(<HU>) d.is_active(<HU>)",
+    "load.raw_start ,<T>,d.directory_base.set=\"/downloads/tv/Show.Name.S01.1080p.WEB-DL-GRP\",d.custom1.set=\"cross-seed\",d.custom.set=addtime,<time>",
+    "download_list"
+  ]
+}

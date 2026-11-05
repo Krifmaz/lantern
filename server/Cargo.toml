@@ -81,6 +81,10 @@ md-5 = "0.10"
 kit-server-settings = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0", default-features = false, features = ["toml"] }
 kit-server-changelog = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0", default-features = false }
 
+# cross-seed: reflinks (FICLONE)
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
+
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"

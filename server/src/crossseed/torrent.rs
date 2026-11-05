@@ -117,6 +117,34 @@ fn info_span(d: &[u8]) -> Option<(usize, usize)> {
     None
 }
 
+/// `{ ...meta.raw, [key]: value }` re-encoded: the `.torrent` with `key` set to the bencoded `value` in its top
+/// dictionary, keys in byte order as bencode wants (rTorrent's `libtorrent_resume`). `None` when it isn't one.
+pub fn with_top_key(d: &[u8], key: &str, value_bencoded: &[u8]) -> Option<Vec<u8>> {
+    if d.first() != Some(&b'd') {
+        return None;
+    }
+    let mut entries: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+    let mut at = 1;
+    while *d.get(at)? != b'e' {
+        let B::Bytes(k) = value(d, &mut at, 0)? else { return None };
+        let start = at;
+        value(d, &mut at, 0)?;
+        if k != key.as_bytes() {
+            entries.push((k, d[start..at].to_vec()));
+        }
+    }
+    entries.push((key.as_bytes().to_vec(), value_bencoded.to_vec()));
+    entries.sort_by(|a, b| a.0.cmp(&b.0));
+    let mut out = vec![b'd'];
+    for (k, v) in entries {
+        out.extend_from_slice(format!("{}:", k.len()).as_bytes());
+        out.extend_from_slice(&k);
+        out.extend_from_slice(&v);
+    }
+    out.push(b'e');
+    Some(out)
+}
+
 /// Reads a `.torrent` file; `None` when it isn't one.
 pub fn parse(d: &[u8]) -> Option<Meta> {
     let (start, end) = info_span(d)?;
