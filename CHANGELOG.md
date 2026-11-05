@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+- Cloudflare solving waits up to two minutes for its browser to start, and tries once more if it doesn't, so a busy
+  or slow machine no longer fails a check before the browser is ready.
+
 ### Added
 - Import never skips an indexer: custom definitions in a Prowlarr backup become your custom definitions, Prowlarr's
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for

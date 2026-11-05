@@ -49,6 +49,10 @@ pub const IDLE: Duration = Duration::from_secs(300);
 /// How many pages the browser opens at once; more requests wait their turn.
 pub const PAGES_AT_ONCE: usize = 3;
 
+/// How long the browser may take to start. A busy or slow machine (a small NAS, a CI runner starting several
+/// browsers at once) can need far more than the usual second or two, so this is generous.
+pub const LAUNCH_TIMEOUT: Duration = Duration::from_secs(120);
+
 /// How long a site's cookies are kept when the site doesn't say (cf_clearance usually lasts longer).
 pub const CLEARANCE_DEFAULT: Duration = Duration::from_secs(3600);
 
@@ -719,7 +723,7 @@ impl Solver {
             .user_data_dir(&profile)
             .no_sandbox()
             .hide()
-            .launch_timeout(Duration::from_secs(30))
+            .launch_timeout(LAUNCH_TIMEOUT)
             .request_timeout(Duration::from_secs(60))
             .window_size(1920, 1080)
             .env("HOME", home.clone())
@@ -741,9 +745,17 @@ impl Solver {
             cfg = cfg.with_head();
         }
         let cfg = cfg.build().map_err(|e| fail(format!("The browser for Cloudflare checks can't be set up: {e}")))?;
-        let (browser, mut handler) = Browser::launch(cfg)
-            .await
-            .map_err(|e| fail(format!("The browser for Cloudflare checks ({}) didn't start: {e}", program.display())))?;
+        // a first start that times out is tried once more: the second start finds the browser's files in the
+        // page cache and is much quicker
+        let (browser, mut handler) = match Browser::launch(cfg.clone()).await {
+            Ok(b) => b,
+            Err(first) => {
+                tracing::warn!("The browser for Cloudflare checks didn't start, trying once more: {first}");
+                Browser::launch(cfg)
+                    .await
+                    .map_err(|e| fail(format!("The browser for Cloudflare checks ({}) didn't start: {e}", program.display())))?
+            }
+        };
         let task = tokio::spawn(async move { while handler.next().await.is_some() {} });
         Ok((browser, task))
     }
