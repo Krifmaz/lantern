@@ -288,7 +288,7 @@ impl Hub {
         let view = |p: &str| if p.is_empty() { String::new() } else { paths::to_app(p, &folder, &app.import_path) };
         json!({
             "id": g.id, "app_id": g.app_id, "app": app.name, "title": g.title, "protocol": g.protocol,
-            "indexer_id": g.indexer_id, "category": g.category, "state": g.state, "progress": g.progress,
+            "indexer_id": g.indexer_id, "client_id": g.client_id, "category": g.category, "state": g.state, "progress": g.progress,
             "size": g.size, "speed": g.speed, "eta": g.eta, "path": view(&g.path),
             "files": g.files.iter().map(|(p, s)| json!({ "path": view(p), "size": s })).collect::<Vec<_>>(),
             "error": g.error, "attempts": g.attempts, "next_try": g.next_try, "added": g.added,
