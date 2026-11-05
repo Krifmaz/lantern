@@ -137,3 +137,26 @@ Non-obvious calls, one line each, newest last.
   A preset's categories are saved as the indexer's `categories` setting (editable), and apps see only those.
 - 2026-11-05 — The Add list is filtered in the browser (the full list is fetched once), with the same rules the
   server applies to `/api/indexers/catalog?q=&protocol=&privacy=&language=` for other clients.
+- 2026-11-05 — **Port, don't reimagine** (the owner's change of approach). Lantern now ports Prowlarr, autobrr,
+  cross-seed and FlareSolverr module by module into Rust, keeping their behaviour, settings and edge cases, instead
+  of writing its own versions. The versions are pinned in `UPSTREAM.lock`; `docs/PARITY.md` lists every endpoint,
+  setting, page, action and background job, and a row is done only with a test or screenshot showing it works like
+  the original. No new features until every row is done. Where a fresh Lantern module and the original differ, the
+  original's behaviour wins; the earlier entries above stay as history and are replaced as each module is ported.
+- 2026-11-05 — Pins are each project's latest stable release: Prowlarr v2.7.0.5723 (`master`; v3.0.0.5737 is a
+  `develop` build), autobrr v1.90.0, cross-seed v6.13.9 (v7 is still pre-release) and FlareSolverr v3.5.2. The
+  Cardigann and announce definitions are data, not code, so they keep following their branches (`UPSTREAM.lock`
+  `[data.*]`).
+- 2026-11-05 — Parity work runs in tracks that own separate folders (`docs/PARITY.md`, "Track"): Prowlarr API
+  (`server/src/prowlarr/`, new), Prowlarr indexers (`server/src/indexers/`), Prowlarr apps
+  (`server/src/prowlarr/apps/`), autobrr (`server/src/releases/`), cross-seed (`server/src/crossseed/`), FlareSolverr
+  (`server/src/solver/`), the two forked web UIs (`ui/prowlarr/`, `ui/autobrr/`) and Lantern's own pages (`web/`).
+  Migration (`server/src/migrate/`) is changed only in its own thread.
+- 2026-11-05 — The Prowlarr and autobrr web frontends are forked as they are into `ui/prowlarr/` and `ui/autobrr/`
+  (snapshot forks at the `UPSTREAM.lock` commit, like Photovault's), built in the image with Node and served by
+  Lantern against its compatible APIs. The Encore look comes from mapping their own CSS variables to the kit's
+  generated tokens, so their layouts, mobile behaviour and pages stay theirs; their logos, donation, Discord and
+  wiki links are removed. Lantern's own Leptos pages remain only for the download hub, the vault and keeper, and
+  Cloudflare solving.
+- 2026-11-05 — cross-seed v6 has no web UI, so its settings get a Lantern page built from a settings schema (track L);
+  its daemon, API and CLI behaviour are ported as they are.

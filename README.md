@@ -135,16 +135,17 @@ dmg is signed ad hoc.
 
 ## Credits
 
-Lantern is written fresh in Rust. These projects were used as reference only (their docs, source and real API
-answers), so that apps made for them work with Lantern unchanged:
+Lantern is a Rust port of Prowlarr, autobrr, cross-seed and FlareSolverr, at the versions in
+[`UPSTREAM.lock`](UPSTREAM.lock), with their web frontends forked; [docs/PARITY.md](docs/PARITY.md) shows how far
+each port is. All credit for their design and behaviour goes to their authors and contributors:
 
 | Project | License | Used for |
 | --- | --- | --- |
-| [Prowlarr](https://github.com/Prowlarr/Prowlarr) | GPL-3.0 | the indexer manager API and app sync |
+| [Prowlarr](https://github.com/Prowlarr/Prowlarr) | GPL-3.0 | ported: indexer manager, API, app sync and web frontend |
 | [Jackett](https://github.com/Jackett/Jackett) | GPL-2.0 | Torznab behaviour and Cardigann definitions |
-| [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) | MIT | the challenge-solving API |
-| [autobrr](https://github.com/autobrr/autobrr) | GPL-2.0-or-later | IRC announce parsing and filters |
-| [cross-seed](https://github.com/cross-seed/cross-seed) | Apache-2.0 | cross-seed matching |
+| [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) | MIT | ported: the challenge-solving API |
+| [autobrr](https://github.com/autobrr/autobrr) | GPL-2.0-or-later | ported: IRC announces, feeds, filters, actions and web frontend |
+| [cross-seed](https://github.com/cross-seed/cross-seed) | Apache-2.0 | ported: cross-seed matching, injection and API |
 | [Sonarr](https://github.com/Sonarr/Sonarr), [Radarr](https://github.com/Radarr/Radarr), [Lidarr](https://github.com/Lidarr/Lidarr), [Readarr](https://github.com/Readarr/Readarr) | GPL-3.0 | the indexer and download client APIs they expect |
 | [qBittorrent](https://github.com/qbittorrent/qBittorrent), [SABnzbd](https://github.com/sabnzbd/sabnzbd), [NZBGet](https://github.com/nzbgetcom/nzbget) | GPL-2.0+ | the download client APIs Lantern speaks and emulates |
 
