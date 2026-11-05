@@ -3,6 +3,10 @@
 ## Unreleased
 
 ### Added
+- Import never skips an indexer: custom definitions in a Prowlarr backup become your custom definitions, Prowlarr's
+  built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
+  Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition
+  editor. The plan shows which way each indexer came over. Newznab indexers can sign in with a user name and password.
 - Indexer logins, API keys and session cookies are sealed with the vault's key at rest; ones saved earlier are
   sealed at the next start. With the vault locked, an indexer says why instead of signing in with nothing.
 - Cloudflare solving: a headless Chromium (in the image) gets past Cloudflare and DDoS-Guard checks by itself when an

@@ -406,6 +406,10 @@ impl Indexers {
                     apikey: ix.settings.get("apikey").cloned().unwrap_or_default(),
                     protocol: if kind == "newznab" { Protocol::Usenet } else { Protocol::Torrent },
                     extra: ix.settings.get("extra").cloned().unwrap_or_default(),
+                    basic: match (ix.settings.get("username"), ix.settings.get("password")) {
+                        (Some(u), Some(p)) if !u.is_empty() && !p.is_empty() => Some((u.clone(), p.clone())),
+                        _ => None,
+                    },
                     http: http::Http::new(&ix.name, delay, "UTF-8", Some(&proxy)).with_solver(self.solver.clone()),
                 })
             }

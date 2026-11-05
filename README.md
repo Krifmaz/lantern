@@ -39,6 +39,10 @@ Outside the image, set `APP_CHROMIUM` to a Chromium or Chrome program.
    already there, what is skipped and why, and what you do by hand. Nothing changes yet.
 3. Press **Import**. Indexers keep Prowlarr's numbers and Lantern takes Prowlarr's API key, so once Lantern answers at
    Prowlarr's address, apps keep searching without changes.
+   No indexer is left behind. The plan says which way each one came over: Lantern's own definition, a custom
+   definition from the backup (saved as yours), Newznab or Torznab underneath (Headphones VIP and similar), or an
+   address that answered as Newznab or Torznab. One that none of these fit is added turned off and listed under
+   **Needs your help**, where **Create definition** opens an editor started from its address and settings.
 4. For FlareSolverr, paste its docker-compose service, `.env` or `docker run` command under **From FlareSolverr** to see
    what to change; Lantern solves Cloudflare checks by itself.
 

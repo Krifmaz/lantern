@@ -61,12 +61,14 @@ fn upload(key: &str, file: &[u8], fields: &[(&str, &str)]) -> Request<Body> {
         .unwrap()
 }
 
-/// A Prowlarr database at `path` with the tables (and columns) Prowlarr has, and a few of everything.
-fn prowlarr_db(path: &Path) {
+/// A Prowlarr database at `path` with the tables (and columns) Prowlarr has, and a few of everything: a site of
+/// Lantern's definitions, a Newznab preset, a site of a custom definition, Headphones VIP (Newznab underneath), a
+/// built-in whose address `probe_url` answers as Torznab, and a built-in that answers nothing.
+fn prowlarr_db(path: &Path, probe_url: &str) {
     use kit_server_core::{Db, SqliteDb};
     let db = SqliteDb::open(path).unwrap();
     db.execute_batch(
-        r#"CREATE TABLE "Config" ("Id" INTEGER PRIMARY KEY, "Key" TEXT NOT NULL, "Value" TEXT NOT NULL);
+        &r#"CREATE TABLE "Config" ("Id" INTEGER PRIMARY KEY, "Key" TEXT NOT NULL, "Value" TEXT NOT NULL);
         CREATE TABLE "Tags" ("Id" INTEGER PRIMARY KEY, "Label" TEXT NOT NULL);
         CREATE TABLE "Indexers" ("Id" INTEGER PRIMARY KEY, "Name" TEXT NOT NULL, "Implementation" TEXT NOT NULL, "Settings" TEXT,
             "ConfigContract" TEXT, "Enable" INTEGER, "Priority" INTEGER NOT NULL DEFAULT 25, "Added" DATETIME NOT NULL,
@@ -86,30 +88,63 @@ fn prowlarr_db(path: &Path) {
            'CardigannSettings', 1, 10, '2024-01-01 00:00:00', '[1,2]'),
           (7, 'NZBgeek', 'Newznab', '{"baseUrl":"https://api.nzbgeek.info","apiPath":"/api","apiKey":"geek-key","additionalParameters":"","categories":[2000]}',
            'NewznabSettings', 0, 25, '2024-01-01 00:00:00', '[]'),
-          (8, 'My Custom Site', 'Cardigann', '{"definitionFile":"my-custom-site","extraFieldData":{}}', 'CardigannSettings', 1, 25, '2024-01-01 00:00:00', '[]'),
-          (9, 'Some Tracker', 'SomeBuiltInTracker', '{"baseUrl":"https://tracker.test/","apiKey":"x"}', 'SomeSettings', 1, 25, '2024-01-01 00:00:00', '[]');
+          (8, 'My Custom Site', 'Cardigann', '{"definitionFile":"my-custom-site","extraFieldData":{"username":"cu","password":"custom-pw"}}', 'CardigannSettings', 1, 25, '2024-01-01 00:00:00', '[]'),
+          (9, 'Some Tracker', 'SomeBuiltInTracker', '{"baseUrl":"http://127.0.0.1:1/","apiKey":"x"}', 'SomeSettings', 1, 25, '2024-01-01 00:00:00', '[]'),
+          (10, 'Headphones VIP', 'Headphones', '{"baseUrl":"https://indexer.codeshy.com","apiPath":"/api","apiKey":"964d601959918a578a670984bdee9357","username":"hp-user","password":"hp-pass","categories":[3000]}',
+           'HeadphonesSettings', 1, 25, '2024-01-01 00:00:00', '[]'),
+          (11, 'Probe Me', 'SomeTorznabSite', '{"baseUrl":"PROBE_URL","apiKey":"probe-key"}', 'SomeSettings', 1, 25, '2024-01-01 00:00:00', '[]');
         INSERT INTO Applications (Name, Implementation, Settings, ConfigContract, SyncLevel, Tags) VALUES
           ('Sonarr', 'Sonarr', '{"prowlarrUrl":"http://prowlarr:9696","baseUrl":"http://sonarr:8989","apiKey":"sonarr-key","syncCategories":[5000,5040]}', 'SonarrSettings', 2, '[]');
         INSERT INTO IndexerProxies (Name, Implementation, Settings, ConfigContract, Tags) VALUES
           ('FlareSolverr', 'FlareSolverr', '{"host":"http://flaresolverr:8191/","requestTimeout":60}', 'FlareSolverrSettings', '[1]'),
           ('Tagged proxy', 'Http', '{"host":"tagged.lan","port":3128}', 'HttpSettings', '[2]');
         INSERT INTO DownloadClients (Enable, Name, Implementation, Settings, ConfigContract) VALUES (1, 'qBittorrent', 'QBittorrent', '{}', 'QBittorrentSettings');
-        INSERT INTO Notifications (Name, Implementation, Settings) VALUES ('Discord', 'Discord', '{}');"#,
+        INSERT INTO Notifications (Name, Implementation, Settings) VALUES ('Discord', 'Discord', '{}');"#
+            .replace("PROBE_URL", probe_url),
     )
     .unwrap();
 }
 
-/// A Prowlarr backup: its database and config.xml in a zip.
-fn prowlarr_backup(dir: &Path) -> Vec<u8> {
+/// The custom definition `my-custom-site` a Prowlarr backup carries: the test tracker under another name.
+fn custom_definition() -> String {
+    let defs = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/definitions/lantern-test.yml");
+    std::fs::read_to_string(defs).unwrap().replacen("id: lantern-test", "id: my-custom-site", 1).replacen(
+        "name: Lantern Test Tracker",
+        "name: My Custom Site",
+        1,
+    )
+}
+
+/// A site that answers Torznab's capabilities question at /api, on a free port; its address.
+async fn torznab_site() -> String {
+    let app = Router::new().route(
+        "/api",
+        get(|q: axum::extract::Query<std::collections::HashMap<String, String>>| async move {
+            match q.get("t").map(String::as_str) {
+                Some("caps") => Ok(r#"<?xml version="1.0"?><caps><searching><search available="yes"/></searching></caps>"#),
+                _ => Err(StatusCode::BAD_REQUEST),
+            }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    format!("http://{addr}/")
+}
+
+/// A Prowlarr backup: its database, config.xml and a custom definition in a zip; `probe_url` is a Torznab site.
+fn prowlarr_backup(dir: &Path, probe_url: &str) -> Vec<u8> {
     std::fs::create_dir_all(dir).unwrap();
     let db = dir.join("prowlarr.db");
-    prowlarr_db(&db);
+    prowlarr_db(&db, probe_url);
     let mut zip = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
     let opts = zip::write::SimpleFileOptions::default();
     zip.start_file("prowlarr.db", opts).unwrap();
     zip.write_all(&std::fs::read(&db).unwrap()).unwrap();
     zip.start_file("config.xml", opts).unwrap();
     zip.write_all(b"<Config>\n  <Port>9696</Port>\n  <ApiKey>prowlarr-api-key</ApiKey>\n  <UrlBase></UrlBase>\n</Config>").unwrap();
+    zip.start_file("Definitions/Custom/my-custom-site.yml", opts).unwrap();
+    zip.write_all(custom_definition().as_bytes()).unwrap();
     zip.finish().unwrap().into_inner()
 }
 
@@ -120,9 +155,10 @@ fn step<'a>(plan: &'a Value, part: &str, name: &str) -> &'a Value {
 #[tokio::test]
 async fn a_prowlarr_backup_is_looked_at_then_imported_once() {
     let (app, st, dir, key) = lantern("backup").await;
-    let backup = prowlarr_backup(&dir.join("prowlarr"));
+    let probe_url = torznab_site().await;
+    let backup = prowlarr_backup(&dir.join("prowlarr"), &probe_url);
 
-    // the dry run says what would happen and changes nothing
+    // the dry run says what would happen, and which path each indexer took, and changes nothing
     let (s, plan) = call(&app, upload(&key, &backup, &[])).await;
     assert_eq!(s, StatusCode::OK, "{plan}");
     assert_eq!(plan["dry_run"], true);
@@ -130,8 +166,22 @@ async fn a_prowlarr_backup_is_looked_at_then_imported_once() {
     assert_eq!(site["action"], "add");
     assert_eq!(site["secrets"], json!(["password"]));
     assert_eq!(step(&plan, "indexers", "NZBgeek")["action"], "add");
-    assert!(step(&plan, "indexers", "My Custom Site")["detail"].as_str().unwrap().contains("no definition called my-custom-site"));
-    assert_eq!(step(&plan, "indexers", "Some Tracker")["action"], "skip");
+    assert_eq!(site["how"], "Lantern's definition lantern-test");
+    assert_eq!(step(&plan, "definitions", "my-custom-site.yml")["action"], "add");
+    let custom = step(&plan, "indexers", "My Custom Site");
+    assert_eq!(
+        (custom["action"].as_str(), custom["how"].as_str()),
+        (Some("add"), Some("Custom definition my-custom-site from the backup"))
+    );
+    let hp = step(&plan, "indexers", "Headphones VIP");
+    assert_eq!((hp["action"].as_str(), hp["how"].as_str()), (Some("add"), Some("Headphones VIP: Newznab underneath")));
+    let probed = step(&plan, "indexers", "Probe Me");
+    assert_eq!(probed["action"], "add");
+    assert_eq!(probed["how"].as_str().unwrap(), format!("Answered as Torznab at {}/api", probe_url.trim_end_matches('/')));
+    let stuck = step(&plan, "indexers", "Some Tracker");
+    assert_eq!((stuck["action"].as_str(), stuck["how"].as_str()), (Some("needs_help"), Some("Needs your help")));
+    assert!(stuck["detail"].as_str().unwrap().contains("Create definition"), "{stuck}");
+    assert!(st.indexers.library.custom_text("my-custom-site").is_none(), "a dry run saves no definition");
     assert_eq!(step(&plan, "apps", "Sonarr")["action"], "add");
     assert_eq!(step(&plan, "settings", "API key")["action"], "set");
     assert_eq!(step(&plan, "settings", "Port")["action"], "nothing_needed");
@@ -140,7 +190,9 @@ async fn a_prowlarr_backup_is_looked_at_then_imported_once() {
     assert!(step(&plan, "settings", "FlareSolverr")["detail"].as_str().unwrap().contains("Lantern Test Tracker"));
     assert!(plan["notes"].to_string().contains("qBittorrent"));
     assert!(plan["summary"].as_str().unwrap().ends_with("Nothing was changed yet."));
-    assert!(!plan.to_string().contains("hunter2") && !plan.to_string().contains("geek-key"), "secrets never show in a plan");
+    for secret in ["hunter2", "geek-key", "hp-pass", "custom-pw", "probe-key"] {
+        assert!(!plan.to_string().contains(secret), "secrets never show in a plan: {secret}");
+    }
     assert!(st.indexers.list().unwrap().is_empty());
     assert_eq!(st.settings.str("api_key"), key);
 
@@ -159,7 +211,26 @@ async fn a_prowlarr_backup_is_looked_at_then_imported_once() {
     assert_eq!((geek.kind.as_str(), geek.definition.as_str(), geek.enabled), ("newznab", "nzbgeek", false));
     assert_eq!(geek.settings.get("apikey").map(String::as_str), Some("geek-key"));
     assert!(step(&plan, "indexers", "NZBgeek")["detail"].as_str().unwrap().contains("Its number is 7, as in Prowlarr"));
-    assert_eq!(st.indexers.list().unwrap().len(), 2);
+    // the custom definition is Lantern's now, and the site uses it
+    assert!(st.indexers.library.custom_text("my-custom-site").is_some());
+    let custom = st.indexers.get(8).unwrap();
+    assert_eq!((custom.kind.as_str(), custom.definition.as_str(), custom.enabled), ("cardigann", "my-custom-site", true));
+    assert_eq!(custom.settings.get("password").map(String::as_str), Some("custom-pw"));
+    // Headphones VIP is Newznab with its fixed key and its sign-in
+    let hp = st.indexers.get(10).unwrap();
+    assert_eq!((hp.kind.as_str(), hp.base_url.as_str(), hp.enabled), ("newznab", "https://indexer.codeshy.com", true));
+    assert_eq!(hp.settings.get("apikey").map(String::as_str), Some("964d601959918a578a670984bdee9357"));
+    assert_eq!(hp.settings.get("username").map(String::as_str), Some("hp-user"));
+    assert_eq!(hp.settings.get("password").map(String::as_str), Some("hp-pass"));
+    // the site that answered is generic Torznab
+    let probed = st.indexers.get(11).unwrap();
+    assert_eq!((probed.kind.as_str(), probed.enabled), ("torznab", true));
+    assert_eq!(probed.settings.get("apikey").map(String::as_str), Some("probe-key"));
+    // the one nothing worked for is there, turned off, saying why
+    let stuck = st.indexers.get(9).unwrap();
+    assert!(!stuck.enabled);
+    assert!(stuck.last_error.starts_with("Needs your help"), "{}", stuck.last_error);
+    assert_eq!(st.indexers.list().unwrap().len(), 6);
     assert_eq!(st.settings.str("api_key"), "prowlarr-api-key");
     assert_eq!(st.settings.str("site_proxy"), "socks5://proxy.lan:1080");
     let new_key = "prowlarr-api-key";
@@ -171,7 +242,8 @@ async fn a_prowlarr_backup_is_looked_at_then_imported_once() {
     // the logins went into the vault too, encrypted, one account each
     assert!(plan["notes"].to_string().contains("saved in the vault"), "{plan}");
     let items = st.vault.list().unwrap();
-    assert_eq!(items.len(), 3, "{items:?}");
+    let vault_count = items.len();
+    assert!(vault_count >= 5, "{items:?}");
     assert!(!serde_json::to_string(&items).unwrap().contains("hunter2"));
     let tracker = items.iter().find(|i| i["name"] == "Lantern Test Tracker").unwrap();
     assert_eq!((tracker["kind"].as_str(), tracker["site"].as_str()), (Some("tracker"), Some("lantern-test")));
@@ -182,10 +254,31 @@ async fn a_prowlarr_backup_is_looked_at_then_imported_once() {
     assert_eq!(geek["kind"], "usenet_indexer");
     assert_eq!(st.vault.secrets(geek["id"].as_str().unwrap()).unwrap().get("api_key").map(|s| s.expose()), Some("geek-key"));
     assert!(items.iter().any(|i| i["name"] == "Sonarr" && i["kind"] == "other"));
+    let hp = items.iter().find(|i| i["name"] == "Headphones VIP").unwrap();
+    assert_eq!(st.vault.secrets(hp["id"].as_str().unwrap()).unwrap().get("password").map(|s| s.expose()), Some("hp-pass"));
+
+    // the one that needs help is listed with a definition to start from, and saving one turns it on
+    let (s, v) = call(&app, json_req(new_key, "GET", "/api/import/needs-help", None)).await;
+    assert_eq!(s, StatusCode::OK, "{v}");
+    let list = v["indexers"].as_array().unwrap();
+    assert_eq!(list.len(), 1, "{v}");
+    assert_eq!((list[0]["id"].as_i64(), list[0]["implementation"].as_str()), (Some(9), Some("SomeBuiltInTracker")));
+    assert_eq!(list[0]["base_url"], "http://127.0.0.1:1");
+    let yaml = list[0]["yaml"].as_str().unwrap().to_string();
+    assert!(yaml.contains("http://127.0.0.1:1"), "{yaml}");
+    let (s, v) = call(&app, json_req(new_key, "POST", "/api/import/needs-help/9/definition", Some(json!({ "yaml": yaml })))).await;
+    assert_eq!(s, StatusCode::OK, "{v}");
+    let fixed = st.indexers.get(9).unwrap();
+    assert_eq!((fixed.kind.as_str(), fixed.enabled), ("cardigann", true));
+    assert!(st.indexers.library.custom_text(&fixed.definition).is_some());
+    let (_, v) = call(&app, json_req(new_key, "GET", "/api/import/needs-help", None)).await;
+    assert_eq!(v["indexers"], json!([]));
+    let (s, _) = call(&app, json_req(new_key, "POST", "/api/import/needs-help/9/definition", Some(json!({ "yaml": yaml })))).await;
+    assert_eq!(s, StatusCode::CONFLICT, "a working indexer needs no definition");
 
     // a new indexer after the import gets a number of its own
     let id = st.indexers.add(&json!({"kind": "torznab", "name": "Later", "base_url": "http://t.test"})).unwrap();
-    assert!(id > 7);
+    assert!(id > 11);
 
     // a second import finds everything already there
     let (s, plan) = call(&app, upload(new_key, &backup, &[("dry_run", "false")])).await;
@@ -193,8 +286,12 @@ async fn a_prowlarr_backup_is_looked_at_then_imported_once() {
     assert_eq!(step(&plan, "indexers", "Lantern Test Tracker")["action"], "already_there");
     assert_eq!(step(&plan, "apps", "Sonarr")["action"], "already_there");
     assert_eq!(step(&plan, "settings", "API key")["action"], "already_there");
-    assert_eq!(st.indexers.list().unwrap().len(), 3);
-    assert_eq!(st.vault.list().unwrap().len(), 3, "nothing is saved twice in the vault");
+    assert_eq!(step(&plan, "definitions", "my-custom-site.yml")["action"], "already_there");
+    for name in ["My Custom Site", "Headphones VIP", "Probe Me"] {
+        assert_eq!(step(&plan, "indexers", name)["action"], "already_there", "{name}");
+    }
+    assert_eq!(st.indexers.list().unwrap().len(), 7);
+    assert_eq!(st.vault.list().unwrap().len(), vault_count, "nothing is saved twice in the vault");
 
     // the uploads are cleaned up
     assert_eq!(std::fs::read_dir(st.data_dir.join("import")).unwrap().count(), 0);

@@ -1,5 +1,6 @@
-//! The indexer definitions Lantern knows: the ones built into the image (`/app/definitions`) and the newer ones
-//! it downloads into the data folder (`<data>/definitions/v11`), which win. Updated from Prowlarr/Indexers.
+//! The indexer definitions Lantern knows: the ones built into the image (`/app/definitions`), the newer ones it
+//! downloads into the data folder (`<data>/definitions/v11`), which win, and a person's own (`<data>/definitions/
+//! custom`, from an import or the Create definition editor), which win over both. Updated from Prowlarr/Indexers.
 
 use super::definition::{Definition, SCHEMA};
 use std::collections::BTreeMap;
@@ -17,6 +18,8 @@ pub struct Library {
     dirs: Vec<PathBuf>,
     /// The folder updates are written to.
     data: PathBuf,
+    /// The folder of a person's own definitions.
+    custom: PathBuf,
     /// id → definition.
     defs: Arc<RwLock<BTreeMap<String, Arc<Definition>>>>,
     /// Files that couldn't be read: (file, why).
@@ -24,15 +27,17 @@ pub struct Library {
 }
 
 impl Library {
-    /// A library reading `bundled` (may be missing) then `<data>/definitions/v11`.
+    /// A library reading `bundled` (may be missing), then `<data>/definitions/v11`, then `<data>/definitions/custom`.
     pub fn new(bundled: Option<PathBuf>, data_dir: &Path) -> Library {
         let data = data_dir.join("definitions").join(SCHEMA);
+        let custom = data_dir.join("definitions").join("custom");
         let mut dirs = Vec::new();
         if let Some(b) = bundled {
             dirs.push(b);
         }
         dirs.push(data.clone());
-        let lib = Library { dirs, data, defs: Default::default(), errors: Default::default() };
+        dirs.push(custom.clone());
+        let lib = Library { dirs, data, custom, defs: Default::default(), errors: Default::default() };
         lib.reload();
         lib
     }
@@ -65,6 +70,34 @@ impl Library {
     /// Adds one definition (tests, a person's own file).
     pub fn insert(&self, d: Definition) {
         self.defs.write().unwrap_or_else(|e| e.into_inner()).insert(d.id.clone(), Arc::new(d));
+    }
+
+    /// Saves `yaml` as one of a person's own definitions (`<data>/definitions/custom/<id>.yml`, replacing one of the
+    /// same id) and reads it; the definition, or why it can't be used in words.
+    pub fn save_custom(&self, yaml: &str) -> Result<Arc<Definition>, String> {
+        let d = Definition::parse(yaml)?;
+        if d.id.len() > 100 || !d.id.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')) || d.id.starts_with('.') {
+            return Err(format!("The definition's id \"{}\" can only have letters, digits, - _ and .", d.id));
+        }
+        if d.name.trim().is_empty() {
+            return Err("The definition needs a name".into());
+        }
+        if d.links.is_empty() {
+            return Err("The definition needs the site's address under links".into());
+        }
+        std::fs::create_dir_all(&self.custom).map_err(|e| format!("The definitions folder can't be made: {e}"))?;
+        std::fs::write(self.custom.join(format!("{}.yml", d.id)), yaml).map_err(|e| format!("The definition can't be saved: {e}"))?;
+        let d = Arc::new(d);
+        self.defs.write().unwrap_or_else(|e| e.into_inner()).insert(d.id.clone(), d.clone());
+        Ok(d)
+    }
+
+    /// The text of the person's own definition `id`, when there is one.
+    pub fn custom_text(&self, id: &str) -> Option<String> {
+        if !id.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')) || id.starts_with('.') {
+            return None;
+        }
+        std::fs::read_to_string(self.custom.join(format!("{id}.yml"))).ok()
     }
 
     /// The definition `id`, or the one that replaced it.

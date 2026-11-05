@@ -1,17 +1,20 @@
 //! The import routes (an admin only; each answers a [`Plan`](super::Plan)).
 //!
 //! ```text
-//! POST /api/import/prowlarr        multipart: file (a Prowlarr backup .zip or prowlarr.db), dry_run, take_api_key
+//! POST /api/import/prowlarr        multipart: file (a Prowlarr backup .zip or prowlarr.db), definition (custom
+//!                                  definition .yml files, any number), dry_run, take_api_key
 //! POST /api/import/prowlarr/api    {url, key, dry_run, take_api_key}: read a running Prowlarr through its API
 //! POST /api/import/flaresolverr    {text}: FlareSolverr's docker-compose service, .env or docker run command
 //! GET  /api/import/apps            the apps imported for app sync (API keys masked)
+//! GET  /api/import/needs-help      the indexers added turned off, each with a starting definition to edit
+//! POST /api/import/needs-help/{id}/definition   {yaml}: save it as a custom definition and turn the indexer on
 //! ```
 //!
 //! `dry_run` is true unless it is sent as false: a look first, then the same request again to import.
 
 use super::{flaresolverr, prowlarr, InVault, Options};
 use crate::AppState;
-use axum::extract::{DefaultBodyLimit, Multipart, State};
+use axum::extract::{DefaultBodyLimit, Multipart, Path, State};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use kit_server_core::{err, Admin, Result};
@@ -29,6 +32,8 @@ pub fn router() -> Router<AppState> {
         .route("/api/import/prowlarr/api", post(prowlarr_api))
         .route("/api/import/flaresolverr", post(flaresolverr_text))
         .route("/api/import/apps", get(apps))
+        .route("/api/import/needs-help", get(needs_help))
+        .route("/api/import/needs-help/{id}/definition", post(create_definition))
 }
 
 /// The port of Lantern's FlareSolverr API: `APP_SOLVER_PORT`, 8191 when it is not set.
@@ -72,6 +77,7 @@ async fn prowlarr_file(State(st): State<AppState>, _: Admin, mut form: Multipart
     let _clean = Scratch(vec![upload.clone(), unpacked.clone()]);
     let mut opts = Options::default();
     let mut got_file = false;
+    let mut definitions = Vec::new();
     let bad_upload = |e: axum::extract::multipart::MultipartError| err(400, format!("The upload stopped before the end ({e}). Try again."));
     while let Some(mut field) = form.next_field().await.map_err(bad_upload)? {
         match field.name().unwrap_or("") {
@@ -84,6 +90,14 @@ async fn prowlarr_file(State(st): State<AppState>, _: Admin, mut form: Multipart
                 out.flush().await.map_err(|e| err(500, format!("The data folder can't be written: {e}")))?;
                 got_file = true;
             }
+            "definition" => {
+                let name = field.file_name().unwrap_or("definition.yml").to_string();
+                let text = field.text().await.map_err(bad_upload)?;
+                if text.len() > 1 << 20 {
+                    return Err(err(413, format!("{name} is too big for a definition (more than 1 MB).")));
+                }
+                definitions.push((name, text));
+            }
             "dry_run" => opts.dry_run = flag(field.text().await.ok().as_deref(), true),
             "take_api_key" => opts.take_api_key = flag(field.text().await.ok().as_deref(), true),
             _ => {}
@@ -92,9 +106,10 @@ async fn prowlarr_file(State(st): State<AppState>, _: Admin, mut form: Multipart
     if !got_file {
         return Err(err(400, "Choose a Prowlarr backup (.zip) or its database (prowlarr.db) to import."));
     }
-    let src = tokio::task::spawn_blocking(move || prowlarr::read_upload(&upload, &unpacked))
+    let mut src = tokio::task::spawn_blocking(move || prowlarr::read_upload(&upload, &unpacked))
         .await
         .map_err(|e| err(500, format!("Reading the upload stopped: {e}")))??;
+    src.definitions.extend(definitions);
     Ok(Json(json!(prowlarr::run(&st, &src, opts, &InVault::new(&st.vault)).await?)))
 }
 
@@ -108,6 +123,18 @@ async fn prowlarr_api(State(st): State<AppState>, _: Admin, Json(body): Json<Val
 async fn flaresolverr_text(_: Admin, Json(body): Json<Value>) -> Result<Json<Value>> {
     let text = body.get("text").and_then(Value::as_str).unwrap_or("");
     Ok(Json(json!(flaresolverr::plan(text, solver_port())?)))
+}
+
+async fn needs_help(State(st): State<AppState>, _: Admin) -> Result<Json<Value>> {
+    Ok(Json(json!({ "indexers": prowlarr::needing_help(&st)? })))
+}
+
+async fn create_definition(State(st): State<AppState>, _: Admin, Path(id): Path<i64>, Json(body): Json<Value>) -> Result<Json<Value>> {
+    let yaml = body.get("yaml").and_then(Value::as_str).unwrap_or("");
+    if yaml.trim().is_empty() {
+        return Err(err(400, "Write the site's definition first."));
+    }
+    Ok(Json(prowlarr::create_definition(&st, id, yaml)?))
 }
 
 async fn apps(State(st): State<AppState>, _: Admin) -> Result<Json<Value>> {

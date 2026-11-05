@@ -117,3 +117,10 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — The emulated SABnzbd and NZBGet offer the categories Sonarr, Radarr, Lidarr and Readarr use out of the
   box (in small letters and with a capital, as Radarr's NZBGet `Movies` and Readarr's `Readarr`), besides each app's
   own, because the apps refuse to save a client whose category they don't see; Lantern takes any category anyway.
+- 2026-11-05 — Import tries, for each Prowlarr indexer: a definition (Lantern's, or a custom one from the backup,
+  which is saved to `<data>/definitions/custom` first and wins over the bundled one of the same id), then
+  Newznab/Torznab underneath (Prowlarr's presets, and built-ins such as Headphones VIP from a small table of their
+  fixed address, path and key), then asking its address for caps at `/api`, `/api/torznab/api` and `/torznab/api`
+  (all at once, 10 s each). An indexer none of these fit is added turned off with its settings and a `needs_help`
+  reason, under `https://address-unknown.invalid` when Prowlarr had no address, so Create definition can turn it on
+  later under the same number. Basic auth for Newznab is sent only to addresses under the indexer's own base.
