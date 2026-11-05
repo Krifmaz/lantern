@@ -143,9 +143,9 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `POST /api/v1/search` | P-api | todo | |  |
 | `GET /api/v1/search` | P-api | partial | | fresh version |
 | `POST /api/v1/search/bulk` | P-api | todo | |  |
-| `GET /content/{path}` | P-ui | todo | |  |
+| `GET /content/{path}` | P-ui | partial | `server/tests/prowlarr_ui.rs::only_content_is_open_without_signing_in`, `::the_manifest_names_the_instance_like_manifest_mapper` | the built files, open to everyone, served at `/prowlarr/Content/` for now (moves to `/` later) |
 | `GET /` | P-ui | partial | | fresh version |
-| `GET /{path}` | P-ui | todo | |  |
+| `GET /{path}` | P-ui | partial | `server/tests/prowlarr_ui.rs::every_page_is_the_frontend_under_prowlarr`, `::the_page_gets_the_url_base_like_html_mapper_base`, `::pages_are_paths_without_a_dot_outside_content`, `::initialize_json_has_prowlarrs_fields_with_lanterns_api` | Prowlarr's frontend with its URL base set to `/prowlarr` (moves to `/` later); no `?h=` cache breaker |
 | `GET /api/v1/system/status` | P-api | partial | | fresh version |
 | `GET /api/v1/system/routes` | P-api | todo | |  |
 | `GET /api/v1/system/routes/duplicate` | P-api | todo | |  |
@@ -527,7 +527,7 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | --- | --- | --- | --- | --- |
 | health with fixes | P-ui | todo | |  |
 | about (version, paths, runtime) | P-ui | todo | |  |
-| more info links (to strip or point to Lantern) | P-ui | todo | |  |
+| more info links (to strip or point to Lantern) | P-ui | done | `docs/parity/p-ui/system-status-desktop.png` | More info and Donations removed (`ui/prowlarr/LANTERN.md`) |
 
 #### System → Tasks (`/system/tasks`)
 
@@ -574,10 +574,11 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| mobile layout (sidebar collapses, tables scroll) | P-ui | todo | |  |
+| mobile layout (sidebar collapses, tables scroll) | P-ui | partial | `docs/parity/p-ui/indexers-phone.png`, `sidebar-open-phone.png`, `settings-general-phone.png`, `system-status-phone.png` | Prowlarr's layout unchanged; the folding sidebar is shown, scrolling tables wait for pages with data |
 | keyboard shortcuts | P-ui | todo | |  |
 | live updates over SignalR | P-ui | todo | |  |
-| theme (rethemed to Encore) | P-ui | todo | |  |
+| theme (rethemed to Encore) | P-ui | done | `docs/parity/p-ui/indexers-desktop.png`, `settings-general-desktop.png`, `system-status-desktop.png`, `indexers-desktop-light.png` next to `kit-reference-desktop.png` | every theme variable mapped to the kit's tokens, the kit's fonts (`ui/prowlarr/LANTERN.md`) |
+| branding: Lantern's name in the header, no donate, translate, Discord, Reddit, wiki or GitHub links, no Analytics section or Sentry reports | P-ui | done | `docs/parity/p-ui/indexers-desktop.png`, `system-status-desktop.png` | `ui/prowlarr/LANTERN.md` lists each change |
 
 ### Background jobs
 

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Lantern (kit look reference)</title>
+  <!-- Lantern's own stylesheets, as web/index.html loads them: the kit's tokens, the kit's components, the app's rules -->
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/kit.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <!-- the shell markup of web/src/main.rs, with the kit's components on a settings-like page -->
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#/">Lantern</a>
+      <nav class="nav">
+        <a href="#/">Home</a>
+        <a class="active" href="#/indexers">Indexers</a>
+        <a href="#/search">Search</a>
+        <a href="#/releases">Releases</a>
+        <a href="#/apps">Apps</a>
+        <a href="#/downloads">Download clients</a>
+      </nav>
+      <div class="sidebar-foot"><div class="grow"><div class="ellipsis" style="font-weight:650">admin</div><div class="small faint">owner</div></div></div>
+    </aside>
+    <main class="main"><div id="view">
+      <div class="row between"><h1>Indexers</h1><div class="row"><button class="btn">Test all</button><button class="btn primary">Add indexer</button></div></div>
+      <div class="section-head"><h2>Host</h2></div>
+      <div class="card stack">
+        <label class="field"><span>Port</span><input class="input" value="9696"></label>
+        <label class="field"><span>URL base</span><input class="input" value=""></label>
+        <div class="row"><span class="badge">torrent</span><span class="badge">usenet</span><button class="btn danger">Delete</button></div>
+      </div>
+      <div class="section-head"><h2>Status</h2></div>
+      <div class="card"><p class="muted">Version 0.0.1 · the kit's Encore look (tokens.css, kit.css)</p></div>
+    </div></main>
+  </div>
+</body>
+</html>

@@ -7,6 +7,8 @@
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
   Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition
   editor. The plan shows which way each indexer came over. Newznab indexers can sign in with a user name and password.
+- `docs/parity/p-ui/` shows Prowlarr's frontend in Lantern (Indexers, Settings → General, System → Status, desktop
+  and phone) next to Lantern's own look; `docs/PARITY.md` marks the theme and branding rows done.
 - Prowlarr's web frontend is part of the image and opens at `/prowlarr/` after signing in to Lantern (Lantern's own
   pages stay at `/` for now). Its pages show errors where Lantern doesn't answer Prowlarr's API yet.
 - Prowlarr's web frontend says Lantern: the header shows Lantern's name instead of Prowlarr's logo, and the donate,
