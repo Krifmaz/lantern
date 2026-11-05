@@ -1,0 +1,36 @@
+/*
+ * Copyright (c) 2021 - 2025, Ludvig Lundgren and the autobrr contributors.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+
+import "./index.css";
+import "./i18n";
+
+import { App } from "./App";
+import { InitializeGlobalContext } from "./utils/Context";
+// LANTERN: see followKitTheme() below
+import { followKitTheme } from "./lantern/theme";
+
+declare global {
+    interface Window {
+      APP: APP;
+    }
+}
+
+window.APP = window.APP || {};
+
+// LANTERN: the kit's themes follow autobrr's dark and light modes (src/lantern/theme.ts)
+followKitTheme();
+
+// Initializes auth and theme contexts
+InitializeGlobalContext();
+
+const root = createRoot(document.getElementById("root")!);
+root.render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);

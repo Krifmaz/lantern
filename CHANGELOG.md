@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- autobrr's web frontend is part of the image and opens at `/autobrr/` after signing in to Lantern, in the kit's
+  Encore look (dark mode) or light theme (light mode), with Lantern's name in the header and no links to autobrr's
+  docs, GitHub or Discord. Its pages show errors where Lantern doesn't answer autobrr's API yet.
+  `scripts/upstream-merge.sh --project autobrr` keeps it up to date (`ui/autobrr/`, see `UPSTREAM.md`), and
+  `docs/parity/a-ui/` shows the Dashboard, Filters and Settings → IRC at desktop and phone width.
 - Import never skips an indexer: custom definitions in a Prowlarr backup become your custom definitions, Prowlarr's
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
   Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition

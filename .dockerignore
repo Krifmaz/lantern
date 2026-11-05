@@ -11,3 +11,5 @@ data
 !docs/releases/*.md
 ui/prowlarr/node_modules
 ui/prowlarr/_output
+ui/autobrr/node_modules
+ui/autobrr/dist

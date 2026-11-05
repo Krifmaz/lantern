@@ -1,0 +1,1115 @@
+/*
+ * Copyright (c) 2021 - 2025, Ludvig Lundgren and the autobrr contributors.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+import { MultiSelectOption } from "@components/inputs/select";
+import type { TFunction } from "i18next";
+
+export const AnnounceTypeOptions: MultiSelectOption[] = [
+  {
+    label: "New",
+    value: "NEW"
+  },
+  {
+    label: "Checked",
+    value: "CHECKED"
+  },
+  {
+    label: "Promo",
+    value: "PROMO"
+  },
+  {
+    label: "Promo GP",
+    value: "PROMO_GP"
+  },
+  {
+    label: "Resurrected",
+    value: "RESURRECTED"
+  }
+];
+
+export const getAnnounceTypeOptions = (t: TFunction): MultiSelectOption[] => [
+  { label: t("options:announceType.NEW"), value: "NEW" },
+  { label: t("options:announceType.CHECKED"), value: "CHECKED" },
+  { label: t("options:announceType.PROMO"), value: "PROMO" },
+  { label: t("options:announceType.PROMO_GP"), value: "PROMO_GP" },
+  { label: t("options:announceType.RESURRECTED"), value: "RESURRECTED" }
+];
+
+export const resolutions = [
+  "2160p",
+  "1080p",
+  "810p",
+  "720p",
+  "576p",
+  "480p",
+];
+
+export const RESOLUTION_OPTIONS: MultiSelectOption[] = resolutions.map(r => ({ value: r, label: r, key: r }));
+
+export const codecs = [
+  "AV1",
+  "AVC",
+  "H.264",
+  "H.265",
+  "HEVC",
+  "MPEG-2",
+  "VC-1",
+  "XviD",
+  "x264",
+  "x265"
+];
+
+export const CODECS_OPTIONS: MultiSelectOption[] = codecs.map(v => ({ value: v, label: v, key: v }));
+
+export const sources = [
+  "AHDTV",
+  "BD5",
+  "BD9",
+  "BDRip",
+  "BDr",
+  "BRRip",
+  "BluRay",
+  "CAM",
+  "DVDR",
+  "DVDRip",
+  "DVDScr",
+  "HDCAM",
+  "HDDVD",
+  "HDDVDRip",
+  "HDTS",
+  "HDTV",
+  "Mixed",
+  "SiteRip",
+  "UHD.BluRay",
+  "WEB",
+  "WEB-DL",
+  "WEBRip"
+];
+
+export const SOURCES_OPTIONS: MultiSelectOption[] = sources.map(v => ({ value: v, label: v, key: v }));
+
+export const containers = [
+  "avi",
+  "mp4",
+  "mkv"
+];
+
+export const CONTAINER_OPTIONS: MultiSelectOption[] = containers.map(v => ({ value: v, label: v, key: v }));
+
+export const hdr = [
+  "HDR",
+  "HDR10",
+  "HDR10+",
+  "HLG",
+  "DV",
+  "DV HDR",
+  "DV HDR10",
+  "DV HDR10+",
+  "DoVi",
+  "Dolby Vision"
+];
+
+export const HDR_OPTIONS: MultiSelectOption[] = hdr.map(v => ({ value: v, label: v, key: v }));
+
+export const quality_other = [
+  "REMUX",
+  "HYBRID",
+  "REPACK"
+];
+
+export const OTHER_OPTIONS = quality_other.map(v => ({ value: v, label: v, key: v }));
+
+export const formatMusic = [
+  "MP3",
+  "FLAC",
+  "Ogg Vorbis",
+  "Ogg",
+  "AAC",
+  "AC3",
+  "DTS",
+  "DSD"
+];
+
+export const FORMATS_OPTIONS: MultiSelectOption[] = formatMusic.map(r => ({ value: r, label: r, key: r }));
+
+export const sourcesMusic = [
+  "CD",
+  "WEB",
+  "DVD",
+  "Vinyl",
+  "Soundboard",
+  "DAT",
+  "Cassette",
+  "Blu-Ray",
+  "SACD"
+];
+
+export const SOURCES_MUSIC_OPTIONS: MultiSelectOption[] = sourcesMusic.map(v => ({ value: v, label: v, key: v }));
+
+export const qualityMusic = [
+  "192",
+  "256",
+  "320",
+  "APS (VBR)",
+  "APX (VBR)",
+  "V2 (VBR)",
+  "V1 (VBR)",
+  "V0 (VBR)",
+  "Lossless",
+  "24bit Lossless",
+  "DSD64",
+  "DSD128",
+  "DSD256",
+  "DSD512"
+];
+
+export const QUALITY_MUSIC_OPTIONS: MultiSelectOption[] = qualityMusic.map(v => ({ value: v, label: v, key: v }));
+
+export const releaseTypeMusic = [
+  "Album",
+  "Anthology",
+  "Bootleg",
+  "Compilation",
+  "Concert Recording",
+  "Demo",
+  "DJ Mix",
+  "EP",
+  "Interview",
+  "Live album",
+  "Mixtape",
+  "Remix",
+  "Sampler",
+  "Single",
+  "Soundtrack",
+  "Unknown"
+];
+
+export const RELEASE_TYPE_MUSIC_OPTIONS: MultiSelectOption[] = releaseTypeMusic.map(v => ({
+  value: v,
+  label: v,
+  key: v
+}));
+
+export const formatBooks = [
+  "epub",
+  "pdf",
+  "mobi",
+  "azw3",
+  "azw",
+  "cbz",
+  "cbr",
+  "pdb",
+  "doc",
+  "docx",
+  "lit",
+  "chm",
+  "djvu",
+  "lrf",
+  "fb2",
+  "html",
+  "htm",
+  "txt",
+  "rtf",
+  "xml",
+  "mp3",
+  "m4a",
+  "m4b",
+  "aac",
+  "ogg",
+  "wma",
+  "flac",
+  "wav"
+];
+
+export const FORMATS_BOOKS_OPTIONS: MultiSelectOption[] = formatBooks.map(r => ({ value: r, label: r, key: r }));
+
+export const originOptions = [
+  "P2P",
+  "Internal",
+  "SCENE",
+  "O-SCENE"
+];
+
+export const ORIGIN_OPTIONS = originOptions.map(v => ({ value: v, label: v, key: v }));
+
+export const languageOptions = [
+  "BALTIC",
+  "BRAZiLiAN",
+  "BULGARiAN",
+  "CHiNESE",
+  "CHS",
+  "CHT",
+  "CZECH",
+  "DANiSH",
+  "DUBBED",
+  "DKSUBS",
+  "DUTCH",
+  "ENGLiSH",
+  "ESTONiAN",
+  "FLEMiSH",
+  "FiNNiSH",
+  "FRENCH",
+  "GERMAN",
+  "GREEK",
+  "HAiTiAN",
+  "HARDSUB",
+  "Hardcoded",
+  "HEBREW",
+  "HebSub",
+  "HiNDi",
+  "HUNGARiAN",
+  "iCELANDiC",
+  "iTALiAN",
+  "JAPANESE",
+  "KOREAN",
+  "LATiN",
+  "MANDARiN",
+  "MULTi",
+  "MULTILANG",
+  "MULTiSUB",
+  "MULTiSUBS",
+  "NORDiC",
+  "NORWEGiAN",
+  "POLiSH",
+  "PORTUGUESE",
+  "ROMANiAN",
+  "RUSSiAN",
+  "SLOVAK",
+  "SPANiSH",
+  "SUBBED",
+  "SUBFORCED",
+  "SUBPACK",
+  "SWEDiSH",
+  "SYNCED",
+  "TURKiSH",
+  "UKRAiNiAN",
+  "UNSUBBED"
+];
+
+export const LANGUAGE_OPTIONS = languageOptions.map(v => ({ value: v, label: v, key: v }));
+
+export interface RadioFieldsetOption {
+  label: string;
+  description: string;
+  value: ActionType;
+  type?: string;
+}
+
+export const DownloaderTypeOptions: RadioFieldsetOption[] = [
+  {
+    label: "qBittorrent",
+    description: "Add torrents directly to qBittorrent",
+    value: "QBITTORRENT"
+  },
+  {
+    label: "Deluge",
+    description: "Add torrents directly to Deluge",
+    value: "DELUGE_V1"
+  },
+  {
+    label: "Deluge 2",
+    description: "Add torrents directly to Deluge 2",
+    value: "DELUGE_V2"
+  },
+  {
+    label: "rTorrent",
+    description: "Add torrents directly to rTorrent",
+    value: "RTORRENT"
+  },
+  {
+    label: "Transmission",
+    description: "Add torrents directly to Transmission",
+    value: "TRANSMISSION"
+  },
+  {
+    label: "Porla",
+    description: "Add torrents directly to Porla",
+    value: "PORLA"
+  },
+  {
+    label: "aria2",
+    description: "Add torrents directly to aria2",
+    value: "ARIA2"
+  },
+  {
+    label: "Radarr",
+    description: "Send to Radarr and let it decide",
+    value: "RADARR"
+  },
+  {
+    label: "Sonarr",
+    description: "Send to Sonarr and let it decide",
+    value: "SONARR"
+  },
+  {
+    label: "Lidarr",
+    description: "Send to Lidarr and let it decide",
+    value: "LIDARR"
+  },
+  {
+    label: "Whisparr (v2)",
+    description: "Send to Whisparr and let it decide",
+    value: "WHISPARR"
+  },
+  {
+    label: "Whisparr (v3)",
+    description: "Send to Whisparr and let it decide",
+    value: "WHISPARR_V3"
+  },
+  {
+    label: "Readarr",
+    description: "Send to Readarr and let it decide",
+    value: "READARR"
+  },
+  {
+    label: "Sportarr",
+    description: "Send to Sportarr and let it decide",
+    value: "SPORTARR"
+  },
+  {
+    label: "SABnzbd",
+    description: "Add nzbs directly to SABnzbd",
+    value: "SABNZBD",
+    type: "nzb"
+  },
+  {
+    label: "NZBGet",
+    description: "Add nzbs directly to NZBGet",
+    value: "NZBGET",
+    type: "nzb"
+  }
+];
+
+export const getDownloaderTypeOptions = (t: TFunction): RadioFieldsetOption[] => [
+  {
+    label: t("options:downloadClient.QBITTORRENT.label"),
+    description: t("options:downloadClient.QBITTORRENT.description"),
+    value: "QBITTORRENT"
+  },
+  {
+    label: t("options:downloadClient.DELUGE_V1.label"),
+    description: t("options:downloadClient.DELUGE_V1.description"),
+    value: "DELUGE_V1"
+  },
+  {
+    label: t("options:downloadClient.DELUGE_V2.label"),
+    description: t("options:downloadClient.DELUGE_V2.description"),
+    value: "DELUGE_V2"
+  },
+  {
+    label: t("options:downloadClient.RTORRENT.label"),
+    description: t("options:downloadClient.RTORRENT.description"),
+    value: "RTORRENT"
+  },
+  {
+    label: t("options:downloadClient.TRANSMISSION.label"),
+    description: t("options:downloadClient.TRANSMISSION.description"),
+    value: "TRANSMISSION"
+  },
+  {
+    label: t("options:downloadClient.PORLA.label"),
+    description: t("options:downloadClient.PORLA.description"),
+    value: "PORLA"
+  },
+  {
+    label: t("options:downloadClient.ARIA2.label"),
+    description: t("options:downloadClient.ARIA2.description"),
+    value: "ARIA2"
+  },
+  {
+    label: t("options:downloadClient.RADARR.label"),
+    description: t("options:downloadClient.RADARR.description"),
+    value: "RADARR"
+  },
+  {
+    label: t("options:downloadClient.SONARR.label"),
+    description: t("options:downloadClient.SONARR.description"),
+    value: "SONARR"
+  },
+  {
+    label: t("options:downloadClient.LIDARR.label"),
+    description: t("options:downloadClient.LIDARR.description"),
+    value: "LIDARR"
+  },
+  {
+    label: t("options:downloadClient.WHISPARR.label"),
+    description: t("options:downloadClient.WHISPARR.description"),
+    value: "WHISPARR"
+  },
+  {
+    label: t("options:downloadClient.WHISPARR_V3.label"),
+    description: t("options:downloadClient.WHISPARR_V3.description"),
+    value: "WHISPARR_V3"
+  },
+  {
+    label: t("options:downloadClient.READARR.label"),
+    description: t("options:downloadClient.READARR.description"),
+    value: "READARR"
+  },
+  {
+    label: t("options:downloadClient.SPORTARR.label"),
+    description: t("options:downloadClient.SPORTARR.description"),
+    value: "SPORTARR"
+  },
+  {
+    label: t("options:downloadClient.SABNZBD.label"),
+    description: t("options:downloadClient.SABNZBD.description"),
+    value: "SABNZBD",
+    type: "nzb"
+  },
+  {
+    label: t("options:downloadClient.NZBGET.label"),
+    description: t("options:downloadClient.NZBGET.description"),
+    value: "NZBGET",
+    type: "nzb"
+  }
+];
+
+export const ActionTypeOptions: RadioFieldsetOption[] = [
+  { label: "Test", description: "A simple action to test a filter.", value: "TEST" },
+  { label: "Watch dir", description: "Add filtered torrents to a watch directory", value: "WATCH_FOLDER" },
+  { label: "Webhook", description: "Run webhook", value: "WEBHOOK" },
+  { label: "Exec", description: "Run a custom command after a filter match", value: "EXEC" },
+  { label: "qBittorrent", description: "Add torrents directly to qBittorrent", value: "QBITTORRENT" },
+  { label: "Deluge", description: "Add torrents directly to Deluge", value: "DELUGE_V1" },
+  { label: "Deluge v2", description: "Add torrents directly to Deluge 2", value: "DELUGE_V2" },
+  { label: "rTorrent", description: "Add torrents directly to rTorrent", value: "RTORRENT" },
+  { label: "Transmission", description: "Add torrents directly to Transmission", value: "TRANSMISSION" },
+  { label: "Porla", description: "Add torrents directly to Porla", value: "PORLA" },
+  { label: "aria2", description: "Add torrents directly to aria2", value: "ARIA2" },
+  { label: "Radarr", description: "Send to Radarr and let it decide", value: "RADARR" },
+  { label: "Sonarr", description: "Send to Sonarr and let it decide", value: "SONARR" },
+  { label: "Lidarr", description: "Send to Lidarr and let it decide", value: "LIDARR" },
+  { label: "Whisparr (v2)", description: "Send to Whisparr and let it decide", value: "WHISPARR" },
+  { label: "Whisparr (v3)", description: "Send to Whisparr and let it decide", value: "WHISPARR_V3" },
+  { label: "Readarr", description: "Send to Readarr and let it decide", value: "READARR" },
+  { label: "Sportarr", description: "Send to Sportarr and let it decide", value: "SPORTARR" },
+  { label: "SABnzbd", description: "Add to SABnzbd", value: "SABNZBD" },
+  { label: "NZBGet", description: "Add to NZBGet", value: "NZBGET" }
+];
+
+export const getActionTypeOptions = (t: TFunction): RadioFieldsetOption[] => [
+  { label: t("options:actionType.TEST.label"), description: t("options:actionType.TEST.description"), value: "TEST" },
+  { label: t("options:actionType.WATCH_FOLDER.label"), description: t("options:actionType.WATCH_FOLDER.description"), value: "WATCH_FOLDER" },
+  { label: t("options:actionType.WEBHOOK.label"), description: t("options:actionType.WEBHOOK.description"), value: "WEBHOOK" },
+  { label: t("options:actionType.EXEC.label"), description: t("options:actionType.EXEC.description"), value: "EXEC" },
+  { label: t("options:actionType.QBITTORRENT.label"), description: t("options:actionType.QBITTORRENT.description"), value: "QBITTORRENT" },
+  { label: t("options:actionType.DELUGE_V1.label"), description: t("options:actionType.DELUGE_V1.description"), value: "DELUGE_V1" },
+  { label: t("options:actionType.DELUGE_V2.label"), description: t("options:actionType.DELUGE_V2.description"), value: "DELUGE_V2" },
+  { label: t("options:actionType.RTORRENT.label"), description: t("options:actionType.RTORRENT.description"), value: "RTORRENT" },
+  { label: t("options:actionType.TRANSMISSION.label"), description: t("options:actionType.TRANSMISSION.description"), value: "TRANSMISSION" },
+  { label: t("options:actionType.PORLA.label"), description: t("options:actionType.PORLA.description"), value: "PORLA" },
+  { label: t("options:actionType.ARIA2.label"), description: t("options:actionType.ARIA2.description"), value: "ARIA2" },
+  { label: t("options:actionType.RADARR.label"), description: t("options:actionType.RADARR.description"), value: "RADARR" },
+  { label: t("options:actionType.SONARR.label"), description: t("options:actionType.SONARR.description"), value: "SONARR" },
+  { label: t("options:actionType.LIDARR.label"), description: t("options:actionType.LIDARR.description"), value: "LIDARR" },
+  { label: t("options:actionType.WHISPARR.label"), description: t("options:actionType.WHISPARR.description"), value: "WHISPARR" },
+  { label: t("options:actionType.WHISPARR_V3.label"), description: t("options:actionType.WHISPARR_V3.description"), value: "WHISPARR_V3" },
+  { label: t("options:actionType.READARR.label"), description: t("options:actionType.READARR.description"), value: "READARR" },
+  { label: t("options:actionType.SPORTARR.label"), description: t("options:actionType.SPORTARR.description"), value: "SPORTARR" },
+  { label: t("options:actionType.SABNZBD.label"), description: t("options:actionType.SABNZBD.description"), value: "SABNZBD" },
+  { label: t("options:actionType.NZBGET.label"), description: t("options:actionType.NZBGET.description"), value: "NZBGET" }
+];
+
+export const ActionTypeNameMap: Record<ActionType, string> = {
+  "TEST": "Test",
+  "WATCH_FOLDER": "Watch folder",
+  "WEBHOOK": "Webhook",
+  "EXEC": "Exec",
+  "DELUGE_V1": "Deluge v1",
+  "DELUGE_V2": "Deluge v2",
+  "QBITTORRENT": "qBittorrent",
+  "RTORRENT": "rTorrent",
+  "TRANSMISSION": "Transmission",
+  "PORLA": "Porla",
+  "ARIA2": "aria2",
+  "RADARR": "Radarr",
+  "SONARR": "Sonarr",
+  "LIDARR": "Lidarr",
+  "WHISPARR": "Whisparr (v2)",
+  "WHISPARR_V3": "Whisparr (v3)",
+  "READARR": "Readarr",
+  "SPORTARR": "Sportarr",
+  "SABNZBD": "SABnzbd",
+  "NZBGET": "NZBGet"
+} as const;
+
+export const getActionTypeNameMap = (t: TFunction): Record<ActionType, string> => ({
+  "TEST": t("options:actionType.TEST.label"),
+  "WATCH_FOLDER": t("options:actionType.WATCH_FOLDER.label"),
+  "WEBHOOK": t("options:actionType.WEBHOOK.label"),
+  "EXEC": t("options:actionType.EXEC.label"),
+  "DELUGE_V1": t("options:actionType.DELUGE_V1.label"),
+  "DELUGE_V2": t("options:actionType.DELUGE_V2.label"),
+  "QBITTORRENT": t("options:actionType.QBITTORRENT.label"),
+  "RTORRENT": t("options:actionType.RTORRENT.label"),
+  "TRANSMISSION": t("options:actionType.TRANSMISSION.label"),
+  "PORLA": t("options:actionType.PORLA.label"),
+  "ARIA2": t("options:actionType.ARIA2.label"),
+  "RADARR": t("options:actionType.RADARR.label"),
+  "SONARR": t("options:actionType.SONARR.label"),
+  "LIDARR": t("options:actionType.LIDARR.label"),
+  "WHISPARR": t("options:actionType.WHISPARR.label"),
+  "WHISPARR_V3": t("options:actionType.WHISPARR_V3.label"),
+  "READARR": t("options:actionType.READARR.label"),
+  "SPORTARR": t("options:actionType.SPORTARR.label"),
+  "SABNZBD": t("options:actionType.SABNZBD.label"),
+  "NZBGET": t("options:actionType.NZBGET.label")
+});
+
+export const DOWNLOAD_CLIENTS = [
+  "QBITTORRENT",
+  "DELUGE_V1",
+  "DELUGE_V2",
+  "RTORRENT",
+  "TRANSMISSION",
+  "PORLA",
+  "ARIA2",
+  "RADARR",
+  "SONARR",
+  "LIDARR",
+  "WHISPARR",
+  "WHISPARR_V3",
+  "READARR",
+  "SPORTARR",
+  "SABNZBD",
+  "NZBGET"
+];
+
+export const ActionContentLayoutOptions: SelectGenericOption<ActionContentLayout>[] = [
+  { label: "Original", description: "Original", value: "ORIGINAL" },
+  { label: "Create subfolder", description: "Create subfolder", value: "SUBFOLDER_CREATE" },
+  { label: "Don't create subfolder", description: "Don't create subfolder", value: "SUBFOLDER_NONE" }
+];
+
+export const ActionPriorityOptions: SelectGenericOption<ActionPriorityLayout>[] = [
+  { label: "Top of queue", description: "Top of queue", value: "MAX" },
+  { label: "Bottom of queue", description: "Bottom of queue", value: "MIN" },
+  { label: "Disabled", description: "Disabled", value: "" }
+];
+
+export const getRTorrentPriorityOptions = (t: TFunction): SelectGenericOption<ActionPriorityLayout>[] => [
+  { label: t("options:rtorrentPriority.HIGH"), description: t("options:rtorrentPriority.HIGH"), value: "HIGH" },
+  { label: t("options:rtorrentPriority.NORMAL"), description: t("options:rtorrentPriority.NORMAL"), value: "NORMAL" },
+  { label: t("options:rtorrentPriority.LOW"), description: t("options:rtorrentPriority.LOW"), value: "LOW" },
+  { label: t("options:rtorrentPriority.DEFAULT"), description: t("options:rtorrentPriority.DEFAULT"), value: "" }
+];
+
+export const ActionRtorrentRenameOptions: SelectGenericOption<ActionContentLayout>[] = [
+  { label: "No", description: "No", value: "ORIGINAL" },
+  { label: "Yes", description: "Yes", value: "SUBFOLDER_NONE" }
+];
+
+export interface OptionBasic {
+  label: string;
+  value: string;
+}
+
+export interface OptionBasicTyped<T> {
+  label: string;
+  value: T;
+}
+
+export const PushStatusOptions: OptionBasic[] = [
+  {
+    label: "Rejected",
+    value: "PUSH_REJECTED"
+  },
+  {
+    label: "Approved",
+    value: "PUSH_APPROVED"
+  },
+  {
+    label: "Pending",
+    value: "PENDING"
+  },
+  {
+    label: "Error",
+    value: "PUSH_ERROR"
+  }
+];
+
+export const getPushStatusOptions = (t: TFunction): OptionBasic[] => [
+  { label: t("options:pushStatus.PUSH_REJECTED"), value: "PUSH_REJECTED" },
+  { label: t("options:pushStatus.PUSH_APPROVED"), value: "PUSH_APPROVED" },
+  { label: t("options:pushStatus.PENDING"), value: "PENDING" },
+  { label: t("options:pushStatus.PUSH_ERROR"), value: "PUSH_ERROR" }
+];
+
+export const ListTypeOptions: OptionBasicTyped<ListType>[] = [
+  {
+    label: "Sonarr",
+    value: "SONARR"
+  },
+  {
+    label: "Radarr",
+    value: "RADARR"
+  },
+  {
+    label: "Lidarr",
+    value: "LIDARR"
+  },
+  {
+    label: "Readarr",
+    value: "READARR"
+  },
+  {
+    label: "Whisparr (v2)",
+    value: "WHISPARR"
+  },
+  {
+    label: "Whisparr (v3)",
+    value: "WHISPARR_V3"
+  },
+  {
+    label: "Sportarr",
+    value: "SPORTARR"
+  },
+  {
+    label: "MDBList",
+    value: "MDBLIST"
+  },
+  {
+    label: "Trakt",
+    value: "TRAKT"
+  },
+  {
+    label: "Plaintext",
+    value: "PLAINTEXT"
+  },
+  {
+    label: "Steam",
+    value: "STEAM"
+  },
+  {
+    label: "Metacritic",
+    value: "METACRITIC"
+  },
+  {
+    label: "AniList",
+    value: "ANILIST"
+  },
+];
+
+export const ListTypeNameMap: Record<ListType, string> = {
+  "SONARR": "Sonarr",
+  "RADARR": "Radarr",
+  "LIDARR": "Lidarr",
+  "READARR": "Readarr",
+  "SPORTARR": "Sportarr",
+  "WHISPARR": "Whisparr (v2)",
+  "WHISPARR_V3": "Whisparr (v3)",
+  "MDBLIST": "MDBList",
+  "TRAKT": "Trakt",
+  "METACRITIC": "Metacritic",
+  "STEAM": "Steam",
+  "PLAINTEXT": "Plaintext",
+  "ANILIST": "AniList",
+};
+
+export const NotificationTypeOptions: OptionBasicTyped<NotificationType>[] = [
+  {
+    label: "Bark",
+    value: "BARK"
+  },
+  {
+    label: "Discord",
+    value: "DISCORD"
+  },
+  {
+    label: "Gotify",
+    value: "GOTIFY"
+  },
+  {
+    label: "LunaSea",
+    value: "LUNASEA"
+  },
+  {
+    label: "Notifiarr",
+    value: "NOTIFIARR"
+  },
+  {
+    label: "Ntfy",
+    value: "NTFY"
+  },
+  {
+    label: "Pushover",
+    value: "PUSHOVER"
+  },
+  {
+    label: "Shoutrrr",
+    value: "SHOUTRRR"
+  },
+  {
+    label: "Telegram",
+    value: "TELEGRAM"
+  },
+  {
+    label: "Webhook",
+    value: "WEBHOOK"
+  },
+];
+
+export const getNotificationTypeOptions = (t: TFunction): OptionBasicTyped<NotificationType>[] => [
+  { label: t("options:notificationType.BARK"), value: "BARK" },
+  { label: t("options:notificationType.DISCORD"), value: "DISCORD" },
+  { label: t("options:notificationType.GOTIFY"), value: "GOTIFY" },
+  { label: t("options:notificationType.LUNASEA"), value: "LUNASEA" },
+  { label: t("options:notificationType.NOTIFIARR"), value: "NOTIFIARR" },
+  { label: t("options:notificationType.NTFY"), value: "NTFY" },
+  { label: t("options:notificationType.PUSHOVER"), value: "PUSHOVER" },
+  { label: t("options:notificationType.SHOUTRRR"), value: "SHOUTRRR" },
+  { label: t("options:notificationType.TELEGRAM"), value: "TELEGRAM" },
+  { label: t("options:notificationType.WEBHOOK"), value: "WEBHOOK" }
+];
+
+export const IrcAuthMechanismTypeOptions: OptionBasicTyped<IrcAuthMechanism>[] = [
+  {
+    label: "None",
+    value: "NONE"
+  },
+  {
+    label: "SASL (plain)",
+    value: "SASL_PLAIN"
+  },
+  {
+    label: "NickServ",
+    value: "NICKSERV"
+  }
+];
+
+export const downloadsPerUnitOptions: OptionBasic[] = [
+  {
+    label: "Select",
+    value: ""
+  },
+  {
+    label: "MINUTE",
+    value: "MINUTE"
+  },
+  {
+    label: "HOUR",
+    value: "HOUR"
+  },
+  {
+    label: "DAY",
+    value: "DAY"
+  },
+  {
+    label: "WEEK",
+    value: "WEEK"
+  },
+  {
+    label: "MONTH",
+    value: "MONTH"
+  },
+  {
+    label: "EVER",
+    value: "EVER"
+  }
+];
+
+export const getWindowTypeOptions = (t: TFunction): OptionBasic[] => [
+  { label: t("options:maxDownloadsWindowType.FIXED"), value: "FIXED" },
+  { label: t("options:maxDownloadsWindowType.ROLLING"), value: "ROLLING" }
+];
+
+export const DownloadRuleConditionOptions: OptionBasic[] = [
+  {
+    label: "Always",
+    value: "ALWAYS"
+  },
+  {
+    label: "Max downloads reached",
+    value: "MAX_DOWNLOADS_REACHED"
+  }
+];
+
+export const DownloaderAuthType: OptionBasic[] = [
+  {
+    label: "None",
+    value: "NONE"
+  },
+  {
+    label: "Basic Auth",
+    value: "BASIC_AUTH"
+  },
+  {
+    label: "Digest Auth",
+    value: "DIGEST_AUTH"
+  }
+];
+
+const logLevel = ["DEBUG", "INFO", "WARN", "ERROR", "TRACE"] as const;
+
+export const LogLevelOptions = logLevel.map(v => ({ value: v, label: v, key: v }));
+
+export interface SelectOption {
+  label: string;
+  description: string;
+  value: NotificationEvent;
+}
+
+export interface SelectGenericOption<T> {
+  label: string;
+  description: string;
+  value: T;
+}
+
+export const EventOptions: SelectOption[] = [
+  {
+    label: "Push Rejected",
+    value: "PUSH_REJECTED",
+    description: "On push rejected for the arrs or download client"
+  },
+  {
+    label: "Push Approved",
+    value: "PUSH_APPROVED",
+    description: "On push approved for the arrs or download client"
+  },
+  {
+    label: "Push Error",
+    value: "PUSH_ERROR",
+    description: "On push error for the arrs or download client"
+  },
+  {
+    label: "IRC Disconnected",
+    value: "IRC_DISCONNECTED",
+    description: "Unexpectedly disconnected from irc network"
+  },
+  {
+    label: "IRC Reconnected",
+    value: "IRC_RECONNECTED",
+    description: "Reconnected to irc network after error"
+  },
+  {
+    label: "New update",
+    value: "APP_UPDATE_AVAILABLE",
+    description: "Get notified on updates"
+  },
+  {
+    label: "New Release",
+    value: "RELEASE_NEW",
+    description: "On new release from indexer (before filtering)"
+  }
+];
+
+export const getEventOptions = (t: TFunction): SelectOption[] => [
+  {
+    label: t("options:event.PUSH_REJECTED.label"),
+    value: "PUSH_REJECTED",
+    description: t("options:event.PUSH_REJECTED.description")
+  },
+  {
+    label: t("options:event.PUSH_APPROVED.label"),
+    value: "PUSH_APPROVED",
+    description: t("options:event.PUSH_APPROVED.description")
+  },
+  {
+    label: t("options:event.PUSH_ERROR.label"),
+    value: "PUSH_ERROR",
+    description: t("options:event.PUSH_ERROR.description")
+  },
+  {
+    label: t("options:event.IRC_DISCONNECTED.label"),
+    value: "IRC_DISCONNECTED",
+    description: t("options:event.IRC_DISCONNECTED.description")
+  },
+  {
+    label: t("options:event.IRC_RECONNECTED.label"),
+    value: "IRC_RECONNECTED",
+    description: t("options:event.IRC_RECONNECTED.description")
+  },
+  {
+    label: t("options:event.IRC_UNHEALTHY.label"),
+    value: "IRC_UNHEALTHY",
+    description: t("options:event.IRC_UNHEALTHY.description")
+  },
+  {
+    label: t("options:event.IRC_HEALTHY.label"),
+    value: "IRC_HEALTHY",
+    description: t("options:event.IRC_HEALTHY.description")
+  },
+  {
+    label: t("options:event.LIST_REFRESH_SUCCESS.label"),
+    value: "LIST_REFRESH_SUCCESS",
+    description: t("options:event.LIST_REFRESH_SUCCESS.description")
+  },
+  {
+    label: t("options:event.LIST_REFRESH_ERROR.label"),
+    value: "LIST_REFRESH_ERROR",
+    description: t("options:event.LIST_REFRESH_ERROR.description")
+  },
+  {
+    label: t("options:event.FEED_REFRESH_SUCCESS.label"),
+    value: "FEED_REFRESH_SUCCESS",
+    description: t("options:event.FEED_REFRESH_SUCCESS.description")
+  },
+  {
+    label: t("options:event.FEED_REFRESH_ERROR.label"),
+    value: "FEED_REFRESH_ERROR",
+    description: t("options:event.FEED_REFRESH_ERROR.description")
+  },
+  {
+    label: t("options:event.APP_UPDATE_AVAILABLE.label"),
+    value: "APP_UPDATE_AVAILABLE",
+    description: t("options:event.APP_UPDATE_AVAILABLE.description")
+  },
+  {
+    label: t("options:event.RELEASE_NEW.label"),
+    value: "RELEASE_NEW",
+    description: t("options:event.RELEASE_NEW.description")
+  }
+];
+
+export const FeedDownloadTypeOptions: OptionBasicTyped<FeedDownloadType>[] = [
+  {
+    label: "Magnet",
+    value: "MAGNET"
+  },
+  {
+    label: "Torrent",
+    value: "TORRENT"
+  },
+  {
+    label: "NZB",
+    value: "NZB"
+  }
+];
+
+// Built-in Pushover sounds - https://pushover.net/api#sounds
+// Custom user-uploaded sounds are fetched from the API when available
+export const PushoverSoundOptions: OptionBasic[] = [
+  { label: "Pushover (default)", value: "pushover" },
+  { label: "Bike", value: "bike" },
+  { label: "Bugle", value: "bugle" },
+  { label: "Cash Register", value: "cashregister" },
+  { label: "Classical", value: "classical" },
+  { label: "Cosmic", value: "cosmic" },
+  { label: "Falling", value: "falling" },
+  { label: "Gamelan", value: "gamelan" },
+  { label: "Incoming", value: "incoming" },
+  { label: "Intermission", value: "intermission" },
+  { label: "Magic", value: "magic" },
+  { label: "Mechanical", value: "mechanical" },
+  { label: "Piano Bar", value: "pianobar" },
+  { label: "Siren", value: "siren" },
+  { label: "Space Alarm", value: "spacealarm" },
+  { label: "Tug Boat", value: "tugboat" },
+  { label: "Alien Alarm (long)", value: "alien" },
+  { label: "Climb (long)", value: "climb" },
+  { label: "Persistent (long)", value: "persistent" },
+  { label: "Pushover Echo (long)", value: "echo" },
+  { label: "Up Down (long)", value: "updown" },
+  { label: "Vibrate Only", value: "vibrate" },
+  { label: "None (silent)", value: "none" },
+];
+
+export const tagsMatchLogicOptions: OptionBasic[] = [
+  {
+    label: "any",
+    value: "ANY"
+  },
+  {
+    label: "all",
+    value: "ALL"
+  }
+];
+
+export const ExternalFilterTypeOptions: RadioFieldsetOption[] = [
+  { label: "Exec", description: "Run a custom command", value: "EXEC" },
+  { label: "Webhook", description: "Run webhook", value: "WEBHOOK" }
+];
+
+export const ExternalFilterTypeNameMap = {
+  "EXEC": "Exec",
+  "WEBHOOK": "Webhook"
+};
+
+export const ExternalFilterOnErrorValues: ExternalFilterOnError[] = ["REJECT", "CONTINUE"];
+
+export const ExternalFilterOnErrorOptions: SelectGenericOption<ExternalFilterOnError>[] = [
+  { label: "Reject", description: "Reject on error, default", value: "REJECT" },
+  { label: "Continue to next", description: "Continue on error", value: "CONTINUE" },
+];
+
+export const ExternalFilterWebhookMethodOptions: OptionBasicTyped<WebhookMethod>[] = [
+  { label: "GET", value: "GET" },
+  { label: "POST", value: "POST" },
+  { label: "PUT", value: "PUT" },
+  { label: "PATCH", value: "PATCH" },
+  { label: "DELETE", value: "DELETE" }
+];
+
+export const ProxyTypeOptions: OptionBasicTyped<ProxyType>[] = [
+  {
+    label: "SOCKS5",
+    value: "SOCKS5"
+  },
+  {
+    label: "HTTP",
+    value: "HTTP"
+  },
+];
+
+export const ListsTraktOptions: OptionBasic[] = [
+  {
+    label: "Anticipated TV",
+    value: "https://api.autobrr.com/lists/trakt/anticipated-tv"
+  },
+  {
+    label: "Popular TV",
+    value: "https://api.autobrr.com/lists/trakt/popular-tv"
+  },
+  {
+    label: "Upcoming Movies",
+    value: "https://api.autobrr.com/lists/trakt/upcoming-movies"
+  },
+  {
+    label: "Upcoming BluRay",
+    value: "https://api.autobrr.com/lists/trakt/upcoming-bluray"
+  },
+  {
+    label: "Popular TV",
+    value: "https://api.autobrr.com/lists/trakt/popular-tv"
+  },
+  {
+    label: "Steven Lu",
+    value: "https://api.autobrr.com/lists/stevenlu"
+  },
+];
+
+export const ListsMetacriticOptions: OptionBasic[] = [
+  {
+    label: "Upcoming Albums",
+    value: "https://api.autobrr.com/lists/metacritic/upcoming-albums"
+  },
+  {
+    label: "New Albums",
+    value: "https://api.autobrr.com/lists/metacritic/new-albums"
+  }
+];
+
+export const ListsMDBListOptions: OptionBasic[] = [
+  {
+    label: "Latest TV Shows",
+    value: "https://mdblist.com/lists/garycrawfordgc/latest-tv-shows/json"
+  },
+];
+
+export const ListsAniListOptions: OptionBasic[] = [
+  {
+    label: "Current anime season",
+    value: "https://api.autobrr.com/lists/anilist/seasonal"
+  },
+  {
+    label: "Trending animes",
+    value: "https://api.autobrr.com/lists/anilist/trending"
+  },
+  {
+    label: "Next anime season",
+    value: "https://api.autobrr.com/lists/anilist/upcoming"
+  },
+];
