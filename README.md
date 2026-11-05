@@ -54,6 +54,17 @@ docker run --read-only -p 9696:9696 -v lantern-data:/data lantern
 | `APP_ADMIN_USER`, `APP_ADMIN_PASSWORD` | the owner made at the first start | `admin`, a printed password |
 | `APP_VAULT_PASSPHRASE` | locks the account vault with your passphrase instead of `vault.key` in the data folder (set it before the first start; Lantern won't open the vault without it) | not set: `vault.key` |
 | `APP_NAME`, `APP_SESSION_DAYS`, `APP_API_KEY` | settings (settings.toml); set here they are locked in Settings | |
+| `APP_DOWNLOADS_DIR` | the downloads folder; each app gets `<folder>/<category>` in it. Mount it (`-v /data/downloads:/downloads`) at the same place in your download clients and apps, or set each one's own path in Lantern | `/downloads` |
+| `APP_GRAB_ATTEMPTS` | how many times a grab is sent before it fails | `5` |
+
+### Download hub
+
+Apps need only Lantern's address and API key (`X-Api-Key`). They register once (`POST /api/hub/apps` with `name`,
+`media`, `import_path`, `callback_url`), search (`GET /api/hub/search?app=`), grab (`POST /api/hub/grabs` with a
+result's `token` or any `url`), and hear back through their callback address or the live stream
+(`GET /api/hub/events?app=&apikey=`) with each finished file's path as the app sees it. Webhooks carry
+`X-Lantern-Signature: sha256=<HMAC-SHA256 of the body with the API key>`. All routes are listed in
+`server/src/hub/api.rs`.
 
 ## Checks
 

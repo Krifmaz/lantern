@@ -22,6 +22,17 @@ Non-obvious calls, one line each, newest last.
   words until the Cloudflare solving stage lands.
 - 2026-11-05 — The Android app is generated from the kit v0.2.1 template (the tag the rest of Lantern pins; kit v0.3.0
   changed nothing under android/), with Lantern's port 9696 as the address the emulator suggests.
+- 2026-11-05 — Download hub: one folder per app, `<downloads folder>/<category>`, with paths swapped at whole folder
+  names between Lantern, each client (its own `root`) and each app (its `import_path`), so a single shared mount
+  keeps hardlinks possible. Paths are worked out when they are used, so a changed path applies to every app at once.
+- 2026-11-05 — Download hub: qBittorrent torrents are found again by the tags `lantern` and `lantern-<grab id>`
+  instead of computing the info hash, so magnets and files work the same and nothing else in the client is touched.
+- 2026-11-05 — Download hub: Lantern retries sending a grab (and a download its client failed) with waits of 30 s,
+  2, 10, 30 and 60 min, then tells the app it failed; picking another release stays the app's call.
+- 2026-11-05 — Download hub: client passwords and API keys sit in the database like indexer secrets (masked in every
+  answer) until the account vault lands, which moves them into it.
+- 2026-11-05 — Download hub: webhooks are signed with Lantern's API key (HMAC-SHA256), which the app already holds,
+  rather than a second secret per app.
 - 2026-11-05 — The vault's data key is sealed with a key argon2id makes from `APP_VAULT_PASSPHRASE`, else from a random
   `<data>/vault.key` (0600). The key file is the default so Lantern can sign in to sites unattended after a restart;
   the passphrase is for people who don't want a copy of the data folder alone to open anything. A vault whose key is

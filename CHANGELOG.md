@@ -18,6 +18,10 @@
   only after typing their password again, with the 2FA code. Encrypted backups, and restore with a check first.
 - Android: Indexers (how every site is doing, what went wrong, the last week's numbers, Test) and Search (every
   indexer at once, by kind; open a result's page or copy its link), and the server's notices on the home page.
+- Download hub: qBittorrent and SABnzbd behind one download-client layer; apps register with their name, media type
+  and import path and get their own category and folder; search and grab through Lantern; progress followed, failed
+  sends tried again (5 times by default), and apps called back by webhook and a live event stream with the finished
+  files' exact paths in their own view.
 
 ## 0.0.1
 

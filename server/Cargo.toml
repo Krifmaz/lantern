@@ -54,7 +54,7 @@ percent-encoding = "2"
 html-escape = "0.2"
 unicode-normalization = "0.1"
 encoding_rs = "0.8"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "cookies", "gzip", "brotli", "deflate", "socks"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "cookies", "multipart", "gzip", "brotli", "deflate", "socks"] }
 quick-xml = "0.37"
 futures-util = "0.3"
 hmac = "0.12"
