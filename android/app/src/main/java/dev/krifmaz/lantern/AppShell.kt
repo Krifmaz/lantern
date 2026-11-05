@@ -21,8 +21,14 @@ import dev.krifmaz.kit.compose.widgets.BackBar
 
 /** The app's pages; [AppShell] keeps them as a stack, and Back goes to the one below. */
 sealed interface Page {
-    /** The first page: the server's status, the kit's features and the entries to the other pages. */
+    /** The first page: the server's notices, how the indexers are doing, and the entries to the other pages. */
     data object Home : Page
+
+    /** Every indexer and how it is doing; [admin] may test them (null: not known yet). */
+    data class Indexers(val admin: Boolean?) : Page
+
+    /** One search through every indexer. */
+    data object Search : Page
 
     /** What's new: every release's notes ([ChangelogScreen]). */
     data object Changelog : Page
@@ -66,6 +72,10 @@ fun AppShell(app: App) {
     if (stack.size > 1) BackHandler(onBack = back)
     when (val page = stack.last()) {
         Page.Home -> HomePage(app, base, bugs, open, onChangeServer = { app.settings.forget() })
+
+        is Page.Indexers -> IndexersPage(app, page.admin, onBack = back)
+
+        Page.Search -> SearchPage(app, onBack = back)
 
         Page.Changelog ->
             Column(Modifier.fillMaxSize()) {

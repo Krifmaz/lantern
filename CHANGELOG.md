@@ -16,6 +16,8 @@
 - Account vault (Vault page): tracker and Usenet logins, passwords, cookies, passkeys, API keys, 2FA seeds and invite
   notes, encrypted at rest (argon2id + XChaCha20-Poly1305). Secrets are never listed or logged; the owner sees them
   only after typing their password again, with the 2FA code. Encrypted backups, and restore with a check first.
+- Android: Indexers (how every site is doing, what went wrong, the last week's numbers, Test) and Search (every
+  indexer at once, by kind; open a result's page or copy its link), and the server's notices on the home page.
 
 ## 0.0.1
 

@@ -36,8 +36,9 @@ import dev.krifmaz.kit.compose.bugs.CrashLog
 import dev.krifmaz.kit.compose.bugs.CrashLogReport
 import dev.krifmaz.kit.compose.bugs.NewBugReportSheet
 import dev.krifmaz.kit.compose.bugs.saveExport
-import dev.krifmaz.kit.compose.details.DetailsDialog
 import dev.krifmaz.kit.compose.dialogs.ConfirmDialog
+import dev.krifmaz.kit.compose.notices.NoticeBanners
+import dev.krifmaz.kit.compose.notices.rememberNotices
 import dev.krifmaz.kit.compose.offline.OfflineBanner
 import dev.krifmaz.kit.compose.offline.probeHealth
 import dev.krifmaz.kit.compose.settings.Muted
@@ -58,8 +59,8 @@ import dev.krifmaz.kit.compose.R as KitR
 
 /**
  * The first page: the offline banner when the server can't be reached, What's new once after an update, the
- * kit's toasts and details, the entries to the other pages, bug reports, the crash log and updates. The list's
- * resource id ("home-list") is what the benchmarks scroll. Replace the "Try the kit" part with the app's own.
+ * server's notices (admins), how the indexers are doing with the entries to Indexers and Search, the settings
+ * entries, bug reports, the crash log and updates. The list's resource id ("home-list") is what the benchmarks scroll.
  *
  * @param app the app (its server, settings and calls).
  * @param base the server's address.
@@ -74,7 +75,8 @@ fun HomePage(app: App, base: String, bugs: BugReportsHost, open: (Page) -> Unit,
     val scope = rememberCoroutineScope()
     // who is looking: null until the server says (or when it can't); the admin pages show unless it says no
     var me by remember { mutableStateOf<Me?>(null) }
-    var details by remember { mutableStateOf(false) }
+    // how the indexers are doing, in one line ("" until the server says)
+    var health by remember { mutableStateOf("") }
     var askSignOut by remember { mutableStateOf(false) }
     var newReport by remember { mutableStateOf(false) }
     // offline mode: one /api/health check at start and on every Retry
@@ -96,8 +98,18 @@ fun HomePage(app: App, base: String, bugs: BugReportsHost, open: (Page) -> Unit,
             } catch (_: Exception) {
                 // the last answer stays (null: the admin pages show, and the server says no there)
             }
+            health = try {
+                val list = withContext(Dispatchers.IO) { IndexerRules.indexersOf(app.server.getObject("/api/indexers")) }
+                IndexerRules.summaryLine(IndexerRules.summary(list, System.currentTimeMillis() / 1000.0))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                "The indexers couldn't be loaded: ${e.message ?: e.javaClass.simpleName}"
+            }
         }
     }
+    // the server's notices (an indexer that stopped working, the data folder …), as banners for admins
+    val notices = rememberNotices(app.server.kit, admin = me?.admin == true)
     // What's new: once after an update, when the server says there is something new for this account
     WhatsNewOnStart(app.changelog, onFullChangelog = { open(Page.Changelog) })
 
@@ -121,16 +133,11 @@ fun HomePage(app: App, base: String, bugs: BugReportsHost, open: (Page) -> Unit,
         ) {
             SectionHead(KitApp.name, subtitle = base.substringAfter("://"), action = "Change server", onAction = onChangeServer)
 
-            SectionHead("Try the kit", subtitle = "Toasts and details, in the kit's theme")
-            Row(Modifier.padding(horizontal = Gutter), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SmallButton("Info") { Toasts.show("Saved") }
-                SmallButton("OK") { Toasts.show("Done", "ok") }
-                SmallButton("Error") { Toasts.show("The server answered 502 Bad Gateway – it may be restarting", "err") }
-                SmallButton("Undo") { Toasts.show("Moved to the Trash", action = "Undo", onAction = { Toasts.show("Restored", "ok") }) }
-            }
-            Row(Modifier.padding(Gutter), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                SmallButton("Details") { details = true }
-            }
+            NoticeBanners(notices, admin = me?.admin == true, modifier = Modifier.padding(horizontal = Gutter))
+
+            SectionHead("Indexers", subtitle = health)
+            EntryRow("Indexers", "How every site is doing, what went wrong and its numbers") { open(Page.Indexers(me?.admin)) }
+            EntryRow("Search", "Search every indexer at once") { open(Page.Search) }
 
             SectionHead("Settings")
             EntryRow("What's new", "Every release's notes") { open(Page.Changelog) }
@@ -160,9 +167,6 @@ fun HomePage(app: App, base: String, bugs: BugReportsHost, open: (Page) -> Unit,
             onDismiss = { askSignOut = false },
             onConfirm = { scope.launch { withContext(Dispatchers.IO) { app.server.logout() } } },
         )
-    }
-    if (details) {
-        DetailsDialog("Details", "java.io.IOException: unexpected end of stream on $base/api/health\n\tat okhttp3...") { details = false }
     }
     if (newReport) {
         NewBugReportSheet(bugs, page = "Home", onDismiss = { newReport = false })
