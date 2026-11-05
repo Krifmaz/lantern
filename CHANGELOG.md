@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+- Cloudflare solving waits up to two minutes for its browser to start, and tries once more if it doesn't, so a busy
+  or slow machine no longer fails a check before the browser is ready.
+
 ### Added
 - Apps that search through Lantern's Newznab/Torznab feeds now get exactly what Prowlarr v2.7.0.5723 answers: every
   search parameter, the same feed and capabilities, the same error messages, and Prowlarr's test indexer (number 0).
