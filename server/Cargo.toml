@@ -20,13 +20,14 @@ path = "src/lib.rs"
 # The kit, pinned to one release tag. To update: read the kit's CHANGELOG.md, bump the tag here and in
 # web/Cargo.toml, run the tests.
 [dependencies]
-kit-server-core = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1", features = ["sqlite"] }
-kit-server-health = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
-kit-server-changelog = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
-kit-server-notices = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
-kit-server-bugreports = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
-kit-server-diagnostics = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
-kit-server-settings = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+kit-server-core = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0", features = ["sqlite"] }
+kit-server-health = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
+kit-server-changelog = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
+kit-server-notices = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
+kit-server-bugreports = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
+kit-server-diagnostics = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
+kit-server-setup = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
+kit-server-settings = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
 axum = { version = "0.8", features = ["multipart"] }
 axum-extra = { version = "0.10", features = ["cookie"] }
 cookie = "0.18"
@@ -75,8 +76,8 @@ tokio-rustls = { version = "0.26", default-features = false, features = ["ring",
 webpki-roots = "1"
 
 [build-dependencies]
-kit-server-settings = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1", default-features = false, features = ["toml"] }
-kit-server-changelog = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1", default-features = false }
+kit-server-settings = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0", default-features = false, features = ["toml"] }
+kit-server-changelog = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0", default-features = false }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

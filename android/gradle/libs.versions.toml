@@ -1,7 +1,7 @@
 # Every version is pinned, equal to the kit's android/gradle/libs.versions.toml . Bump the kit
 # first (`kit`, the kit release without its v), then the rest to the kit's versions of that release.
 [versions]
-kit = "0.2.1"
+kit = "0.8.0"
 agp = "9.4.0"
 kotlin = "2.4.21"                 # also in the root build.gradle.kts buildscript classpath
 composeBom = "2026.06.01"         # Compose 1.11.4, material3 1.4.0

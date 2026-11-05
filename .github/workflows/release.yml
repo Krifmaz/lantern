@@ -38,7 +38,7 @@ concurrency:
 
 jobs:
   test:
-    uses: Krifmaz/kit/.github/workflows/kit-ci.yml@v0.2.1
+    uses: Krifmaz/kit/.github/workflows/kit-ci.yml@v0.8.0
     with:
       rust-dirs: |
         server
@@ -47,7 +47,7 @@ jobs:
 
   prepare:
     needs: test
-    uses: Krifmaz/kit/.github/workflows/kit-release.yml@v0.2.1
+    uses: Krifmaz/kit/.github/workflows/kit-release.yml@v0.8.0
     with:
       stage: prepare
       app-name: Lantern
@@ -61,7 +61,7 @@ jobs:
 
   docker:
     needs: prepare
-    uses: Krifmaz/kit/.github/workflows/kit-docker.yml@v0.2.1
+    uses: Krifmaz/kit/.github/workflows/kit-docker.yml@v0.8.0
     with:
       image: lantern
       version: ${{ needs.prepare.outputs.version }}
@@ -71,7 +71,7 @@ jobs:
   android:
     needs: prepare
     if: inputs.apps
-    uses: Krifmaz/kit/.github/workflows/kit-android.yml@v0.2.1
+    uses: Krifmaz/kit/.github/workflows/kit-android.yml@v0.8.0
     with:
       app-name: Lantern
       version: ${{ needs.prepare.outputs.version }}
@@ -87,7 +87,7 @@ jobs:
   desktop:
     needs: prepare
     if: inputs.apps
-    uses: Krifmaz/kit/.github/workflows/kit-desktop.yml@v0.2.1
+    uses: Krifmaz/kit/.github/workflows/kit-desktop.yml@v0.8.0
     with:
       # kit-desktop uploads kit-app-desktop-<OS>, which kit-release collects (any app name works)
       app-name: Lantern
@@ -112,7 +112,7 @@ jobs:
   publish:
     needs: [prepare, docker, desktop, android]
     if: always() && needs.prepare.result == 'success' && needs.docker.result == 'success'
-    uses: Krifmaz/kit/.github/workflows/kit-release.yml@v0.2.1
+    uses: Krifmaz/kit/.github/workflows/kit-release.yml@v0.8.0
     with:
       stage: publish
       app-name: Lantern

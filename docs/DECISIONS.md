@@ -117,6 +117,11 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — The emulated SABnzbd and NZBGet offer the categories Sonarr, Radarr, Lidarr and Readarr use out of the
   box (in small letters and with a capital, as Radarr's NZBGet `Movies` and Readarr's `Readarr`), besides each app's
   own, because the apps refuse to save a client whose category they don't see; Lantern takes any category anyway.
+- 2026-11-05 — First-run setup lives in the kit (kit-server-setup, kit-leptos, kit-iced, kit-compose; kit v0.8.0), as
+  every kit app needs it; Lantern only makes the owner with its own name and password rules. Moving from kit v0.2.1
+  to v0.8.0 at the same time was additive for Lantern (no code changes beyond setup).
+- 2026-11-05 — With `APP_ADMIN_PASSWORD` unset, Lantern no longer writes `initial_admin_password.txt`: the setup code
+  is kept in memory and printed in the log only, so no password sits in the data folder or its backups.
 - 2026-11-05 — Usenet presets follow Prowlarr's list (address, API path, categories), plus the few Lantern had
   before (nzb.su, SceneNZBs, Usenet Crawler) so indexers added with them keep their name. AnimeTosho is marked
   public (anyone can use its feed) though Prowlarr lists every preset as private. Tabula Rasa now uses its plain

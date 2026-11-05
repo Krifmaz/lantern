@@ -1,6 +1,6 @@
 # Lantern — rules for every session
 
-Lantern is built on [Krifmaz/kit](https://github.com/Krifmaz/kit) (v0.2.1): its server crates, kit-leptos
+Lantern is built on [Krifmaz/kit](https://github.com/Krifmaz/kit) (v0.8.0): its server crates, kit-leptos
 and the kit's default theme. Read the kit's `CHANGELOG.md` before bumping the kit tag.
 
 - **No shell for user input.** Never pass anything a person typed, uploaded or named to a shell. Run programs

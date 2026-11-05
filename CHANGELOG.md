@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- First-run setup: a new Lantern asks for "Create your account" (username, password twice, optional email) on the
+  web, desktop and Android apps, instead of making `admin` with a printed password. The screen needs the one-time
+  setup code Lantern prints in its log at start, so nobody else on the network can claim it first; the code stops
+  working once the owner exists. `APP_ADMIN_USER` and `APP_ADMIN_PASSWORD` still make the owner for unattended
+  installs. Built on the kit's new first-run setup (kit v0.8.0, up from v0.2.1).
 - Indexers → Add is one searchable list of every torrent site and Usenet indexer, filtered by torrent or Usenet,
   privacy (private, semi-private, public) and language, and it says how many sites there are. Usenet indexers like
   Prowlarr's (NZBgeek, DrunkenSlug, NZBPlanet, NinjaCentral, DOGnzb, NZBFinder, altHUB, Tabula Rasa, abNZB and more)
