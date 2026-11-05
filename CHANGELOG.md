@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- Cloudflare solving: a headless Chromium (in the image) gets past Cloudflare and DDoS-Guard checks by itself when an
+  indexer meets one; the site's cookies are kept and reused, so most requests need no browser.
+- The FlareSolverr API on port 8191 (`APP_SOLVER_PORT`), so apps that use FlareSolverr can use Lantern instead.
+- A Cloudflare checks card on the Indexers page (test any address) and a Diagnostics check for the browser.
+- CI checks the image as it ships: its browser gets past a Cloudflare-style check through the FlareSolverr API.
 - Indexers: every site in the Prowlarr/Indexers definitions (bundled in the image and updated daily), plus
   Newznab and Torznab indexers, with login, tests, health and hold after repeated failures.
 - Torznab/Newznab feeds per indexer and for all of them (`/{id}/api`, `/all/api`), Jackett and Prowlarr paths too,

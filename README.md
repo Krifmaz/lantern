@@ -24,6 +24,13 @@ ease-of-use features from the first commit.
    - API path: `/api`. API key: Lantern's.
 3. Apps made for Prowlarr also find Lantern's Prowlarr API at `http://<lantern>:9696/api/v1`.
 
+## Cloudflare checks and FlareSolverr
+
+Sites behind a Cloudflare (or DDoS-Guard) check need nothing extra: Lantern's own browser gets past the check
+when it meets one and keeps the site's cookies. Apps that use FlareSolverr can point at Lantern instead:
+`http://<lantern>:8191/` (publish the port with `-p 8191:8191`; `APP_SOLVER_PORT` moves it, `0` turns it off).
+Outside the image, set `APP_CHROMIUM` to a Chromium or Chrome program.
+
 ## Move from Prowlarr and FlareSolverr
 
 1. In Prowlarr, open **System → Backup**, press **Backup Now** and download the `.zip` (it keeps the logins; Prowlarr's
@@ -62,7 +69,7 @@ Then open <http://localhost:9696>. With Docker:
 
 ```
 docker build -t lantern .
-docker run --read-only -p 9696:9696 -v lantern-data:/data lantern
+docker run --read-only -p 9696:9696 -p 8191:8191 -v lantern-data:/data lantern
 ```
 
 | Variable | Meaning | Default |

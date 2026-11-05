@@ -10,6 +10,7 @@
 //! | `/api/settings`, `/api/settings/schema`, `/api/settings/secret/{key}` | kit-server-settings |
 //! | `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` | [`auth`] |
 //! | `/api/indexers/*`, `/api/search`, `/{id}/api` (Torznab/Newznab), `/{id}/download`, `/api/v1/*` (Prowlarr API) | [`indexers`] |
+//! | `/api/solver`, `/api/solver/test`; the FlareSolverr API on its own port ([`solver_port`]) | [`solver`] |
 //! | `/api/hub/*` (download clients, apps, search and grab, live events) | [`hub`] |
 //! | `/api/vault`, `/api/vault/*` (the account vault) | [`vault`] |
 //! | `/api/import/*` (Prowlarr and FlareSolverr, dry run first) | [`migrate`] |
@@ -23,6 +24,7 @@ pub mod hub;
 pub mod indexers;
 pub mod migrate;
 pub mod releases;
+pub mod solver;
 pub mod vault;
 
 use axum::http::{header, HeaderValue};
@@ -67,6 +69,11 @@ pub fn port() -> u16 {
     std::env::var("APP_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(9696)
 }
 
+/// The FlareSolverr API's port from `APP_SOLVER_PORT`: 8191 (FlareSolverr's) when not set, 0 to serve none.
+pub fn solver_port() -> u16 {
+    std::env::var("APP_SOLVER_PORT").ok().and_then(|p| p.trim().parse().ok()).unwrap_or(8191)
+}
+
 /// The app's state, handed to every route; clones share everything.
 #[derive(Clone)]
 pub struct AppState {
@@ -92,6 +99,8 @@ pub struct AppState {
     pub indexers: indexers::Indexers,
     /// Signs the download links handed to apps.
     pub signer: indexers::LinkSigner,
+    /// Gets past Cloudflare checks with a headless browser (also the FlareSolverr API).
+    pub solver: solver::Solver,
     /// The download hub: download clients, apps and their grabs.
     pub hub: hub::Hub,
     /// The account vault: site logins and keys, encrypted at rest.
@@ -131,6 +140,8 @@ impl AppState {
         hub::migrate(&db)?;
         migrate::migrate(&db)?;
         releases::migrate(&db)?;
+        solver::migrate(&db)?;
+        let solver = solver::Solver::new(solver::find_program(env("APP_CHROMIUM").as_deref()), data, Some(db.clone()));
         let bundled = PathBuf::from(env("APP_DEFINITIONS_DIR").unwrap_or_else(|| "/app/definitions".into()));
         let library = indexers::library::Library::new(Some(bundled), data);
         let signer = indexers::LinkSigner::open(data)?;
@@ -145,7 +156,7 @@ impl AppState {
             .await
             .map_err(|e| anyhow::anyhow!("The settings can't be read: {}", e.detail))?;
         let changelog = Arc::new(Changelog::new(&settings.str("app_name"), VERSION, changelog_gen::NOTES));
-        let indexers = indexers::Indexers::new(db.clone(), library).with_settings(settings.clone());
+        let indexers = indexers::Indexers::new(db.clone(), library).with_settings(settings.clone()).with_solver(solver.clone());
         let hub = hub::Hub::new(db.clone(), indexers.clone(), signer.clone(), settings.clone());
         let announce_dir = PathBuf::from(env("APP_ANNOUNCE_DIR").unwrap_or_else(|| "/app/announce".into()));
         let announce = releases::announce::Library::new(vec![announce_dir, data.join("announce")]);
@@ -166,6 +177,7 @@ impl AppState {
             hub,
             vault,
             releases,
+            solver,
         })
     }
 
@@ -280,6 +292,7 @@ pub fn app(st: AppState) -> Router {
         .merge(kit_server_settings::router())
         .merge(auth::router())
         .merge(indexers::api::router())
+        .merge(solver::api::router())
         .merge(hub::api::router())
         .merge(vault::api::router())
         .merge(migrate::api::router())

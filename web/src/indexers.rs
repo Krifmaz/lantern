@@ -184,6 +184,71 @@ pub fn Indexers(admin: bool) -> impl IntoView {
         </div>
         <div class="card flat">{rows}</div>
         <p class="small muted mt">"Apps add each indexer as Torznab (Newznab for Usenet) at "<span class="mono">"http://<lantern>:9696/<id>/"</span>", or every indexer at once at "<span class="mono">"/all/"</span>", with Lantern's API key (Settings → General → Apps)."</p>
+        {admin.then(|| view! { <Cloudflare/> })}
+    }
+}
+
+/// The words for the solver's state (`GET /api/solver`): the browser and how many sites have kept cookies.
+pub fn solver_words(v: &Value) -> String {
+    let Some(browser) = v.get("browser").and_then(Value::as_str) else {
+        return "No browser for Cloudflare checks: use the Lantern image, or set APP_CHROMIUM.".into();
+    };
+    let running = if v.get("running").and_then(Value::as_bool) == Some(true) { "open now" } else { "starts when a site needs it" };
+    let sites = v.get("sites").and_then(Value::as_array).map(Vec::len).unwrap_or(0);
+    let kept = match sites {
+        0 => "no site's cookies kept yet".to_string(),
+        1 => "cookies kept for 1 site".to_string(),
+        n => format!("cookies kept for {n} sites"),
+    };
+    format!("{browser} · {running} · {kept}")
+}
+
+/// The Cloudflare checks card: the browser, the sites it got past, a test of any address, and the FlareSolverr
+/// address for other apps.
+#[component]
+fn Cloudflare() -> impl IntoView {
+    let (tick, set_tick) = signal(0u32);
+    let state = LocalResource::new(move || {
+        tick.track();
+        async { api::get("/solver").await.map_err(|e| e.message) }
+    });
+    let (url, set_url) = signal(String::new());
+    let (busy, set_busy) = signal(false);
+    let test = move |_| {
+        let u = url.get_untracked();
+        set_busy.set(true);
+        rt_spawn(async move {
+            match api::post("/solver/test", json!({ "url": u })).await {
+                Ok(r) if r.get("ok").and_then(Value::as_bool) == Some(true) => toast(&s(&r, "message"), "success"),
+                Ok(r) => toast(&s(&r, "message"), "error"),
+                Err(e) => toast(&e.message, "error"),
+            }
+            set_busy.set(false);
+            set_tick.update(|t| *t += 1);
+        })
+    };
+    let words = move || match state.get() {
+        None => String::new(),
+        Some(Err(e)) => e,
+        Some(Ok(v)) => solver_words(&v),
+    };
+    let port = move || match state.get() {
+        Some(Ok(v)) => v.get("port").and_then(Value::as_u64).unwrap_or(0),
+        _ => 0,
+    };
+    view! {
+        <h2 class="mt">"Cloudflare checks"</h2>
+        <div class="card flat" id="cloudflare">
+            <p class="small" style="margin-top:0">{words}</p>
+            <div class="row wrap" style="gap:8px">
+                <input class="input grow" style="min-width:240px" placeholder="https://site.example/" prop:value=url on:input=move |e| set_url.set(event_target_value(&e))/>
+                <button class="btn" disabled=move || busy.get() || url.get().trim().is_empty() on:click=test>{move || if busy.get() { "Opening…" } else { "Test address" }}</button>
+            </div>
+            <p class="small muted" style="margin-bottom:0">{move || match port() {
+                0 => "The FlareSolverr API for other apps is off (APP_SOLVER_PORT=0).".to_string(),
+                p => format!("Other apps that use FlareSolverr can use Lantern instead at http://<lantern>:{p}/."),
+            }}</p>
+        </div>
     }
 }
 
@@ -586,6 +651,13 @@ fn result_row(r: Value) -> impl IntoView {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn words_for_the_solver() {
+        assert!(solver_words(&json!({ "browser": null })).contains("APP_CHROMIUM"));
+        let w = solver_words(&json!({ "browser": "/usr/lib/chromium/headless_shell", "running": false, "sites": [{ "host": "a" }] }));
+        assert_eq!(w, "/usr/lib/chromium/headless_shell · starts when a site needs it · cookies kept for 1 site");
+    }
 
     #[test]
     fn words_for_sizes_ages_and_status() {

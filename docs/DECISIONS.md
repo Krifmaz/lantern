@@ -74,3 +74,11 @@ Non-obvious calls, one line each, newest last.
   seeded enough, since it can delete downloaded files. Lantern checks the seeding goals itself instead of setting
   share limits in each client, so the rules work the same for every client. Per-tracker minimums (hit-and-run
   rules) come from the account keeper when it lands.
+- 2026-11-05 — Cloudflare solving drives Debian's Chromium headless shell over the DevTools protocol (chromiumoxide),
+  copied with the files of the packages it needs into the distroless image, so the image stays distroless and
+  read-only (the browser's profile and scratch files live in `/data/browser`). It sends a person's Chrome user agent
+  ("HeadlessChrome" said as "Chrome"), and indexers send that same agent with the kept cookies, as cf_clearance asks.
+- 2026-11-05 — The FlareSolverr API listens on its own port 8191 without sign-in, as FlareSolverr does, so apps
+  switch by address only; `APP_SOLVER_PORT=0` turns it off for anyone who doesn't need it.
+- 2026-11-05 — When a site checks every plain request even with the cookies, a GET is read through the browser
+  instead (pages only; files still go through Lantern's own client).

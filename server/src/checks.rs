@@ -3,7 +3,7 @@
 //! - Notice `data`: the data folder can't be written (the kit's storage notice, for the one folder this app
 //!   writes to), checked every minute and on Check again. Served at `/api/notices/data` (and in `/api/notices`).
 //! - Notice `indexers`: one or more switched-on indexers failed their last search, checked every five minutes.
-//! - Diagnostics: the data folder, the database and the indexers. An app adds its own services, folders and
+//! - Diagnostics: the data folder, the database, the browser for Cloudflare checks and the indexers. An app adds its own services, folders and
 //!   tools here.
 
 use crate::AppState;
@@ -77,7 +77,8 @@ pub fn notices() -> Notices<AppState> {
         )
 }
 
-/// The Diagnostics page's checks: the data folder, the database and the indexers.
+/// The Diagnostics page's checks: the data folder, the database, the browser for Cloudflare checks and the
+/// indexers.
 pub fn diagnostics() -> Registry<AppState> {
     Registry::new()
         .check("data", |st: AppState| async move {
@@ -94,6 +95,18 @@ pub fn diagnostics() -> Registry<AppState> {
             match st.db.one("SELECT COUNT(*) n FROM users", vec![]) {
                 Ok(_) => Check::new("Database", Kind::Path, true, "OK"),
                 Err(e) => Check::new("Database", Kind::Path, false, e.detail),
+            }
+        })
+        .check("browser", |st: AppState| async move {
+            match st.solver.program() {
+                Some(p) => {
+                    let ua = st.solver.user_agent();
+                    let how = if ua.is_empty() { "starts when a site needs it".to_string() } else { ua };
+                    Check::new("Browser for Cloudflare checks", Kind::Tool, true, format!("{} · {how}", p.display()))
+                        .request(p.display().to_string())
+                }
+                None => Check::new("Browser for Cloudflare checks", Kind::Tool, false, "No Chromium found")
+                    .fix("Use the Lantern image, which has one, or set APP_CHROMIUM to a Chromium or Chrome program"),
             }
         })
         .check("indexers", |st: AppState| async move {

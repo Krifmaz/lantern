@@ -58,6 +58,7 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 quick-xml = "0.37"
 futures-util = "0.3"
 hmac = "0.12"
+chromiumoxide = { version = "0.9", default-features = false }
 tar = "0.4"
 flate2 = "1"
 # account vault: argon2id keys, XChaCha20-Poly1305, wiped secrets, TOTP codes
