@@ -1,0 +1,107 @@
+/*
+ * Copyright (c) 2021 - 2025, Ludvig Lundgren and the autobrr contributors.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import { getRouteApi } from "@tanstack/react-router";
+import Select from "react-select";
+import { useTranslation } from "react-i18next";
+
+import { APIClient } from "@api/APIClient";
+import { ConfigQueryOptions } from "@api/queries";
+import { SettingsKeys } from "@api/query_keys";
+import { toast } from "@components/hot-toast";
+import Toast from "@components/notifications/Toast";
+import { LogLevelOptions } from "@domain/constants";
+import { MultiSelectOption } from "@components/inputs/select";
+
+import { Section, RowItem } from "./_components";
+import { selectComponents, selectStyles, selectTheme } from "@components/inputs/select_props";
+import { LogFiles } from "@screens/Logs";
+
+type SelectWrapperProps = {
+  id: string;
+  value?: string;
+  onChange: (value: string) => void;
+  options: MultiSelectOption[];
+};
+
+const SelectWrapper = ({ id, value, onChange, options }: SelectWrapperProps) => {
+  const { t } = useTranslation("settings");
+
+  return (
+    <Select
+      id={id}
+      components={selectComponents}
+      placeholder={t("logsPage.chooseType")}
+      styles={selectStyles}
+      theme={selectTheme}
+      value={options.find((o) => o.value == value)}
+      onChange={(newValue: unknown) => {
+        if (newValue) {
+          onChange(String((newValue as MultiSelectOption).value));
+        }
+      }}
+      options={options}
+    />
+  );
+};
+
+function LogSettings() {
+  const { t } = useTranslation("settings");
+  const settingsLogRoute = getRouteApi("/auth/authenticated-routes/settings/logs");
+  const { queryClient} =  settingsLogRoute.useRouteContext();
+
+  const configQuery = useSuspenseQuery(ConfigQueryOptions())
+
+  const config = configQuery.data
+
+  const setLogLevelUpdateMutation = useMutation({
+    mutationFn: (value: string) => APIClient.config.update({ log_level: value }),
+    onSuccess: () => {
+      toast.custom((toastInstance) => <Toast type="success" body={t("logsPage.updated")} t={toastInstance} />);
+
+      queryClient.invalidateQueries({ queryKey: SettingsKeys.config() });
+    }
+  });
+
+  return (
+    <Section
+      title={t("logsPage.title")}
+      description={t("logsPage.description")}
+    >
+      <div className="-mx-4 lg:col-span-9">
+        <div className="divide-y divide-gray-200 dark:divide-gray-750">
+          {!configQuery.isLoading && config && (
+            <form className="divide-y divide-gray-200 dark:divide-gray-750" action="#" method="POST">
+              <RowItem label={t("logsPage.path")} value={config?.log_path} title={t("logsPage.setInConfig")} emptyText={t("logsPage.notSet")}/>
+              <RowItem
+                className="sm:col-span-1"
+                label={t("logsPage.level")}
+                title={t("logsPage.logLevel")}
+                value={
+                  <SelectWrapper
+                    id="log_level"
+                    value={config?.log_level}
+                    options={LogLevelOptions}
+                    onChange={(value) => setLogLevelUpdateMutation.mutate(value)}
+                  />
+                }
+              />
+              <RowItem label={t("logsPage.maxSize")} value={config?.log_max_size} title={t("logsPage.setInConfig")} rightSide="MB"/>
+              <RowItem label={t("logsPage.maxBackups")} value={config?.log_max_backups} title={t("logsPage.setInConfig")}/>
+            </form>
+          )}
+
+          <div className="px-6 pt-4">
+            <LogFiles/>
+          </div>
+        </div>
+      </div>
+
+    </Section>
+  );
+}
+
+export default LogSettings;

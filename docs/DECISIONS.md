@@ -251,6 +251,30 @@ Non-obvious calls, one line each, newest last.
   asks for one, because Lantern can't ask those sites' APIs yet (autobrr does; it comes with the indexer API slice).
 - 2026-11-05 — Track A-api builds in its own Cargo target folder, without incremental files: builds of the same crate
   from several worktrees in one shared target folder overwrote each other's files, and the disk is shared.
+- 2026-11-05 — autobrr's frontend fork (`ui/autobrr/`) holds the contents of autobrr's `web/` (its own Vite app,
+  `package.json` and pnpm lockfile) plus `LICENSE`, not a `web/` folder inside it; `scripts/upstream-merge.sh` gained
+  a case for it (a path ending in `/` brings that folder's contents) and keeps `upstream/autobrr`.
+- 2026-11-05 — **Interim:** autobrr's frontend is served at `/autobrr/` with autobrr's base URL support (its
+  `baseUrl` is `/autobrr/`), so its API calls go to `/autobrr/api/...` with the frontend unchanged: Lantern's own
+  `/api/...` (auth, settings, health, …) would clash with autobrr's paths there. `server/src/autobrr_ui.rs` mounts the
+  autobrr-compatible API router (track A-api) at `/autobrr/api`; until then every path there answers a plain 404.
+  The pages and their files need a Lantern session (without one, pages go to Lantern's sign-in at `/`); the API
+  prefix is not behind that check, as autobrr's API also takes API keys (webhooks, feeds) and answers 401 itself.
+  The manifest, icons and `robots.txt` stay open, as browsers fetch them without the session.
+- 2026-11-05 — The autobrr frontend is built as autobrr's Dockerfile builds it: Node 24.19.0
+  (`node:24.19.0-trixie-slim`), pnpm at the version its `package.json` pins (`packageManager`) through corepack,
+  `pnpm install --frozen-lockfile`, `pnpm run build`. CI also runs its lint and its vitest tests.
+- 2026-11-05 — Encore for autobrr's frontend: Tailwind's colour scales are replaced by scales drawn from the kit's
+  tokens (`ui/autobrr/src/lantern/colors.ts`), since autobrr's look is Tailwind classes, not theme variables. One class
+  means a different thing in dark and light mode (`dark:bg-gray-800` is a card, `text-gray-800` is text), so each
+  scale runs from the theme's lightest to its darkest colour, set per mode. autobrr's dark mode is Encore and its
+  light mode the kit's light theme (`<html data-theme>` follows autobrr's `dark` class); autobrr's Theme setting
+  (dark, light, system) stays as it is. Blue is the accent: fills use `--accent` with `--on-accent` text, links and
+  focus rings `--accent-2`. Unlike Prowlarr's fork, the dashboard charts use the tokens too (approved `--ok`,
+  matches `--accent-2`, rejected `--faint`, errored `--err`), as their bright blue was most of the dashboard.
+- 2026-11-05 — The autobrr update banner and version chip are left in the frontend: they show only what the API
+  answers, and Lantern's autobrr API must not point them at autobrr's releases. Help texts in autobrr's translations
+  that name autobrr stay for now: several mean autobrr itself (its filter format, its hosted lists).
 - 2026-11-05 — FlareSolverr is ported from v3.5.2 (`server/src/solver/`): its checks, waits, "Verify you are human"
   click, Turnstile token, sessions, POST form, error texts and HTTP codes, word for word; Lantern answers as version
   3.5.2. Two things stay Lantern's: one shared Chromium with a browser context per request and per session (instead

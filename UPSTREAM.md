@@ -6,6 +6,12 @@
 it as it is; its own changes are small, come as separate commits on top of each import, and are listed in
 [`ui/prowlarr/LANTERN.md`](ui/prowlarr/LANTERN.md) so a conflict is easy to judge.
 
+`ui/autobrr/` is the same kind of fork of [autobrr](https://github.com/autobrr/autobrr)'s web frontend: the
+contents of its `web/` folder (a whole Vite app with its own `package.json` and pnpm lockfile) plus its `LICENSE`, at
+the commit `[autobrr]` pins, on the branch `upstream/autobrr`; its changes are listed in
+[`ui/autobrr/LANTERN.md`](ui/autobrr/LANTERN.md). Everything below works the same for both; the examples use
+Prowlarr.
+
 ## How it works
 
 `scripts/upstream-merge.sh` keeps a branch **`upstream/prowlarr`** whose commits are *snapshots*: only the
@@ -45,11 +51,13 @@ says. Then:
 git switch -c claude/<thread>-prowlarr-ui-sync origin/main
 scripts/upstream-merge.sh                      # the commit UPSTREAM.lock pins
 scripts/upstream-merge.sh --ref v2.8.0.5800    # or another tag, branch or commit (prints a note)
+scripts/upstream-merge.sh --project autobrr    # autobrr's frontend, at the commit UPSTREAM.lock pins
 git push origin upstream/prowlarr              # keep the snapshot line on the remote, when allowed
 ```
 
-Then build and check the frontend (`cd ui/prowlarr && yarn install --frozen-lockfile && yarn build`), take the
-screenshots in `docs/parity/p-ui/` again and open a pull request.
+Then build and check the frontend (`cd ui/prowlarr && yarn install --frozen-lockfile && yarn build`, or
+`cd ui/autobrr && corepack enable && pnpm install --frozen-lockfile && pnpm run lint && pnpm test && pnpm run build`),
+take the screenshots in `docs/parity/p-ui/` or `docs/parity/a-ui/` again and open a pull request.
 
 | Exit status | Meaning |
 | --- | --- |
@@ -59,7 +67,7 @@ screenshots in `docs/parity/p-ui/` again and open a pull request.
 
 | Option | Effect |
 | --- | --- |
-| `--project NAME` | The `UPSTREAM.lock` section to import (default `prowlarr`; the only one so far). |
+| `--project NAME` | The `UPSTREAM.lock` section to import: `prowlarr` (default) or `autobrr`. |
 | `--ref REF` | Upstream tag, branch or commit (default: the commit `UPSTREAM.lock` pins). |
 | `--repo URL` | Upstream repository (default: the lock's `repo`; `file://` for testing). |
 | `--no-merge` | Only update `upstream/prowlarr`. |
@@ -71,8 +79,12 @@ The first import is Prowlarr v2.7.0.5723, commit `0dc20d8495bad9951c3fafe53f32b6
 merged unmodified (with `--allow-unrelated-histories`, as `ui/prowlarr/` did not exist). Lantern's changes follow
 as separate commits: the Encore look, the branding and links, and the build under `/prowlarr/`.
 
+autobrr's first import is v1.90.0, commit `4c1bf93d3397055de8e78ce136cf1e239e568d92` (2026-11-01), merged the
+same way; its Encore look, branding and serving under `/autobrr/` follow as separate commits.
+
 ## Rules for fork changes
 
 - Keep them small and grouped; prefer adding a file (a Lantern stylesheet, a theme file) to editing upstream's.
-- Mark each edit in upstream's files with a `LANTERN:` comment and list it in `ui/prowlarr/LANTERN.md`.
-- Keep the frontend talking Prowlarr's API: Lantern's `/api/v1` answers it, so the fork needs no API changes.
+- Mark each edit in upstream's files with a `LANTERN:` comment and list it in the fork's `LANTERN.md`.
+- Keep the frontend talking its original's API: Lantern's `/api/v1` answers Prowlarr's and `/autobrr/api` autobrr's,
+  so the forks need no API changes.

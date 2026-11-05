@@ -14,3 +14,7 @@ target/
 # the Prowlarr frontend build (ui/prowlarr)
 /ui/prowlarr/node_modules
 /ui/prowlarr/_output
+# the autobrr frontend build (ui/autobrr; dist/.gitkeep is autobrr's and stays tracked)
+/ui/autobrr/node_modules
+/ui/autobrr/dist/*
+!/ui/autobrr/dist/.gitkeep
