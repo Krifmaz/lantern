@@ -549,9 +549,15 @@ async fn tags_app_profile_and_download_client_are_kept_in_prowlarrs_shape() {
     let e = st.indexers.update(id, &json!({ "downloadClientId": 99 })).unwrap_err();
     assert_eq!((e.status.as_u16(), e.detail.as_str()), (400, "Download Client does not exist"));
     let client = st.hub.add_client(&json!({ "kind": "qbittorrent", "url": "http://qbit.lan:8080" })).unwrap();
-    st.indexers.update(id, &json!({ "tags": "tv", "appProfileId": 3, "downloadClientId": client })).unwrap();
+    // an app profile must exist (`AppProfileExistsValidator`)
+    let e = st.indexers.update(id, &json!({ "appProfileId": 3 })).unwrap_err();
+    assert_eq!((e.status.as_u16(), e.detail.as_str()), (400, "App Profile does not exist"));
+    let (_, profile, _) =
+        call(&app, "POST", "/api/v1/appprofile", Some(json!({ "name": "Interactive", "enableInteractiveSearch": true }))).await;
+    let profile = profile["id"].as_i64().unwrap();
+    st.indexers.update(id, &json!({ "tags": "tv", "appProfileId": profile, "downloadClientId": client })).unwrap();
     let (_, v, _) = call(&app, "GET", &format!("/api/v1/indexer/{id}"), None).await;
-    assert_eq!((v["tags"].clone(), v["appProfileId"].clone(), v["downloadClientId"].clone()), (json!([tv]), json!(3), json!(client)));
+    assert_eq!((v["tags"].clone(), v["appProfileId"].clone(), v["downloadClientId"].clone()), (json!([tv]), json!(profile), json!(client)));
     let e = st.indexers.update(id, &json!({ "appProfileId": 0 })).unwrap_err();
     assert_eq!((e.status.as_u16(), e.detail.as_str()), (400, "'App Profile Id' must be greater than '0'."));
     let e = st.indexers.add(&json!({ "kind": "torznab", "name": "Bad", "base_url": site, "app_profile_id": -1 })).unwrap_err();
