@@ -82,3 +82,10 @@ Non-obvious calls, one line each, newest last.
   switch by address only; `APP_SOLVER_PORT=0` turns it off for anyone who doesn't need it.
 - 2026-11-05 — When a site checks every plain request even with the cookies, a GET is read through the browser
   instead (pages only; files still go through Lantern's own client).
+- 2026-11-05 — The keeper's account numbers (ratio, upload, download, bonus) are typed in or sent through
+  `PUT /api/keeper/{id}/stats`: tracker profile pages differ per site and the Cardigann definitions don't describe them.
+  Sign-ins and activity are automatic for accounts linked to an indexer (its search, test and grab history).
+- 2026-11-05 — ntfy, Discord and email alerts live in Lantern (`keeper/alerts.rs`, email through lettre) because the kit
+  v0.2.1 has no notifier; they are generic and can move to the kit later.
+- 2026-11-05 — Keep-alive signs in every `keeper_keepalive_days` (default 3), or every third of a site's sign-in rule
+  when that is sooner, and at most once per 6 hours per account, so a failing site isn't hammered.

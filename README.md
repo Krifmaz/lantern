@@ -80,6 +80,7 @@ docker run --read-only -p 9696:9696 -p 8191:8191 -v lantern-data:/data lantern
 | `APP_ANNOUNCE_DIR` | the IRC announce definitions (the data folder's `announce/` wins) | `/app/announce` |
 | `APP_ADMIN_USER`, `APP_ADMIN_PASSWORD` | the owner made at the first start | `admin`, a printed password |
 | `APP_VAULT_PASSPHRASE` | locks the account vault with your passphrase instead of `vault.key` in the data folder (set it before the first start; Lantern won't open the vault without it) | not set: `vault.key` |
+| `APP_ALERT_NTFY_URL`, `APP_ALERT_DISCORD_WEBHOOK`, `APP_ALERT_EMAIL_TO`, `APP_SMTP_*` | where the account keeper sends warnings (also under Settings → Accounts → Alerts) | not set |
 | `APP_NAME`, `APP_SESSION_DAYS`, `APP_API_KEY` | settings (settings.toml); set here they are locked in Settings | |
 | `APP_DOWNLOADS_DIR` | the downloads folder; each app gets `<folder>/<category>` in it. Mount it (`-v /data/downloads:/downloads`) at the same place in your download clients and apps, or set each one's own path in Lantern | `/downloads` |
 | `APP_GRAB_ATTEMPTS` | how many times a grab is sent before it fails | `5` |
