@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="1.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:newznab="http://www.newznab.com/DTD/2010/feeds/attributes/">
+  <channel>
+    <atom:link rel="self" type="application/rss+xml" />
+    <title>Prowlarr</title>
+    <item>
+      <title>Test Release</title>
+      <description />
+      <guid>https://prowlarr.com</guid>
+      <prowlarrindexer id="0" type="public" />
+      <pubDate>Wed, 04 Nov 2026 10:30:00 +0000</pubDate>
+      <size />
+      <link>https://prowlarr.com</link>
+      <enclosure url="https://prowlarr.com" type="application/x-nzb" />
+      <newznab:attr name="genre" value="" />
+    </item>
+  </channel>
+</rss>

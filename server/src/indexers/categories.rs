@@ -1,6 +1,9 @@
 //! The standard (Newznab) categories every app searches by, and the site categories mapped onto them.
+//!
+//! Ported from Prowlarr v2.7.0.5723 (src/NzbDrone.Core/Indexers/NewznabStandardCategory.cs), GPL-3.0.
 
-/// The standard categories: (id, name). A site category of its own is shown as 100000 + its number.
+/// The standard categories: (id, name), in Prowlarr's `AllCats` order (so a name lookup finds the same one). A
+/// site category of its own is shown as 100000 + its number.
 pub const STANDARD: &[(u32, &str)] = &[
     (1000, "Console"),
     (1010, "Console/NDS"),
@@ -27,6 +30,7 @@ pub const STANDARD: &[(u32, &str)] = &[
     (2060, "Movies/3D"),
     (2070, "Movies/DVD"),
     (2080, "Movies/WEB-DL"),
+    (2090, "Movies/x265"),
     (3000, "Audio"),
     (3010, "Audio/MP3"),
     (3020, "Audio/Video"),
@@ -52,6 +56,7 @@ pub const STANDARD: &[(u32, &str)] = &[
     (5060, "TV/Sport"),
     (5070, "TV/Anime"),
     (5080, "TV/Documentary"),
+    (5090, "TV/x265"),
     (6000, "XXX"),
     (6010, "XXX/DVD"),
     (6020, "XXX/WMV"),
@@ -73,7 +78,26 @@ pub const STANDARD: &[(u32, &str)] = &[
     (8000, "Other"),
     (8010, "Other/Misc"),
     (8020, "Other/Hashed"),
+    (0, "Other"),
+    (20, "Other/Hashed"),
+    (10, "Other/Misc"),
 ];
+
+/// The parent categories (Prowlarr's `ParentCats`), in its order.
+pub const PARENTS: [u32; 9] = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 0];
+
+/// The standard category called exactly `name` (Prowlarr's `GetCatByName`: the first in [`STANDARD`]).
+pub fn by_name(name: &str) -> Option<(u32, &'static str)> {
+    STANDARD.iter().find(|(_, n)| *n == name).copied()
+}
+
+/// The standard parent category that has `id` as one of its own sub-categories (or is `id`).
+pub fn standard_parent_of(id: u32) -> Option<u32> {
+    if PARENTS.contains(&id) {
+        return Some(id);
+    }
+    STANDARD.iter().any(|(i, _)| *i == id).then(|| id / 1000 * 1000)
+}
 
 /// The id of a standard category name (`Movies/HD` → 2040), ignoring case; a few spellings definitions use
 /// are taken too.

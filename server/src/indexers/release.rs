@@ -97,8 +97,20 @@ pub struct Query {
     pub author: String,
     /// Book or movie title.
     pub title: String,
+    /// Publisher (book searches).
+    pub publisher: String,
+    /// TVRage id (TV searches).
+    pub rid: String,
     /// Year.
     pub year: String,
+    /// Only releases at least this many days old (0: any).
+    pub min_age: i64,
+    /// Only releases at most this many days old (0: any).
+    pub max_age: i64,
+    /// Only releases of at least this many bytes (0: any).
+    pub min_size: i64,
+    /// Only releases of at most this many bytes (0: any).
+    pub max_size: i64,
     /// The most results to send back (0: the default).
     pub limit: usize,
     /// How many results to skip.
@@ -223,6 +235,36 @@ pub struct Release {
     pub indexer_id: i64,
     /// That indexer's name.
     pub indexer: String,
+    /// That indexer's priority (lower wins when two indexers find the same release).
+    pub indexer_priority: i64,
+    /// That indexer's privacy: `private`, `public` or `semi-private`.
+    pub indexer_privacy: String,
+    /// The release's flags (`freeleech`, `halfleech`, `neutralleech`, `doubleupload`, `scene`, `internal` …).
+    pub flags: Vec<String>,
+    /// Whether the site marks it as a scene release.
+    pub scene: Option<bool>,
+    /// Peers (seeders and leechers) as the site gives them, when it gives them apart from those.
+    pub peers: Option<i64>,
+    /// TVRage id.
+    pub rage: Option<i64>,
+    /// Trakt id.
+    pub trakt: Option<i64>,
+    /// Audio languages.
+    pub languages: Vec<String>,
+    /// Subtitle languages.
+    pub subs: Vec<String>,
+    /// Book author.
+    pub author: String,
+    /// Book title.
+    pub book_title: String,
+    /// Music artist.
+    pub artist: String,
+    /// Music album.
+    pub album: String,
+    /// Music label.
+    pub label: String,
+    /// Music track.
+    pub track: String,
 }
 
 impl Release {
