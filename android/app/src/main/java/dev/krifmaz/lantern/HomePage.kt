@@ -142,6 +142,10 @@ fun HomePage(app: App, base: String, bugs: BugReportsHost, open: (Page) -> Unit,
                 EntryRow("Vault", "Your tracker and Usenet logins, saved encrypted") { open(Page.Vault(me?.owner)) }
             }
 
+            SectionHead("Downloads")
+            EntryRow("Downloads", "What Lantern downloads for your apps, as it happens") { open(Page.Downloads(me?.admin)) }
+            EntryRow("Apps", "The apps that use Lantern, their folders and downloads") { open(Page.Apps(me?.admin)) }
+
             SectionHead("Settings")
             EntryRow("What's new", "Every release's notes") { open(Page.Changelog) }
             if (me?.admin != false) {

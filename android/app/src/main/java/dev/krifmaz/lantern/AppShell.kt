@@ -30,6 +30,12 @@ sealed interface Page {
     /** One search through every indexer. */
     data object Search : Page
 
+    /** What Lantern downloads for the apps ([appId]'s only, when given); [admin] may retry and remove. */
+    data class Downloads(val admin: Boolean?, val appId: Long? = null, val appName: String? = null) : Page
+
+    /** The apps connected to Lantern; [admin] is passed on to their downloads. */
+    data class Apps(val admin: Boolean?) : Page
+
     /** The accounts in the vault; the [owner] may see their secrets (null: not known yet). */
     data class Vault(val owner: Boolean?) : Page
 
@@ -81,6 +87,10 @@ fun AppShell(app: App) {
         Page.Search -> SearchPage(app, onBack = back)
 
         is Page.Vault -> VaultPage(app, page.owner, onBack = back)
+
+        is Page.Downloads -> DownloadsPage(app, page.admin, page.appId, page.appName, onBack = back)
+
+        is Page.Apps -> AppsPage(app, onOpen = { id, name -> open(Page.Downloads(page.admin, id, name)) }, onBack = back)
 
         Page.Changelog ->
             Column(Modifier.fillMaxSize()) {
