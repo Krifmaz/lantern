@@ -1329,85 +1329,85 @@ cross-seed has no web UI in v6; its daemon, API and CLI are ported. Its settings
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `GET /` (version and user agent) | F | partial | | fresh version |
-| `GET /health` | F | partial | | fresh version |
-| `POST /v1` `request.get` | F | partial | | fresh version |
-| `POST /v1` `request.post` | F | partial | | fresh version |
-| `POST /v1` `sessions.create` | F | todo | |  |
-| `POST /v1` `sessions.list` | F | todo | |  |
-| `POST /v1` `sessions.destroy` | F | todo | |  |
+| `GET /` (version and user agent) | F | done | server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_answers_that_need_no_page | ported (`api.rs`) |
+| `GET /health` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
+| `POST /v1` `request.get` | F | done | server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_challenges | ported (`_evil_logic` in `mod.rs`) |
+| `POST /v1` `request.post` | F | done | server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_challenges, server/src/solver/mod.rs::the_flaresolverr_post_form_is_built_like_post_request | ported (`_post_request`) |
+| `POST /v1` `sessions.create` | F | done | server/tests/solver.rs::tests_py_sessions | ported (a browser context per session) |
+| `POST /v1` `sessions.list` | F | done | server/tests/solver.rs::tests_py_sessions, server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
+| `POST /v1` `sessions.destroy` | F | done | server/tests/solver.rs::tests_py_sessions, server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
 
 ### Request fields
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `cmd` | F | todo | |  |
-| `url` | F | todo | |  |
-| `session` | F | todo | |  |
-| `session_ttl_minutes` | F | todo | |  |
-| `maxTimeout` | F | todo | |  |
-| `cookies` | F | todo | |  |
-| `proxy (url, username, password)` | F | todo | |  |
-| `headers` | F | todo | |  |
-| `userAgent` | F | todo | |  |
-| `postData` | F | todo | |  |
-| `returnOnlyCookies` | F | todo | |  |
-| `returnScreenshot` | F | todo | |  |
-| `returnRawHtml` | F | todo | |  |
-| `download` | F | todo | |  |
-| `waitInSeconds` | F | todo | |  |
-| `disableMedia` | F | todo | |  |
-| `tabs_till_verify` | F | todo | |  |
+| `cmd` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
+| `url` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page, server/tests/solver.rs::tests_py_requests | ported |
+| `session` | F | done | server/tests/solver.rs::tests_py_sessions | ported |
+| `session_ttl_minutes` | F | done | server/tests/solver.rs::tests_py_sessions, server/src/solver/api.rs::a_request_becomes_a_job | ported |
+| `maxTimeout` | F | done | server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_answers_that_need_no_page, server/src/solver/api.rs::python_reading_of_values | ported |
+| `cookies` | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/api.rs::a_request_becomes_a_job | ported |
+| `proxy (url, username, password)` | F | done | server/tests/solver.rs::tests_py_proxies, server/src/solver/api.rs::the_environment_proxy_fills_in | ported |
+| `headers` | F | done | server/tests/solver.rs::tests_py_requests | ported (ignored with a warning, as upstream) |
+| `userAgent` | F | done | server/tests/solver.rs::tests_py_requests | ported (ignored with a warning, as upstream) |
+| `postData` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page, server/tests/solver.rs::tests_py_requests | ported |
+| `returnOnlyCookies` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `returnScreenshot` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `returnRawHtml` | F | done | server/tests/solver.rs::tests_py_requests | ported (ignored with a warning, as upstream) |
+| `download` | F | done | server/tests/solver.rs::tests_py_requests | ported (ignored with a warning, as upstream) |
+| `waitInSeconds` | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/api.rs::a_request_becomes_a_job | ported |
+| `disableMedia` | F | done | server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_proxies | ported |
+| `tabs_till_verify` | F | done | server/tests/solver.rs::tests_py_challenges | ported |
 
 ### Answer fields
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `status` | F | todo | |  |
-| `message` | F | todo | |  |
-| `startTimestamp` | F | todo | |  |
-| `endTimestamp` | F | todo | |  |
-| `version` | F | todo | |  |
-| `solution.url` | F | todo | |  |
-| `solution.status` | F | todo | |  |
-| `solution.headers` | F | todo | |  |
-| `solution.response` | F | todo | |  |
-| `solution.cookies` | F | todo | |  |
-| `solution.userAgent` | F | todo | |  |
-| `solution.screenshot` | F | todo | |  |
-| `solution.turnstile_token` | F | todo | |  |
-| `session` | F | todo | |  |
-| `sessions` | F | todo | |  |
+| `status` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page, server/tests/solver.rs::tests_py_requests | ported |
+| `message` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page, server/tests/solver.rs::tests_py_requests, server/tests/solver.rs::tests_py_challenges | ported, word for word |
+| `startTimestamp` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
+| `endTimestamp` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
+| `version` | F | done | server/tests/solver.rs::tests_py_answers_that_need_no_page | ported (3.5.2) |
+| `solution.url` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `solution.status` | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/api.rs::the_solution_has_flaresolverrs_fields | ported (always 200, as upstream) |
+| `solution.headers` | F | done | server/tests/solver.rs::tests_py_requests | ported (`{}`, left out with returnOnlyCookies) |
+| `solution.response` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `solution.cookies` | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/api.rs::the_solution_has_flaresolverrs_fields | ported (chromedriver's cookie shape) |
+| `solution.userAgent` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `solution.screenshot` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `solution.turnstile_token` | F | done | server/tests/solver.rs::tests_py_challenges | ported |
+| `session` | F | done | server/tests/solver.rs::tests_py_sessions | ported |
+| `sessions` | F | done | server/tests/solver.rs::tests_py_sessions, server/tests/solver.rs::tests_py_answers_that_need_no_page | ported |
 
 ### Settings (environment)
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `HOST` | F | todo | |  |
-| `PORT` | F | todo | |  |
-| `LOG_LEVEL` | F | todo | |  |
-| `LOG_FILE` | F | todo | |  |
-| `LOG_HTML` | F | todo | |  |
-| `HEADLESS` | F | todo | |  |
-| `BROWSER_WAIT_TIMEOUT` | F | todo | |  |
-| `DISABLE_MEDIA` | F | todo | |  |
-| `LANG` | F | todo | |  |
-| `TZ` | F | todo | |  |
-| `PROXY_URL` | F | todo | |  |
-| `PROXY_USERNAME` | F | todo | |  |
-| `PROXY_PASSWORD` | F | todo | |  |
-| `PROMETHEUS_ENABLED` | F | todo | |  |
-| `PROMETHEUS_PORT` | F | todo | |  |
+| `HOST` | F | n/a |  | mapped: Lantern listens on all addresses (HOST's default 0.0.0.0); see DECISIONS.md |
+| `PORT` | F | n/a |  | mapped to `APP_SOLVER_PORT` (default 8191); see DECISIONS.md |
+| `LOG_LEVEL` | F | n/a |  | mapped to Lantern's log (`RUST_LOG`); see DECISIONS.md |
+| `LOG_FILE` | F | n/a |  | logs go to stdout and the kit's log (read-only root); see DECISIONS.md |
+| `LOG_HTML` | F | partial | server/src/solver/config.rs::only_true_turns_a_switch_on | read; the debug log line isn't asserted |
+| `HEADLESS` | F | partial | server/src/solver/config.rs::only_true_turns_a_switch_on | read; `false` shows a window, not tested (no screen in CI) |
+| `BROWSER_WAIT_TIMEOUT` | F | done | server/tests/solver.rs::tests_py_challenges, server/src/solver/config.rs::numbers_and_texts | ported |
+| `DISABLE_MEDIA` | F | done | server/tests/solver.rs::tests_py_proxies | ported |
+| `LANG` | F | done | server/tests/solver.rs::tests_py_requests | ported (`--accept-lang`) |
+| `TZ` | F | done | server/tests/solver.rs::tests_py_requests | ported |
+| `PROXY_URL` | F | done | server/tests/solver.rs::tests_py_proxies, server/src/solver/api.rs::the_environment_proxy_fills_in | ported |
+| `PROXY_USERNAME` | F | done | server/tests/solver.rs::tests_py_proxies, server/src/solver/api.rs::the_environment_proxy_fills_in | ported |
+| `PROXY_PASSWORD` | F | done | server/tests/solver.rs::tests_py_proxies, server/src/solver/api.rs::the_environment_proxy_fills_in | ported |
+| `PROMETHEUS_ENABLED` | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/metrics.rs::answers_are_counted_by_site_and_result | ported |
+| `PROMETHEUS_PORT` | F | done | server/tests/solver.rs::tests_py_requests | ported (8192) |
 
 ### Challenges
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Cloudflare JS challenge | F | partial | | fresh version |
-| DDoS-Guard | F | partial | | fresh version |
-| Cloudflare Turnstile (click and token) | F | todo | |  |
-| Access denied / banned detection and messages | F | todo | |  |
-| Prometheus metrics | F | todo | |  |
+| Cloudflare JS challenge | F | done | server/tests/solver.rs::tests_py_challenges, server/tests/solver.rs::indexers_get_past_a_check_and_keep_the_cookies | ported |
+| DDoS-Guard | F | done | server/tests/solver.rs::tests_py_challenges | ported |
+| Cloudflare Turnstile (click and token) | F | done | server/tests/solver.rs::tests_py_challenges | ported (`click_verify`, `tabs_till_verify`) |
+| Access denied / banned detection and messages | F | done | server/tests/solver.rs::tests_py_challenges | ported |
+| Prometheus metrics | F | done | server/tests/solver.rs::tests_py_requests, server/src/solver/metrics.rs::answers_are_counted_by_site_and_result | ported |
 
 ## Lantern's own pages
 
