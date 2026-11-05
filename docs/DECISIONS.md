@@ -95,3 +95,9 @@ Non-obvious calls, one line each, newest last.
   v0.2.1 has no notifier; they are generic and can move to the kit later.
 - 2026-11-05 — Keep-alive signs in every `keeper_keepalive_days` (default 3), or every third of a site's sign-in rule
   when that is sooner, and at most once per 6 hours per account, so a failing site isn't hammered.
+- 2026-11-05 — The emulated qBittorrent identifies each app by the user name it signs in with (its password is
+  Lantern's API key), and registers it on first sign-in. Sessions live in memory: after a restart the app signs in
+  again on its own, as it does with a real qBittorrent. Calls that only tune the client (tags, priorities, share
+  limits, pause/resume) are accepted and ignored, since Lantern's own rules decide.
+- 2026-11-05 — Torrents an app uploads are kept in `<data>/grabs/` until the grab is removed, so a failed send can
+  be retried; their info hash is worked out from the file (SHA-1 of the `info` dictionary), as apps expect.

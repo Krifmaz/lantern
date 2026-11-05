@@ -165,7 +165,7 @@ impl AppState {
             .map_err(|e| anyhow::anyhow!("The settings can't be read: {}", e.detail))?;
         let changelog = Arc::new(Changelog::new(&settings.str("app_name"), VERSION, changelog_gen::NOTES));
         let indexers = indexers::Indexers::new(db.clone(), library).with_settings(settings.clone()).with_solver(solver.clone());
-        let hub = hub::Hub::new(db.clone(), indexers.clone(), signer.clone(), settings.clone());
+        let hub = hub::Hub::new(db.clone(), indexers.clone(), signer.clone(), settings.clone(), data);
         let announce_dir = PathBuf::from(env("APP_ANNOUNCE_DIR").unwrap_or_else(|| "/app/announce".into()));
         let announce = releases::announce::Library::new(vec![announce_dir, data.join("announce")]);
         let releases = releases::Releases::new(db.clone(), announce, indexers.clone(), signer.clone(), settings.clone());

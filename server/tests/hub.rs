@@ -520,6 +520,124 @@ async fn nothing_is_cleaned_up_while_cleanup_is_off() {
     assert!(fake.lock().unwrap().qbit_deleted.is_empty());
 }
 
+/// A request to the emulated qBittorrent with session cookie `sid` (empty: none) and a form or multipart `body`.
+fn qbit(method: &str, path: &str, sid: &str, content_type: &str, body: Vec<u8>) -> Request<Body> {
+    let mut b = Request::builder().method(method).uri(path);
+    if !sid.is_empty() {
+        b = b.header(header::COOKIE, format!("SID={sid}"));
+    }
+    if !content_type.is_empty() {
+        b = b.header(header::CONTENT_TYPE, content_type);
+    }
+    b.body(Body::from(body)).unwrap()
+}
+
+/// The status, the text and the headers of a request.
+async fn send(app: &Router, req: Request<Body>) -> (StatusCode, String, HeaderMap) {
+    let r = app.clone().oneshot(req).await.unwrap();
+    let (s, h) = (r.status(), r.headers().clone());
+    let b = axum::body::to_bytes(r.into_body(), 1 << 22).await.unwrap();
+    (s, String::from_utf8_lossy(&b).to_string(), h)
+}
+
+#[tokio::test]
+async fn an_app_adds_lantern_as_its_qbittorrent() {
+    let (base, fake) = fakes().await;
+    let (app, st, dir) = server("emulated-qbit", &[]).await;
+    let root = dir.join("downloads").to_string_lossy().to_string();
+    call(&app, "POST", "/api/hub/clients", Some(json!({ "kind": "qbittorrent", "url": base, "username": "admin", "password": "adminpw" })))
+        .await;
+    let form = "application/x-www-form-urlencoded";
+
+    let (_, text, _) = send(&app, qbit("POST", "/api/v2/auth/login", "", form, b"username=Sonarr&password=wrong".to_vec())).await;
+    assert_eq!(text, "Fails.");
+    let (s, _, _) = send(&app, qbit("GET", "/api/v2/app/version", "", "", vec![])).await;
+    assert_eq!(s, StatusCode::FORBIDDEN);
+    let (_, text, h) = send(&app, qbit("POST", "/api/v2/auth/login", "", form, b"username=Sonarr&password=test-key".to_vec())).await;
+    assert_eq!(text, "Ok.");
+    let sid = h.get(header::SET_COOKIE).unwrap().to_str().unwrap().split(';').next().unwrap().trim_start_matches("SID=").to_string();
+    let (_, text, _) = send(&app, qbit("GET", "/api/v2/app/webapiVersion", &sid, "", vec![])).await;
+    assert_eq!(text, "2.9.3");
+
+    // the app was registered on sight; its own view of its folder is set on the Apps page
+    let (_, apps) = call(&app, "GET", "/api/hub/apps", None).await;
+    assert_eq!((apps["apps"][0]["name"].as_str(), apps["apps"][0]["source"].as_str()), (Some("Sonarr"), Some("qbittorrent")));
+    let app_id = apps["apps"][0]["id"].as_i64().unwrap();
+    call(&app, "PUT", &format!("/api/hub/apps/{app_id}"), Some(json!({ "import_path": "/data/sonarr" }))).await;
+
+    send(&app, qbit("POST", "/api/v2/torrents/createCategory", &sid, form, b"category=tv-sonarr&savePath=".to_vec())).await;
+    let (_, text, _) = send(&app, qbit("GET", "/api/v2/torrents/categories", &sid, "", vec![])).await;
+    assert_eq!(serde_json::from_str::<Value>(&text).unwrap(), json!({ "tv-sonarr": { "name": "tv-sonarr", "savePath": "/data/sonarr" } }));
+
+    // a .torrent upload and a magnet, the way Sonarr sends them
+    let torrent =
+        b"d8:announce14:http://t.test/4:infod6:lengthi5e4:name5:a.mkv12:piece lengthi16384e6:pieces20:aaaaaaaaaaaaaaaaaaaaee".to_vec();
+    let hash = server::hub::torrent::info_hash(&torrent).unwrap();
+    let boundary = "qbitboundary";
+    let mut body = Vec::new();
+    for (k, v) in [("category", "tv-sonarr"), ("paused", "false")] {
+        body.extend(format!("--{boundary}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n").as_bytes());
+    }
+    body.extend(format!("--{boundary}\r\nContent-Disposition: form-data; name=\"torrents\"; filename=\"Show.S01E01.torrent\"\r\nContent-Type: application/x-bittorrent\r\n\r\n").as_bytes());
+    body.extend(&torrent);
+    body.extend(format!("\r\n--{boundary}--\r\n").as_bytes());
+    let (_, text, _) =
+        send(&app, qbit("POST", "/api/v2/torrents/add", &sid, &format!("multipart/form-data; boundary={boundary}"), body)).await;
+    assert_eq!(text, "Ok.");
+    let magnet = "magnet:?xt=urn:btih:ABCDEF0123456789ABCDEF0123456789ABCDEF01&dn=Show.S01E02";
+    let mut body = Vec::new();
+    for (k, v) in [("category", "tv-sonarr"), ("urls", magnet)] {
+        body.extend(format!("--{boundary}\r\nContent-Disposition: form-data; name=\"{k}\"\r\n\r\n{v}\r\n").as_bytes());
+    }
+    body.extend(format!("--{boundary}--\r\n").as_bytes());
+    let (_, text, _) =
+        send(&app, qbit("POST", "/api/v2/torrents/add", &sid, &format!("multipart/form-data; boundary={boundary}"), body)).await;
+    assert_eq!(text, "Ok.");
+
+    st.hub.tick().await;
+    {
+        let f = fake.lock().unwrap();
+        assert_eq!(f.torrents.len(), 2);
+        // the real client gets Lantern's category and folder, not the app's
+        assert!(f.torrents.iter().all(|t| t["category"] == "sonarr" && t["save_path"] == format!("{root}/sonarr")));
+    }
+    let (_, text, _) = send(&app, qbit("GET", "/api/v2/torrents/info?category=tv-sonarr", &sid, "", vec![])).await;
+    let list: Value = serde_json::from_str(&text).unwrap();
+    let hashes: Vec<&str> = list.as_array().unwrap().iter().map(|t| t["hash"].as_str().unwrap()).collect();
+    assert_eq!(hashes.len(), 2, "{list}");
+    assert!(hashes.contains(&hash.as_str()) && hashes.contains(&"abcdef0123456789abcdef0123456789abcdef01"));
+    let t = list.as_array().unwrap().iter().find(|t| t["hash"] == hash).unwrap();
+    assert_eq!(
+        (t["state"].as_str(), t["category"].as_str(), t["save_path"].as_str()),
+        (Some("downloading"), Some("tv-sonarr"), Some("/data/sonarr"))
+    );
+
+    {
+        let mut f = fake.lock().unwrap();
+        for t in f.torrents.iter_mut() {
+            t["state"] = json!("uploading");
+            t["progress"] = json!(1.0);
+        }
+    }
+    st.hub.tick().await;
+    let (_, text, _) = send(&app, qbit("GET", &format!("/api/v2/torrents/info?hashes={hash}"), &sid, "", vec![])).await;
+    let t = &serde_json::from_str::<Value>(&text).unwrap()[0];
+    assert_eq!((t["state"].as_str(), t["progress"].as_f64()), (Some("uploading"), Some(1.0)));
+    assert_eq!(t["content_path"], "/data/sonarr/Show.S01E01");
+    let (_, text, _) = send(&app, qbit("GET", &format!("/api/v2/torrents/files?hash={hash}"), &sid, "", vec![])).await;
+    let files: Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(files[0]["name"], "Show.S01E01/Show.S01E01.mkv");
+    let (s, _, _) = send(&app, qbit("GET", "/api/v2/torrents/files?hash=0000", &sid, "", vec![])).await;
+    assert_eq!(s, StatusCode::NOT_FOUND);
+
+    // the app removes it with its files: Lantern removes it from the real client
+    let real = st.hub.grabs(Some(app_id), None, 10).unwrap().into_iter().find(|g| g.infohash == hash).unwrap().client_ref;
+    send(&app, qbit("POST", "/api/v2/torrents/delete", &sid, form, format!("hashes={hash}&deleteFiles=true").into_bytes())).await;
+    assert_eq!(fake.lock().unwrap().qbit_deleted, [(real, "true".to_string())]);
+    let (_, text, _) = send(&app, qbit("GET", "/api/v2/torrents/info", &sid, "", vec![])).await;
+    assert_eq!(serde_json::from_str::<Value>(&text).unwrap().as_array().unwrap().len(), 1);
+}
+
 /// Test helpers on the state.
 trait Due {
     /// Makes grab `id`'s next try due now.
