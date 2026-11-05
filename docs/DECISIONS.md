@@ -38,3 +38,7 @@ Non-obvious calls, one line each, newest last.
   app's folder. rTorrent's XML-RPC can't delete files, so removing a grab there leaves its files on disk.
 - 2026-11-05 — rTorrent is reached over its XML-RPC address (ruTorrent's `/RPC2` or an SCGI bridge), with a small
   XML-RPC reader of Lantern's own instead of another dependency.
+- 2026-11-05 — Cleanup is off by default and only ever touches grabs an app has marked imported and that have
+  seeded enough, since it can delete downloaded files. Lantern checks the seeding goals itself instead of setting
+  share limits in each client, so the rules work the same for every client. Per-tracker minimums (hit-and-run
+  rules) come from the account keeper when it lands.

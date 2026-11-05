@@ -21,6 +21,8 @@
   files' exact paths in their own view.
 - Download hub: Transmission, Deluge, rTorrent and NZBGet join qBittorrent and SABnzbd behind the same client
   layer (qBittorrent and SABnzbd stay the defaults).
+- Download hub: seeding rules (seed to a ratio or for some hours) and cleanup once an app says it imported a
+  download: keep it, remove it from the client, or remove it with its files (off by default).
 
 ## 0.0.1
 
