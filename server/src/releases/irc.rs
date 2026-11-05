@@ -1190,6 +1190,13 @@ impl Handler {
                 }
                 _ = tick.tick() => {
                     if !self.current(g) {
+                        // a stop queues its QUIT just after it makes this connection old: send it before ending
+                        while let Ok(Some(out)) = tokio::time::timeout(Duration::from_millis(150), rx.recv()).await {
+                            let quit = out.starts_with("QUIT ");
+                            if w.write_all(out.as_bytes()).await.is_err() || w.flush().await.is_err() || quit {
+                                break;
+                            }
+                        }
                         return (self.lock().session.registered, None);
                     }
                     let registered = self.lock().session.registered;
