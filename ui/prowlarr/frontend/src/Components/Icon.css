@@ -1,0 +1,27 @@
+.danger {
+  color: var(--dangerColor);
+}
+
+.default {
+  color: inherit;
+}
+
+.disabled {
+  color: var(--disabledColor);
+}
+
+.info {
+  color: var(--infoColor);
+}
+
+.success {
+  color: var(--successColor);
+}
+
+.warning {
+  color: var(--warningColor);
+}
+
+.purple {
+  color: var(--purple);
+}

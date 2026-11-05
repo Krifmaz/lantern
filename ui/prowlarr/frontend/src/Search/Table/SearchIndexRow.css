@@ -1,0 +1,99 @@
+.cell {
+  composes: cell from '~Components/Table/Cells/VirtualTableRowCell.css';
+
+  display: flex;
+  align-items: center;
+}
+
+.protocol {
+  composes: cell;
+
+  flex: 0 0 90px;
+}
+
+.sortTitle {
+  composes: cell;
+
+  flex: 4 0 110px;
+}
+
+.indexer,
+.category {
+  composes: cell;
+
+  flex: 0 0 130px;
+}
+
+.age,
+.size,
+.files,
+.grabs,
+.peers {
+  composes: cell;
+
+  flex: 0 0 75px;
+}
+
+.indexerFlags {
+  composes: cell;
+
+  flex: 0 0 50px;
+}
+
+.actions {
+  composes: cell;
+
+  flex: 0 1 90px;
+  min-width: 90px;
+}
+
+.checkInput {
+  composes: input from '~Components/Form/CheckInput.css';
+
+  margin-top: 0;
+}
+
+.downloadLink {
+  composes: link from '~Components/Link/Link.css';
+
+  margin: 0 2px;
+  width: 22px;
+  color: var(--textColor);
+  text-align: center;
+}
+
+.externalLinks {
+  composes: button from '~Components/Link/IconButton.css';
+
+  color: var(--textColor);
+}
+
+.manualDownloadContent {
+  position: relative;
+  display: inline-block;
+  margin: 0 2px;
+  width: 22px;
+  height: 20.39px;
+  vertical-align: middle;
+  line-height: 20.39px;
+
+  &:hover {
+    color: var(--iconButtonHoverColor);
+  }
+}
+
+.interactiveIcon {
+  position: absolute;
+  top: 4px;
+  left: 0;
+  /* width: 100%; */
+  text-align: center;
+}
+
+.downloadIcon {
+  position: absolute;
+  top: 7px;
+  left: 8px;
+  /* width: 100%; */
+  text-align: center;
+}
