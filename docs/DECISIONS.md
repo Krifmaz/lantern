@@ -20,6 +20,8 @@ Non-obvious calls, one line each, newest last.
   networks); Readarr is pinned to `0.4.18-develop`, the last amd64 build after Readarr was retired.
 - 2026-11-05 — A site whose login needs a captcha asks for a browser cookie instead; Cloudflare challenges say so in
   words until the Cloudflare solving stage lands.
+- 2026-11-05 — The Android app is generated from the kit v0.2.1 template (the tag the rest of Lantern pins; kit v0.3.0
+  changed nothing under android/), with Lantern's port 9696 as the address the emulator suggests.
 - 2026-11-05 — The vault's data key is sealed with a key argon2id makes from `APP_VAULT_PASSPHRASE`, else from a random
   `<data>/vault.key` (0600). The key file is the default so Lantern can sign in to sites unattended after a restart;
   the passphrase is for people who don't want a copy of the data folder alone to open anything. A vault whose key is

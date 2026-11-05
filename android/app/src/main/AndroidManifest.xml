@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- offline mode: whether the phone has a network at all (the reason shown when the server can't be reached) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Updates (kit-compose update/): install a newer, verified APK of this app through a PackageInstaller session.
+         The second one lets Android 12+ skip the confirm screen for an update to this same app (Android may still ask). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+
+    <!-- usesCleartextTraffic: self-hosted servers are often plain http on the LAN (and the emulator's 10.0.2.2) -->
+    <application
+        android:name=".App"
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.App"
+        android:usesCleartextTraffic="true">
+        <!-- the benchmarks and the profile generator start and measure the app in release builds -->
+        <profileable
+            android:shell="true"
+            tools:targetApi="29" />
+
+        <!-- configChanges: turning, folding or resizing the phone and dark mode keep the open page (Compose lays it
+             out again) -->
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|keyboard|keyboardHidden|navigation|uiMode"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Updates: the install session's outcome (only the session's own PendingIntent reaches it) -->
+        <receiver
+            android:name="dev.krifmaz.kit.compose.update.UpdateInstallReceiver"
+            android:exported="false" />
+
+        <!-- Bug reports and the crash log: an export (cacheDir/shared/) handed to the share sheet (res/xml/file_paths.xml) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+</manifest>
