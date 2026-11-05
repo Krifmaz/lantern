@@ -206,3 +206,19 @@ Non-obvious calls, one line each, newest last.
   asks for one, because Lantern can't ask those sites' APIs yet (autobrr does; it comes with the indexer API slice).
 - 2026-11-05 — Track A-api builds in its own Cargo target folder, without incremental files: builds of the same crate
   from several worktrees in one shared target folder overwrote each other's files, and the disk is shared.
+- 2026-11-05 — FlareSolverr is ported from v3.5.2 (`server/src/solver/`): its checks, waits, "Verify you are human"
+  click, Turnstile token, sessions, POST form, error texts and HTTP codes, word for word; Lantern answers as version
+  3.5.2. Two things stay Lantern's: one shared Chromium with a browser context per request and per session (instead
+  of one Chrome per request), and Lantern's own indexers keep their plain-word errors, their own POST form (which
+  keeps the indexer's encoding) and the page's real status (the API always says 200, as FlareSolverr does).
+- 2026-11-05 — FlareSolverr's settings are read under its own names (`LOG_HTML`, `HEADLESS`, `BROWSER_WAIT_TIMEOUT`,
+  `DISABLE_MEDIA`, `LANG`, `TZ`, `PROXY_URL`, `PROXY_USERNAME`, `PROXY_PASSWORD`, `PROMETHEUS_ENABLED`,
+  `PROMETHEUS_PORT`) so a FlareSolverr compose file moves over as it is. `HOST` and `PORT` would clash with the main
+  web server, so the API stays on `APP_SOLVER_PORT` (8191, all addresses, as FlareSolverr's defaults); `LOG_LEVEL`
+  and `LOG_FILE` are Lantern's own log (`RUST_LOG`, stdout; the root is read-only). `HEADLESS=true` (the default)
+  runs Chromium headless rather than in a hidden Xvfb window. The request log hides a proxy password, which
+  FlareSolverr prints. Only `flaresolverr_request` and `flaresolverr_request_duration` are served as metrics
+  (no Python process metrics).
+- 2026-11-05 — A session the request makes by itself (`request.*` with an unknown `session`, or one past its
+  `session_ttl_minutes`) has no proxy, as in FlareSolverr; a proxy with `username` and `password` signs in through the
+  browser's auth handling (FlareSolverr loads an extension for it).
