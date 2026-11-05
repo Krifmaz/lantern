@@ -12,6 +12,7 @@
 //! | `/api/indexers/*`, `/api/search`, `/{id}/api` (Torznab/Newznab), `/{id}/download`, `/api/v1/*` (Prowlarr API) | [`indexers`] |
 //! | `/api/hub/*` (download clients, apps, search and grab, live events) | [`hub`] |
 //! | `/api/vault`, `/api/vault/*` (the account vault) | [`vault`] |
+//! | `/api/import/*` (Prowlarr and FlareSolverr, dry run first) | [`migrate`] |
 //!
 //! Everything the app adds of its own goes into [`app`] next to them.
 
@@ -20,6 +21,7 @@ pub mod checks;
 pub mod hub;
 pub mod indexers;
 pub mod vault;
+pub mod migrate;
 
 use axum::http::{header, HeaderValue};
 use axum::Router;
@@ -123,6 +125,7 @@ impl AppState {
         auth::migrate(&db)?;
         indexers::migrate(&db)?;
         hub::migrate(&db)?;
+        migrate::migrate(&db)?;
         let bundled = PathBuf::from(env("APP_DEFINITIONS_DIR").unwrap_or_else(|| "/app/definitions".into()));
         let library = indexers::library::Library::new(Some(bundled), data);
         let signer = indexers::LinkSigner::open(data)?;
@@ -271,6 +274,7 @@ pub fn app(st: AppState) -> Router {
         .merge(indexers::api::router())
         .merge(hub::api::router())
         .merge(vault::api::router())
+        .merge(migrate::api::router())
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))

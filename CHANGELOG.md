@@ -24,6 +24,10 @@
   files' exact paths in their own view.
 - Download hub: Transmission, Deluge, rTorrent and NZBGet join qBittorrent and SABnzbd behind the same client
   layer (qBittorrent and SABnzbd stay the defaults).
+- Import from Prowlarr (a backup, its database or its API) and FlareSolverr (its settings pasted in), on a new
+  Import page: a dry run first that says line by line what would be added, skipped or left to you, then Import.
+  Indexers keep their logins and Prowlarr's numbers, Lantern can take Prowlarr's API key and proxy, and the apps
+  Prowlarr synced to are kept for app sync.
 
 ## 0.0.1
 

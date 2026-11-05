@@ -48,3 +48,13 @@ Non-obvious calls, one line each, newest last.
   unless it changed here after the backup.
 - 2026-11-05 — Indexer logins stay in the indexer's own settings for now; moving them into the vault (sealed with the
   same key) is its own PR after Cloudflare solving merges, since that track edits the indexer code.
+- 2026-11-05 — Imported indexers keep Prowlarr's number (`/{id}/api`) when it is free in Lantern, and Lantern takes
+  Prowlarr's API key unless told not to, so apps moving with Prowlarr's address keep working unchanged.
+- 2026-11-05 — The import never changes or removes what Lantern already has (a match by definition and name, or by
+  address, is left as it is); only an empty proxy for sites and the API key are set.
+- 2026-11-05 — Prowlarr's tagged indexer proxies are not imported: Lantern has one proxy for every site, and making a
+  per-tag proxy global would change sites Prowlarr never sent through it. Prowlarr's own proxy is imported.
+- 2026-11-05 — Imported secrets go through `migrate::Secrets`; until the account vault is wired in, `InPlace` keeps
+  them where indexers keep them today. Imported apps wait in `imported_apps` for app sync (Lantern pushing indexers to apps).
+- 2026-11-05 — FlareSolverr has no settings file, so its import reads pasted compose/.env/docker run text and only
+  gives steps; nothing is saved, since Lantern solves by itself.
