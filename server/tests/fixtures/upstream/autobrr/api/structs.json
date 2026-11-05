@@ -399,6 +399,103 @@
     "help",
     "regex"
    ]
+  },
+  "Feed": {
+   "always": [
+    "id",
+    "name",
+    "indexer",
+    "type",
+    "enabled",
+    "url",
+    "interval",
+    "timeout",
+    "max_age",
+    "categories",
+    "capabilities",
+    "api_key",
+    "cookie",
+    "user_agent",
+    "tls_skip_verify",
+    "settings",
+    "created_at",
+    "updated_at",
+    "last_run",
+    "last_run_data",
+    "next_run"
+   ],
+   "omitempty": [
+    "indexer_id"
+   ]
+  },
+  "FeedSettingsJSON": {
+   "always": [
+    "download_type",
+    "cache_ttl_days",
+    "max_pages",
+    "process_order"
+   ],
+   "omitempty": []
+  },
+  "FeedCapabilities": {
+   "always": [
+    "server",
+    "limits",
+    "categories",
+    "searching"
+   ],
+   "omitempty": []
+  },
+  "FeedCapabilitiesSearching": {
+   "always": [
+    "search",
+    "tv-search",
+    "movie-search",
+    "audio-search",
+    "book-search"
+   ],
+   "omitempty": []
+  },
+  "FeedCapsSearch": {
+   "always": [
+    "available",
+    "supportedParams",
+    "searchEngine"
+   ],
+   "omitempty": []
+  },
+  "List": {
+   "always": [
+    "id",
+    "name",
+    "type",
+    "enabled",
+    "client_id",
+    "url",
+    "headers",
+    "api_key",
+    "filters",
+    "match_release",
+    "tags_included",
+    "tags_excluded",
+    "include_unmonitored",
+    "include_alternate_titles",
+    "include_year",
+    "skip_clean_sanitize",
+    "last_refresh_time",
+    "last_refresh_error",
+    "last_refresh_status",
+    "created_at",
+    "updated_at"
+   ],
+   "omitempty": []
+  },
+  "ListFilter": {
+   "always": [
+    "id",
+    "name"
+   ],
+   "omitempty": []
   }
  }
 }

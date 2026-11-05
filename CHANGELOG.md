@@ -15,6 +15,12 @@
   or slow machine no longer fails a check before the browser is ready.
 
 ### Added
+- autobrr's feeds and lists (served at `/autobrr/api`). Torznab, Newznab and RSS indexers added in autobrr are now
+  checked on their own schedule: new items go through your filters, and items already seen are skipped. Feeds can
+  be tested, run now, have their seen items cleared, and show what their last run found. Lists from Sonarr, Radarr,
+  Lidarr, Readarr, Whisparr, Sportarr, MDBList, Trakt, Metacritic, Steam, AniList or a plain text file fill in the
+  filters they are linked to every six hours, or right away through the list webhooks. Feeds whose indexer uses a
+  proxy stop with an error until proxies are ported.
 - Indexer proxies work as in Prowlarr v2.7.0.5723: HTTP, SOCKS4, SOCKS5 and FlareSolverr proxies under
   `/api/v1/indexerproxy` (add, change, remove, schema, test, test all), used by the indexers that share a tag with
   them. A FlareSolverr proxy is asked only when a site shows a Cloudflare check; pointed at Lantern, Lantern's own
