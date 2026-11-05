@@ -89,6 +89,8 @@ pub struct Grab {
     pub infohash: String,
     /// The category the app asked for through an emulated client (`tv-sonarr`); empty for Lantern's own API.
     pub ext_category: String,
+    /// The parameters the app attached through the emulated NZBGet (JSON, `[{"Name": "drone", "Value": …}]`).
+    pub ext_params: String,
 }
 
 impl Grab {
@@ -124,6 +126,7 @@ impl Grab {
             imported: r.f("imported"),
             infohash: r.s("infohash"),
             ext_category: r.s("ext_category"),
+            ext_params: r.s("ext_params"),
         }
     }
 
@@ -314,12 +317,17 @@ impl Hub {
     /// Stops grab `id`: removes it from its client (and its files when `delete_files`) and marks it removed.
     pub async fn remove_grab(&self, id: i64, delete_files: bool) -> Result<Grab> {
         let g = self.get_grab(id)?;
-        if g.client_id != 0 && IN_CLIENT.contains(&g.state.as_str()) {
+        // a finished download may still sit in its client's history: removing it there is best effort
+        let finished = g.state == "completed";
+        if g.client_id != 0 && (IN_CLIENT.contains(&g.state.as_str()) || finished) {
             if let Ok(cfg) = self.client(g.client_id) {
                 let backend = self.backend(&cfg)?;
                 let item_id = if g.client_ref.is_empty() { self.find_ref(&cfg, &g).await } else { Some(g.client_ref.clone()) };
                 if let Some(item_id) = item_id {
-                    backend.remove(&item_id, delete_files).await.map_err(|e| err(502, e))?;
+                    match backend.remove(&item_id, delete_files).await {
+                        Err(e) if !finished => return Err(err(502, e)),
+                        _ => {}
+                    }
                 }
             }
         }
@@ -490,6 +498,11 @@ impl Hub {
     /// Sets the category grab `id` shows in an emulated client.
     pub fn set_ext_category_of(&self, id: i64, category: &str) -> Result<()> {
         self.set(id, &[("ext_category", json!(category))])
+    }
+
+    /// Keeps the parameters an app attached to grab `id` (NZBGet's `PPParameters`).
+    pub fn set_ext_params(&self, id: i64, params: Value) -> Result<()> {
+        self.set(id, &[("ext_params", json!(params.to_string()))])
     }
 
     /// An empty grab, for fetching an address before there is a grab.

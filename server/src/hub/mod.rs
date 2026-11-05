@@ -12,7 +12,7 @@
 //! | [`events`] | the live event stream and the webhooks |
 //! | [`paths`] | translating paths between Lantern, the clients and the apps |
 //! | [`torrent`] | info hashes of torrent files and magnets |
-//! | [`emulate`] | Lantern as a download client: the qBittorrent Web API |
+//! | [`emulate`] | Lantern as a download client: the qBittorrent, SABnzbd and NZBGet APIs |
 //! | [`api`] | the routes |
 //!
 //! Every change to a client, a path or an app is read again at the next step, so it applies to every app at once.
@@ -99,6 +99,7 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
         ("hub_grabs", "imported", "REAL NOT NULL DEFAULT 0"),
         ("hub_grabs", "infohash", "TEXT NOT NULL DEFAULT ''"),
         ("hub_grabs", "ext_category", "TEXT NOT NULL DEFAULT ''"),
+        ("hub_grabs", "ext_params", "TEXT NOT NULL DEFAULT '[]'"),
         ("hub_apps", "ext_categories", "TEXT NOT NULL DEFAULT '[]'"),
     ];
     for (table, col, def) in added {

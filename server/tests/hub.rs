@@ -638,6 +638,100 @@ async fn an_app_adds_lantern_as_its_qbittorrent() {
     assert_eq!(serde_json::from_str::<Value>(&text).unwrap().as_array().unwrap().len(), 1);
 }
 
+#[tokio::test]
+async fn apps_add_lantern_as_their_sabnzbd_or_nzbget() {
+    let (base, fake) = fakes().await;
+    let (app, st, dir) = server("emulated-usenet", &[]).await;
+    call(&app, "POST", "/api/hub/clients", Some(json!({ "kind": "sabnzbd", "url": format!("{base}/sab"), "api_key": "sabkey" }))).await;
+    let nzb = "<?xml version=\"1.0\"?><nzb xmlns=\"http://www.newzbin.com/DTD/2003/nzb\"><file subject=\"x\"></file></nzb>";
+
+    // SABnzbd's API
+    let (_, text, _) = send(&app, qbit("GET", "/api?mode=version&output=json", "", "", vec![])).await;
+    assert_eq!(serde_json::from_str::<Value>(&text).unwrap()["version"], "4.3.3");
+    let (_, text, _) = send(&app, qbit("GET", "/api?mode=queue&apikey=wrong&output=json", "", "", vec![])).await;
+    assert_eq!(serde_json::from_str::<Value>(&text).unwrap(), json!({ "status": false, "error": "API Key Incorrect" }));
+    let boundary = "sabboundary";
+    let body = format!("--{boundary}\r\nContent-Disposition: form-data; name=\"name\"; filename=\"Show.S01E01.nzb\"\r\nContent-Type: application/x-nzb\r\n\r\n{nzb}\r\n--{boundary}--\r\n");
+    let (_, text, _) = send(
+        &app,
+        qbit(
+            "POST",
+            "/sabnzbd/api?mode=addfile&cat=tv&apikey=test-key&output=json",
+            "",
+            &format!("multipart/form-data; boundary={boundary}"),
+            body.into_bytes(),
+        ),
+    )
+    .await;
+    let added: Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(added["status"], true, "{added}");
+    let nzo = added["nzo_ids"][0].as_str().unwrap().to_string();
+    assert!(nzo.starts_with("SABnzbd_nzo_lantern"));
+    let (_, apps) = call(&app, "GET", "/api/hub/apps", None).await;
+    assert_eq!((apps["apps"][0]["name"].as_str(), apps["apps"][0]["category"].as_str()), (Some("SABnzbd tv"), Some("sabnzbd-tv")));
+    let folder = dir.join("downloads/sabnzbd-tv").to_string_lossy().to_string();
+    let (_, text, _) = send(&app, qbit("GET", "/api?mode=get_config&apikey=test-key&output=json", "", "", vec![])).await;
+    let cfg: Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(
+        cfg["config"]["categories"][1],
+        json!({ "name": "tv", "order": 1, "pp": "", "script": "Default", "dir": folder, "priority": -100 })
+    );
+    let names: Vec<&str> = cfg["config"]["categories"].as_array().unwrap().iter().filter_map(|c| c["name"].as_str()).collect();
+    for want in ["movies", "Movies", "music", "readarr", "Readarr"] {
+        assert!(names.contains(&want), "apps' default category {want} is offered: {names:?}");
+    }
+
+    st.hub.tick().await;
+    assert_eq!(fake.lock().unwrap().sab_categories.get("sabnzbd-tv"), Some(&folder), "the real SABnzbd gets Lantern's category");
+    let (_, text, _) = send(&app, qbit("GET", "/api?mode=queue&apikey=test-key&output=json", "", "", vec![])).await;
+    let q: Value = serde_json::from_str(&text).unwrap();
+    assert_eq!((q["queue"]["slots"][0]["nzo_id"].as_str(), q["queue"]["slots"][0]["cat"].as_str()), (Some(nzo.as_str()), Some("tv")));
+    assert_eq!(q["queue"]["slots"][0]["status"], "Downloading");
+    let done = PathBuf::from(&folder).join("Show.S01E01");
+    std::fs::create_dir_all(&done).unwrap();
+    std::fs::write(done.join("a.mkv"), b"1").unwrap();
+    {
+        let mut f = fake.lock().unwrap();
+        f.queue.clear();
+        f.history.push(json!({ "nzo_id": "SABnzbd_nzo_1", "name": "Show.S01E01", "status": "Completed", "storage": done.to_string_lossy(), "bytes": 1 }));
+    }
+    st.hub.tick().await;
+    let (_, text, _) = send(&app, qbit("GET", "/api?mode=history&apikey=test-key&output=json", "", "", vec![])).await;
+    let h: Value = serde_json::from_str(&text).unwrap();
+    assert_eq!(
+        (h["history"]["slots"][0]["status"].as_str(), h["history"]["slots"][0]["storage"].as_str()),
+        (Some("Completed"), Some(done.to_string_lossy().as_ref()))
+    );
+    send(&app, qbit("GET", &format!("/api?mode=history&name=delete&value={nzo}&del_files=1&apikey=test-key"), "", "", vec![])).await;
+    assert!(fake.lock().unwrap().sab_deleted.contains(&"SABnzbd_nzo_1".to_string()));
+    let (_, text, _) = send(&app, qbit("GET", "/api?mode=history&apikey=test-key&output=json", "", "", vec![])).await;
+    assert_eq!(serde_json::from_str::<Value>(&text).unwrap()["history"]["noofslots"], 0);
+
+    // NZBGet's JSON-RPC
+    let rpc = |path: &str, body: Value| qbit("POST", path, "", "application/json", body.to_string().into_bytes());
+    let (s, _, _) = send(&app, rpc("/jsonrpc", json!({ "method": "version" }))).await;
+    assert_eq!(s, StatusCode::UNAUTHORIZED);
+    let (_, text, _) = send(&app, rpc("/Radarr:test-key/jsonrpc", json!({ "method": "version", "id": 1 }))).await;
+    assert_eq!(serde_json::from_str::<Value>(&text).unwrap()["result"], "24.3");
+    let b64 = {
+        use base64::Engine;
+        base64::engine::general_purpose::STANDARD.encode(nzb)
+    };
+    let append = json!({ "method": "append", "id": 2, "params": ["Film.2024.nzb", b64, "movies", 0, false, false, "", 0, "SCORE", [{ "Name": "drone", "Value": "x1" }]] });
+    let (_, text, _) = send(&app, rpc("/Radarr:test-key/jsonrpc", append)).await;
+    let nzbid = serde_json::from_str::<Value>(&text).unwrap()["result"].as_i64().unwrap();
+    assert!(nzbid > 0);
+    st.hub.tick().await;
+    let (_, text, _) = send(&app, rpc("/Radarr:test-key/jsonrpc", json!({ "method": "listgroups", "params": [0] }))).await;
+    let g = &serde_json::from_str::<Value>(&text).unwrap()["result"][0];
+    assert_eq!((g["NZBID"].as_i64(), g["Category"].as_str(), g["NZBName"].as_str()), (Some(nzbid), Some("movies"), Some("Film.2024")));
+    assert_eq!(g["Parameters"], json!([{ "Name": "drone", "Value": "x1" }]));
+    let (_, text, _) =
+        send(&app, rpc("/Radarr:test-key/jsonrpc", json!({ "method": "editqueue", "params": ["GroupFinalDelete", "", [nzbid]] }))).await;
+    assert_eq!(serde_json::from_str::<Value>(&text).unwrap()["result"], true);
+    assert_eq!(grab(&st, nzbid).state, "removed");
+}
+
 /// Test helpers on the state.
 trait Due {
     /// Makes grab `id`'s next try due now.

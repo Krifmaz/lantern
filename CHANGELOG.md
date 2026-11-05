@@ -58,6 +58,9 @@
 - Lantern can be added as a qBittorrent download client by any app (user name: the app's name, password: Lantern's
   API key). The app is registered on sight, its torrents go to the real client through the hub with Lantern's
   categories and folders, and it sees them by their info hash with paths in its own view.
+- Lantern can also be added as a SABnzbd (`/api`, `/sabnzbd/api`) or NZBGet (`/jsonrpc`) download client; NZBs go to
+  the real Usenet client through the hub and the queue and history answer in each app's own terms. A finished
+  download an app removes is also taken out of the real client's history.
 
 ## 0.0.1
 

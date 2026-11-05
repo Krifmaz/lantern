@@ -5,13 +5,21 @@
 //! | Module | Speaks |
 //! | --- | --- |
 //! | [`qbittorrent`] | qBittorrent's Web API v2 (`/api/v2/…`) |
+//! | [`sabnzbd`] | SABnzbd's API (`/api`, `/sabnzbd/api`) |
+//! | [`nzbget`] | NZBGet's JSON-RPC (`/jsonrpc`) |
 
+pub mod nzbget;
 pub mod qbittorrent;
+pub mod sabnzbd;
 
 use super::apps::App;
 use super::Hub;
 use kit_server_core::{p, Db, Result, RowExt};
 use serde_json::{json, Value};
+
+/// The categories apps use out of the box, in small letters (Sonarr `tv`, Radarr `movies`, Lidarr `music`, Readarr
+/// `readarr`); each is offered with a capital too.
+pub const COMMON_CATEGORIES: [&str; 9] = ["tv", "movies", "music", "books", "sonarr", "radarr", "lidarr", "readarr", "audiobooks"];
 
 impl Hub {
     /// The app named `name` that connects through an emulated client `source`, registered when it is new.
@@ -38,6 +46,28 @@ impl Hub {
             .flatten()
             .and_then(|r| serde_json::from_str::<Vec<String>>(&r.s("ext_categories")).ok())
             .unwrap_or_default()
+    }
+
+    /// The categories an emulated client offers `apps`: the ones they made, their own, and the usual defaults of
+    /// Sonarr, Radarr, Lidarr and Readarr, since apps check that their category exists before they save the
+    /// client, and Lantern takes any category anyway.
+    pub fn offered_categories(&self, apps: &[super::apps::App]) -> Vec<String> {
+        let mut out: Vec<String> = Vec::new();
+        for a in apps {
+            out.extend(self.ext_categories(a.id));
+            out.push(a.category.clone());
+        }
+        // apps compare names exactly, and some defaults start with a capital (Radarr's NZBGet `Movies`)
+        for c in COMMON_CATEGORIES {
+            out.push(c.to_string());
+            let mut cap = c.chars();
+            if let Some(first) = cap.next() {
+                out.push(first.to_uppercase().chain(cap).collect());
+            }
+        }
+        let mut seen = std::collections::HashSet::new();
+        out.retain(|c| !c.is_empty() && seen.insert(c.clone()));
+        out
     }
 
     /// Adds (`keep`) or drops category `name` of app `id`'s emulated client.
