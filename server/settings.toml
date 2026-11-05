@@ -91,3 +91,29 @@ group = "network"
 label = "Proxy for sites"
 help = "An HTTP or SOCKS5 proxy for every indexer (socks5://host:1080). Empty: none."
 type = "text"
+
+[sections.downloads]
+title = "Downloads"
+
+[groups.downloads]
+section = "downloads"
+title = "Downloads"
+desc = "Where downloads go and how hard Lantern tries. Each app gets a folder of its own inside the downloads folder."
+
+[keys.downloads_root]
+env = "APP_DOWNLOADS_DIR"
+default = "/downloads"
+group = "downloads"
+label = "Downloads folder"
+help = "Where Lantern sees the downloads folder. Mount the same folder in every app and download client (hardlinks need one file system)."
+type = "text"
+
+[keys.grab_attempts]
+env = "APP_GRAB_ATTEMPTS"
+default = 5
+group = "downloads"
+label = "Tries before a grab fails"
+help = "How many times Lantern sends a grab to a download client before it tells the app it failed."
+type = "number"
+min = 1
+max = 20
