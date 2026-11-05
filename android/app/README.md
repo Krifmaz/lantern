@@ -15,8 +15,9 @@ One activity in the kit's default theme; every page is a kit-compose part, wired
 | `SearchPage.kt` | One search through every indexer, by kind; open a result's page, copy its download or magnet link |
 | `VaultPage.kt` | The vault's accounts; the owner shows secrets and the 2FA code with their password, for two minutes |
 | `DownloadsPage.kt` | Downloads (refreshed every few seconds while something moves; Try again, Remove) and Apps |
+| `AccountsPage.kt` | Account health: every kept account's numbers and risks, Sign in now, I signed in today |
 | `Phone.kt` | Opening links in the browser and copying to the clipboard (secrets marked sensitive) |
-| `IndexerRules.kt`, `SearchRules.kt`, `VaultRules.kt`, `DownloadRules.kt` | Reading `/api/indexers`, `/api/indexers/stats`, `/api/search`, `/api/vault…`, `/api/hub/grabs`, `/api/hub/apps` and the words shown (unit-tested in `src/test`) |
+| `IndexerRules.kt`, `SearchRules.kt`, `VaultRules.kt`, `DownloadRules.kt`, `KeeperRules.kt` | Reading `/api/indexers`, `/api/indexers/stats`, `/api/search`, `/api/vault…`, `/api/hub/grabs`, `/api/hub/apps`, `/api/keeper` and the words shown (unit-tested in `src/test`) |
 | `AdminPages.kt` | Server settings (forms from the server's schema) and Diagnostics (with the app's crash reports) |
 | `Server.kt` | The address and token, the server's API (`KitApi`), What's new calls, the network check |
 | `ServerAddress.kt` | What is tried for a typed address (unit-tested in `src/test`) |
