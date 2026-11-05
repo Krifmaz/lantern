@@ -57,7 +57,7 @@ async fn site(Path(s): Path<String>, Query(q): Query<HashMap<String, String>>, h
         r#"<?xml version="1.0"?><rss version="2.0" xmlns:torznab="http://torznab.com/schemas/2015/feed"><channel>
 <item><title>{TITLE}</title><guid>{s}-1</guid><link>{link}</link><size>1500</size><enclosure url="{link}" length="1500" type="application/x-bittorrent"/>
 <torznab:attr name="category" value="5000"/><torznab:attr name="seeders" value="5"/></item>
-<item><title>Another.Show.S01.1080p-GRP</title><guid>{s}-2</guid><link>http://{host}/{s}/file</link><size>1500</size></item>
+<item><title>Another.Show.S01.1080p-GRP</title><guid>{s}-2</guid><link>http://{host}/{s}/file</link><size>9000</size></item>
 </channel></rss>"#
     );
     ([(header::CONTENT_TYPE, "application/rss+xml")], rss).into_response()
@@ -220,11 +220,23 @@ async fn a_finished_torrent_seeds_on_the_other_sites_that_have_the_same_files() 
     // what happened to each candidate
     let (_, v) = call(&app, "GET", "/api/cross-seed").await;
     let recent = v["recent"].as_array().unwrap();
-    let by_site = |name: &str| recent.iter().find(|r| r["indexer"] == name).map(|r| r["decision"].as_str().unwrap().to_string());
+    let by_site = |name: &str| {
+        recent.iter().find(|r| r["indexer"] == name && r["title"] == TITLE).map(|r| r["decision"].as_str().unwrap().to_string())
+    };
+    let decision_of = |name: &str| {
+        recent.iter().find(|r| r["indexer"] == name && r["title"] == TITLE).map(|r| r["match_decision"].as_str().unwrap().to_string())
+    };
     assert_eq!(by_site("Site B").as_deref(), Some("injected"));
     assert_eq!(by_site("Site C").as_deref(), Some("files_differ"));
     assert_eq!(by_site("Site D").as_deref(), Some("magnet_only"));
     assert!(by_site("Site A").is_none(), "the grab's own site isn't a candidate");
+    // cross-seed's decisions, kept next to Lantern's words
+    assert_eq!(decision_of("Site B").as_deref(), Some("MATCH"));
+    assert_eq!(decision_of("Site C").as_deref(), Some("SIZE_MISMATCH"));
+    assert_eq!(decision_of("Site D").as_deref(), Some("MAGNET_LINK"));
+    let other = recent.iter().find(|r| r["indexer"] == "Site B" && r["title"] != TITLE).unwrap();
+    assert_eq!(other["match_decision"], "FUZZY_SIZE_MISMATCH", "a release of another size isn't fetched");
+    assert_eq!(v["match_mode"], "flexible", "cross-seed's default");
     assert_eq!(v["stats"]["injected"], 1);
     assert_eq!(v["stats"]["waiting"], 0, "searched, so not due again for a week");
 
@@ -243,5 +255,94 @@ async fn a_finished_torrent_seeds_on_the_other_sites_that_have_the_same_files() 
     st.db.execute("UPDATE hub_grabs SET state='seeding', imported=?, seed_secs=3600 WHERE id=1", kit_server_core::p![now]).unwrap();
     st.hub.tick().await;
     assert_eq!(fake.lock().unwrap().removed, vec![(source.info_hash.clone(), false)]);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A request to cross-seed's daemon API: (status, body, whether it has a content type).
+async fn daemon(app: &Router, method: &str, path: &str, key: bool, body: &str) -> (u16, String, bool) {
+    let mut req = Request::builder().method(method).uri(path);
+    if key {
+        req = req.header("x-api-key", "test-key");
+    }
+    if body.starts_with('{') {
+        req = req.header(header::CONTENT_TYPE, "application/json");
+    }
+    let r = app.clone().oneshot(req.body(Body::from(body.to_string())).unwrap()).await.unwrap();
+    let status = r.status().as_u16();
+    let typed = r.headers().contains_key(header::CONTENT_TYPE);
+    let bytes = axum::body::to_bytes(r.into_body(), 1 << 22).await.unwrap();
+    (status, String::from_utf8_lossy(&bytes).into_owned(), typed)
+}
+
+#[tokio::test]
+async fn the_cross_seed_api_answers_as_cross_seed_does() {
+    let (url, fake) = fakes().await;
+    let dir = std::env::temp_dir().join(format!("lantern-xs-api-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let web = dir.join("static");
+    std::fs::create_dir_all(&web).unwrap();
+    std::fs::write(web.join("index.html"), "<!doctype html>").unwrap();
+    let vars: HashMap<String, String> =
+        [("APP_API_KEY", "test-key"), ("APP_CROSS_SEED_DELAY", "30")].iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+    let st = server::AppState::open(&dir.join("data"), web, move |n| vars.get(n).cloned()).await.unwrap();
+    for s in ["a", "b", "c", "d"] {
+        let ix = json!({ "kind": "torznab", "name": format!("Site {}", s.to_uppercase()), "base_url": url, "settings": { "api_path": format!("/{s}/api") } });
+        st.indexers.add(&ix).unwrap();
+    }
+    let qbit = json!({ "kind": "qbittorrent", "name": "qBittorrent", "url": format!("{url}/qbit"), "username": "admin", "password": "pw" });
+    st.hub.add_client(&qbit).unwrap();
+    let source = torrent::parse(&torrent_of("a")).unwrap();
+    fake.lock().unwrap().torrents.push((source.info_hash.clone(), TITLE.into(), "tv".into(), "/downloads/tv".into(), String::new()));
+    let app = server::crossseed::daemon::router(st.cross_seed.clone());
+
+    // cross-seed's own answers, word for word
+    let fixture: Value = serde_json::from_str(include_str!("fixtures/upstream/cross-seed/api.json")).unwrap();
+    for case in fixture["cases"].as_array().unwrap() {
+        let s = |k: &str| case[k].as_str().unwrap().to_string();
+        let (status, body, typed) = daemon(&app, &s("method"), &s("path"), case["key"].as_bool().unwrap(), &s("body")).await;
+        assert_eq!((status, body.as_str()), (case["status"].as_u64().unwrap() as u16, s("answer").as_str()), "{case}");
+        assert!(!typed, "cross-seed's answers have no content type: {case}");
+    }
+
+    // the webhook answers at once and searches after: site B's copy is added next to the files
+    let body = format!(r#"{{"infoHash":"{}"}}"#, source.info_hash.to_uppercase());
+    assert_eq!(daemon(&app, "POST", "/api/webhook", true, &body).await.0, 204);
+    for _ in 0..100 {
+        if fake.lock().unwrap().torrents.len() == 2 {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+    {
+        let f = fake.lock().unwrap();
+        assert_eq!(f.torrents.len(), 2, "site B's copy is added");
+        assert_eq!(f.torrents[1].0, torrent::parse(&torrent_of("b")).unwrap().info_hash);
+        assert_eq!(
+            (f.torrents[1].2.as_str(), f.torrents[1].3.as_str()),
+            ("cross-seed", "/downloads/tv"),
+            "not from a grab, so under cross-seed's own category"
+        );
+    }
+    let recent = st.cross_seed.recent(100).unwrap();
+    let a = recent.iter().find(|r| r["indexer"] == "Site A" && r["title"] == TITLE).unwrap();
+    assert_eq!(a["match_decision"], "SAME_INFO_HASH", "the very torrent we have");
+
+    // jobs: one not here, one run ahead of schedule
+    assert_eq!(daemon(&app, "POST", "/api/job", true, "name=rss").await, (404, "rss: unable to run, disabled in config".into(), false));
+    let (status, body, _) = daemon(&app, "POST", "/api/job", true, r#"{"name":"search","ignoreExcludeRecentSearch":true}"#).await;
+    assert_eq!((status, body.as_str()), (200, "search: running ahead of schedule"));
+
+    // announces: one already in the client, one new copy (site E) added, one like nothing we have
+    let ann = |site: &str, name: &str| {
+        format!(r#"{{"name":"{name}","guid":"{url}/{site}/file","link":"{url}/{site}/file","tracker":"Site {}"}}"#, site.to_uppercase())
+    };
+    assert_eq!(daemon(&app, "POST", "/api/announce", true, &ann("b", TITLE)).await.0, 200, "already exists");
+    assert_eq!(daemon(&app, "POST", "/api/announce", true, &ann("e", TITLE)).await.0, 200, "injected");
+    assert_eq!(fake.lock().unwrap().torrents.len(), 3);
+    assert_eq!(daemon(&app, "POST", "/api/announce", true, &ann("f", "Other.Movie.2020.1080p.BluRay-GRP")).await.0, 204);
+    let differ = ann("g", TITLE).replace("/g/file\",\"tracker", "/x/file\",\"tracker");
+    let (status, body, _) = daemon(&app, "POST", "/api/announce", true, &differ).await;
+    assert_eq!(status, 400);
+    assert!(body.starts_with("Missing required params (https://www.cross-seed.org/docs/v6-migration#autobrr-update): {} in {"), "{body}");
     let _ = std::fs::remove_dir_all(&dir);
 }

@@ -1,36 +1,65 @@
-//! Cross-seed (goal 6): once a torrent grab has finished, Lantern looks for the same release on the other torrent
-//! indexers. When another site has a torrent with exactly the same files, Lantern adds it to the same download
-//! client, pointed at the files already on disk, so it seeds on both sites without downloading anything again.
+// Ported from cross-seed v6.13.9 (src/pipeline.ts, src/action.ts, src/db.ts), Apache-2.0.
+//! Cross-seed (goal 6), ported from cross-seed v6.13.9: Lantern looks for the torrents it has on the other torrent
+//! indexers and, when another site has the same files, adds that site's torrent to the same download client,
+//! pointed at the files already on disk, so it seeds on both sites without downloading anything again.
 //!
-//! | Step | What |
-//! | --- | --- |
-//! | pick | finished torrent grabs not searched lately ([`CrossSeed::due`]) |
-//! | search | every other enabled torrent indexer, by the release's name ([`same_release`], [`close_size`]) |
-//! | compare | each candidate's `.torrent`, file by file and size by size ([`torrent`], [`files_match`]) |
-//! | add | to the same client and folder, in the app's category with `.cross-seed` after it, so the app doesn't import it again |
+//! | Part | Module | From cross-seed |
+//! | --- | --- | --- |
+//! | settings, defaults and checks | [`config`] | `runtimeConfig.ts`, `configSchema.ts`, `config.template.cjs` |
+//! | release name patterns, decisions | [`constants`], [`jsre`] | `constants.ts` |
+//! | name helpers | [`utils`] | `utils.ts` |
+//! | what is searched for | [`searchee`] | `searchee.ts` |
+//! | `.torrent` files | [`torrent`] | `parseTorrent.ts` |
+//! | what is left out first | [`prefilter`] | `preFilter.ts` |
+//! | match or not, and why | [`decide`] | `decide.ts` |
+//! | the daemon API (its own port) | [`daemon`] | `server.ts`, `jobs.ts` (run ahead) |
+//! | Lantern's page | [`api`] | – |
 //!
-//! Every candidate's outcome is kept in `cross_seeds` ([`Decision`]), so the page can show what happened.
+//! Searchees are the finished torrents of the hub's download clients ([`CrossSeed::search_grab`], the automatic
+//! pass [`CrossSeed::run`], and `POST /api/webhook` by info hash). Every candidate's decision is kept in
+//! `cross_seeds`: cross-seed's decision (`match_decision`), what was done (`result`, cross-seed's injection result)
+//! and Lantern's outcome word for the page and the hub (`decision`: `injected` keeps a grab's files on disk).
+//!
+//! Until linking is ported, only `MATCH` (same names and sizes) is added to the client, next to the files; a
+//! `MATCH_SIZE_ONLY` or `MATCH_PARTIAL` needs linked files, so its `.torrent` is saved in `cross-seeds/` in the data
+//! folder (cross-seed's `outputDir`) and recorded as a `FAILURE` to inject, as cross-seed does when an injection
+//! fails.
 
 pub mod api;
+pub mod config;
+pub mod constants;
+pub mod daemon;
+pub mod decide;
+pub mod jsre;
+pub mod prefilter;
+pub mod searchee;
 pub mod torrent;
+pub mod utils;
 
-use crate::hub::clients::{AddRequest, Content};
+use crate::hub::clients::{AddRequest, Backend, ClientConfig, Content, Item};
 use crate::hub::grabs::Grab;
 use crate::hub::Hub;
 use crate::indexers::cardigann::Grabbed;
-use crate::indexers::release::{Protocol, Query, Release, SearchKind};
+use crate::indexers::release::{Protocol, Query, SearchKind};
+use config::{Override, RuntimeConfig};
+use constants::{Decision, InjectionResult};
+use decide::{assess_candidate, reason, Assessment, Candidate, MetaOrCandidate, SnatchError};
 use kit_server_core::{err, p, Db, Result, Row, RowExt, SqliteDb};
+use prefilter::{filter_by_content, filter_timestamps, ContentOptions, Timestamps, MAX_INT};
+use searchee::{basename, File, Label, Searchee};
 use serde_json::{json, Value};
+use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
-
-/// How far a candidate's size may be from the grab's and still be fetched to compare (2 %).
-pub const SIZE_TOLERANCE: f64 = 0.02;
+use torrent::Metafile;
 
 /// The category suffix of cross-seeded torrents: apps watch their own category, so they don't import these.
-pub const CATEGORY_SUFFIX: &str = ".cross-seed";
+pub const CATEGORY_SUFFIX: &str = constants::TORRENT_CATEGORY_SUFFIX;
 
-/// The tables cross-seeding keeps: each candidate's outcome, and when each grab was last searched.
+/// The tables cross-seeding keeps: each candidate's outcome, when each grab was last searched, each searchee's
+/// search times per indexer (cross-seed's `timestamp`) and each job's last run (cross-seed's `job_log`).
 pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
+    let fail = |e: kit_server_core::Error| anyhow::anyhow!("The cross-seed tables can't be made: {}", e.detail);
     db.execute_batch(
         "CREATE TABLE IF NOT EXISTS cross_seeds (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,121 +79,127 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
             at REAL NOT NULL,
             times INTEGER NOT NULL DEFAULT 1,
             found INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE TABLE IF NOT EXISTS cross_seed_timestamps (
+            searchee TEXT NOT NULL,
+            indexer_id INTEGER NOT NULL,
+            first_searched REAL NOT NULL,
+            last_searched REAL NOT NULL,
+            PRIMARY KEY (searchee, indexer_id)
+        );
+        CREATE TABLE IF NOT EXISTS cross_seed_job_log (
+            name TEXT PRIMARY KEY,
+            last_run REAL NOT NULL
         );",
     )
-    .map_err(|e| anyhow::anyhow!("The cross-seed tables can't be made: {}", e.detail))
-}
-
-/// What became of one candidate.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Decision {
-    /// Added to the client next to the files already there.
-    Injected,
-    /// The client already has this very torrent.
-    AlreadyThere,
-    /// Same name and size, but the files differ (other names, other sizes, other layout).
-    FilesDiffer,
-    /// The site only gives a magnet link, which has no file list to compare before downloading.
-    MagnetOnly,
-    /// The site's file isn't a torrent, or it couldn't be fetched or added.
-    Failed,
-}
-
-impl Decision {
-    /// How it is stored.
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Decision::Injected => "injected",
-            Decision::AlreadyThere => "already_there",
-            Decision::FilesDiffer => "files_differ",
-            Decision::MagnetOnly => "magnet_only",
-            Decision::Failed => "failed",
+    .map_err(fail)?;
+    let cols: Vec<String> = db.query("PRAGMA table_info(cross_seeds)", p![]).map_err(fail)?.iter().map(|r| r.s("name")).collect();
+    for (col, def) in
+        [("match_decision", "TEXT NOT NULL DEFAULT ''"), ("result", "TEXT NOT NULL DEFAULT ''"), ("searchee", "TEXT NOT NULL DEFAULT ''")]
+    {
+        if !cols.iter().any(|c| c == col) {
+            db.execute_batch(&format!("ALTER TABLE cross_seeds ADD COLUMN {col} {def}")).map_err(fail)?;
         }
     }
+    Ok(())
+}
 
-    /// What it means, in words.
-    pub fn words(decision: &str) -> &'static str {
-        match decision {
-            "injected" => "Seeding here too, from the files already downloaded",
-            "already_there" => "The download client already has this torrent",
-            "files_differ" => "Same release name, but its files differ, so it would need a new download",
-            "magnet_only" => "This site gives only a magnet link, whose files can't be compared first",
-            _ => "Couldn't be checked or added",
-        }
+/// Lantern's outcome word for a candidate (the page's dot and the hub's "keep the files" rule): `injected`,
+/// `already_there`, `files_differ`, `magnet_only` or `failed`.
+pub fn outcome_word(decision: Decision, result: Option<InjectionResult>) -> &'static str {
+    match (decision, result) {
+        (_, Some(InjectionResult::Success)) => "injected",
+        (_, Some(InjectionResult::AlreadyExists)) => "already_there",
+        (Decision::SameInfoHash | Decision::InfoHashAlreadyExists, _) => "already_there",
+        (Decision::MagnetLink, _) => "magnet_only",
+        (Decision::DownloadFailed | Decision::RateLimited | Decision::NoDownloadLink | Decision::BlockedRelease, _) => "failed",
+        (d, Some(_)) if d.is_any_match() => "failed",
+        _ => "files_differ",
     }
 }
 
-/// A release name made comparable: lower case, the file extension left out, every run of punctuation and spaces
-/// as one space (`Show.Name.S01E02.1080p-GRP.mkv` and `show name s01e02 1080p grp` are the same).
-pub fn normalize(title: &str) -> String {
-    let lower = title.trim().to_lowercase();
-    let stem = match lower.rsplit_once('.') {
-        Some((stem, ext)) if (2..=4).contains(&ext.len()) && VIDEO_AND_AUDIO.contains(&ext) => stem.to_string(),
-        _ => lower,
-    };
-    stem.split(|c: char| !c.is_alphanumeric()).filter(|w| !w.is_empty()).collect::<Vec<_>>().join(" ")
-}
-
-/// The file endings left out of a name before comparing.
-const VIDEO_AND_AUDIO: [&str; 12] = ["mkv", "mp4", "avi", "ts", "m2ts", "mov", "wmv", "flac", "mp3", "m4a", "epub", "torrent"];
-
-/// Whether `candidate` is the same release as `title` by name.
-pub fn same_release(title: &str, candidate: &str) -> bool {
-    let (a, b) = (normalize(title), normalize(candidate));
-    !a.is_empty() && a == b
-}
-
-/// Whether a candidate's size (when the site says one) is within [`SIZE_TOLERANCE`] of `size`.
-pub fn close_size(size: i64, candidate: Option<u64>) -> bool {
-    match candidate {
-        None => true,
-        Some(c) if size <= 0 => c > 0,
-        Some(c) => ((c as f64) - (size as f64)).abs() <= size as f64 * SIZE_TOLERANCE,
+/// What an outcome word means, in plain words.
+pub fn words(outcome: &str) -> &'static str {
+    match outcome {
+        "injected" => "Seeding here too, from the files already downloaded",
+        "already_there" => "The download client already has this torrent",
+        "files_differ" => "Not the same files, so it would need a new download",
+        "magnet_only" => "This site gives only a magnet link, whose files can't be compared first",
+        _ => "Couldn't be checked or added",
     }
 }
 
-/// Whether two file lists are the same files: the same paths inside the save folder with the same sizes.
-pub fn files_match(have: &[(String, i64)], candidate: &[(String, i64)]) -> bool {
-    let norm = |l: &[(String, i64)]| {
-        let mut v: Vec<(String, i64)> = l.iter().map(|(p, s)| (p.trim_start_matches('/').replace('\\', "/"), *s)).collect();
-        v.sort();
-        v
-    };
-    !have.is_empty() && norm(have) == norm(candidate)
-}
-
-/// The paths of `files` (as the client sees them) inside `save_path`.
-pub fn relative(files: &[(String, i64)], save_path: &str) -> Vec<(String, i64)> {
-    let base = format!("{}/", save_path.trim_end_matches('/'));
-    files.iter().map(|(p, s)| (p.strip_prefix(&base).unwrap_or(p).to_string(), *s)).collect()
-}
-
-/// How one grab's search went: the candidates looked at and the ones added.
+/// How one search went.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct Outcome {
-    /// Candidates with the same name and a close size.
+    /// Copies found: candidates whose name and size fit, so their files were compared.
     pub candidates: usize,
     /// Of them, the ones now seeding too.
     pub injected: usize,
+    /// Matches of any kind.
+    pub matches: usize,
     /// Indexers that couldn't be searched: (name, why).
     pub failed: Vec<(String, String)>,
+    /// Why the searchee wasn't searched at all (cross-seed's pre-filter), if it wasn't.
+    pub filtered: Option<String>,
 }
 
-/// Cross-seeding over the hub's grabs.
+/// Where a searchee's files are, so a match can be added next to them.
+#[derive(Debug, Clone)]
+pub struct Target {
+    /// The download client.
+    pub client_id: i64,
+    /// The folder the files are in, as the client sees it.
+    pub save_path: String,
+    /// The category to add copies under (with `.cross-seed` after it).
+    pub category: String,
+    /// The grab the files belong to (0: none).
+    pub grab_id: i64,
+    /// The indexer the searchee came from (0: none), which isn't searched.
+    pub indexer_id: i64,
+    /// Whether the searchee's torrent is finished.
+    pub complete: bool,
+}
+
+/// A job that can be run ahead of schedule (cross-seed's `Job`).
+#[derive(Debug, Clone)]
+pub struct Job {
+    /// Its name (`search`).
+    pub name: &'static str,
+    /// How often it runs, in milliseconds.
+    pub cadence: f64,
+    /// Whether it is running now.
+    pub is_active: bool,
+}
+
+/// Cross-seeding over the hub's clients and indexers.
 #[derive(Clone)]
 pub struct CrossSeed {
     /// The hub: its grabs, clients and indexers.
     pub hub: Hub,
+    /// The jobs the daemon API can run ahead of schedule.
+    pub jobs: Arc<Mutex<Vec<Job>>>,
+}
+
+/// Now in milliseconds since 1970, as cross-seed counts.
+pub fn now_ms() -> f64 {
+    crate::auth::now() * 1000.0
 }
 
 impl CrossSeed {
-    /// Cross-seeding for `hub`.
+    /// Cross-seeding for `hub`, with the jobs ported so far: `search` (Lantern's pass over finished torrents).
     pub fn new(hub: Hub) -> CrossSeed {
-        CrossSeed { hub }
+        let cadence = RuntimeConfig::default().search_cadence.unwrap_or(86_400_000.0);
+        CrossSeed { hub, jobs: Arc::new(Mutex::new(vec![Job { name: "search", cadence, is_active: false }])) }
     }
 
     fn db(&self) -> &SqliteDb {
         &self.hub.db
+    }
+
+    /// cross-seed's settings from Lantern's, and the problems found in them (cross-seed's words).
+    pub fn config(&self) -> (RuntimeConfig, Vec<String>) {
+        RuntimeConfig::from_settings(&self.hub.settings)
     }
 
     /// Whether it runs by itself (the `cross_seed` setting).
@@ -172,32 +207,141 @@ impl CrossSeed {
         self.hub.settings.bool("cross_seed")
     }
 
-    /// The wait between two grabs' searches (the `cross_seed_delay` setting, seconds), so sites aren't flooded.
+    /// The wait between two searches (cross-seed's `delay`, seconds), so sites aren't flooded.
     pub fn delay(&self) -> Duration {
-        Duration::from_secs(self.hub.settings.int("cross_seed_delay").clamp(0, 3600) as u64)
+        Duration::from_secs_f64(self.config().0.delay.clamp(0.0, 3600.0))
     }
 
-    /// Days before a grab is searched again (the `cross_seed_again_days` setting), when new copies may be up.
-    pub fn again_days(&self) -> f64 {
-        self.hub.settings.int("cross_seed_again_days").clamp(1, 365) as f64
+    /// The enabled torrent indexers, but `except`.
+    fn torrent_indexers(&self, except: i64) -> Result<Vec<i64>> {
+        Ok(self
+            .hub
+            .indexers
+            .list()?
+            .into_iter()
+            .filter(|ix| ix.enabled && ix.id != except && ix.kind != "newznab")
+            .map(|ix| ix.id)
+            .collect())
     }
 
-    /// The finished torrent grabs whose turn has come: never searched, or last searched over
-    /// [`again_days`](Self::again_days) ago, at most four times in all; oldest first.
-    pub fn due(&self, limit: i64) -> Result<Vec<Grab>> {
-        let before = crate::auth::now() - self.again_days() * 86400.0;
+    /// A searchee's search times over `indexers` (cross-seed's `filterTimestamps` query).
+    pub fn timestamps(&self, title: &str, indexers: &[i64]) -> Result<Timestamps> {
+        if indexers.is_empty() {
+            return Ok(Timestamps { earliest_first_search: 0.0, latest_first_search: 0.0, earliest_last_search: 0.0 });
+        }
+        let rows: HashMap<i64, (f64, f64)> = self
+            .db()
+            .query("SELECT * FROM cross_seed_timestamps WHERE searchee=?", p![title])?
+            .iter()
+            .map(|r| (r.i("indexer_id"), (r.f("first_searched"), r.f("last_searched"))))
+            .collect();
+        let firsts: Vec<f64> = indexers.iter().map(|i| rows.get(i).map(|t| t.0).unwrap_or(MAX_INT)).collect();
+        let lasts: Vec<f64> = indexers.iter().map(|i| rows.get(i).map(|t| t.1).unwrap_or(0.0)).collect();
+        Ok(Timestamps {
+            earliest_first_search: firsts.iter().copied().fold(f64::INFINITY, f64::min),
+            latest_first_search: firsts.iter().copied().fold(f64::NEG_INFINITY, f64::max),
+            earliest_last_search: lasts.iter().copied().fold(f64::INFINITY, f64::min),
+        })
+    }
+
+    /// `updateSearchTimestamps`: `title` was searched on `indexers` now.
+    fn update_search_timestamps(&self, title: &str, indexers: &[i64]) -> Result<()> {
+        let now = now_ms();
+        for id in indexers {
+            self.db().execute(
+                "INSERT INTO cross_seed_timestamps (searchee, indexer_id, first_searched, last_searched) VALUES (?,?,?,?)
+                 ON CONFLICT(searchee, indexer_id) DO UPDATE SET last_searched=excluded.last_searched",
+                p![title, *id, now, now],
+            )?;
+        }
+        Ok(())
+    }
+
+    /// The finished torrent grabs, the least lately searched first, at most `limit`, whose search times let them
+    /// be searched now (cross-seed's `excludeOlder` and `excludeRecentSearch`, changed by `o`).
+    pub fn due_with(&self, limit: i64, o: &Override) -> Result<Vec<Grab>> {
+        let cfg = self.config().0.with(o);
         let rows = self.db().query(
             "SELECT g.* FROM hub_grabs g LEFT JOIN cross_seed_searches s ON s.grab_id = g.id
              WHERE g.protocol='torrent' AND g.state IN ('seeding','completed') AND g.client_id != 0
-               AND (s.grab_id IS NULL OR (s.at < ? AND s.times < 4))
-             ORDER BY COALESCE(s.at, 0), g.finished LIMIT ?",
-            p![before, limit],
+             ORDER BY COALESCE(s.at, 0), g.finished",
+            p![],
         )?;
-        Ok(rows.iter().map(Grab::from_row).collect())
+        let now = now_ms();
+        let mut out = Vec::new();
+        for g in rows.iter().map(Grab::from_row) {
+            if out.len() as i64 >= limit {
+                break;
+            }
+            // searched under its title as cross-seed parses it, as `search_searchee` records it
+            let title = searchee::parse_title(&g.title, &[], None).unwrap_or_else(|| g.title.clone());
+            let s = Searchee { name: g.title.clone(), title: title.clone(), info_hash: Some(g.infohash.clone()), ..Searchee::default() };
+            let t = self.timestamps(&title, &self.torrent_indexers(g.indexer_id)?)?;
+            if filter_timestamps(&s, &cfg, t, now, || 0.0).is_ok() {
+                out.push(g);
+            }
+        }
+        Ok(out)
     }
 
-    /// Searches the other torrent indexers for grab `id`'s release and adds every copy whose files match.
+    /// [`due_with`](Self::due_with) with the settings as they are.
+    pub fn due(&self, limit: i64) -> Result<Vec<Grab>> {
+        self.due_with(limit, &Override::default())
+    }
+
+    /// The torrent clients with their backends.
+    fn torrent_clients(&self) -> Result<Vec<(ClientConfig, Arc<Backend>)>> {
+        let mut out = Vec::new();
+        for c in self.hub.clients()? {
+            if c.enabled && c.protocol() == Protocol::Torrent {
+                if let Ok(b) = self.hub.backend(&c) {
+                    out.push((c, b));
+                }
+            }
+        }
+        Ok(out)
+    }
+
+    /// `getInfoHashesToExclude`: every torrent in the torrent clients.
+    async fn info_hashes_to_exclude(&self) -> HashSet<String> {
+        let mut out = HashSet::new();
+        for (_, b) in self.torrent_clients().unwrap_or_default() {
+            for i in b.items().await.unwrap_or_default() {
+                out.insert(i.id.to_lowercase());
+            }
+        }
+        out
+    }
+
+    /// A client's torrent as a searchee (cross-seed's client searchee): its files inside the save folder.
+    pub async fn client_searchee(&self, cfg: &ClientConfig, backend: &Backend, item: &Item, label: Label) -> Result<Searchee> {
+        let have = relative(&backend.files(item).await.map_err(|e| err(502, e))?, &item.save_path);
+        if have.is_empty() {
+            return Err(err(409, format!("{} doesn't list the files of {}, so they can't be compared", cfg.name, item.name)));
+        }
+        let files: Vec<File> = have.iter().map(|(p, l)| File { name: basename(p), path: p.clone(), length: *l }).collect();
+        let length = files.iter().map(|f| f.length).sum();
+        let title = searchee::parse_title(&item.name, &files, None).unwrap_or_else(|| item.name.clone());
+        Ok(Searchee {
+            info_hash: Some(item.id.to_lowercase()),
+            files,
+            name: item.name.clone(),
+            title,
+            length,
+            client_host: Some(cfg.name.clone()),
+            save_path: Some(item.save_path.clone()),
+            label,
+            ..Searchee::default()
+        })
+    }
+
+    /// Searches the other torrent indexers for grab `id`'s release and adds every copy with the same files.
     pub async fn search_grab(&self, id: i64) -> Result<Outcome> {
+        self.search_grab_with(id, &Override::default()).await
+    }
+
+    /// [`search_grab`](Self::search_grab) with settings changed for this search.
+    pub async fn search_grab_with(&self, id: i64, o: &Override) -> Result<Outcome> {
         let g = self.hub.get_grab(id)?;
         if g.protocol != "torrent" || !matches!(g.state.as_str(), "seeding" | "completed") {
             return Err(err(409, "Only a finished torrent can be cross-seeded"));
@@ -209,47 +353,19 @@ impl CrossSeed {
             .into_iter()
             .find(|i| if g.client_ref.is_empty() { i.tag == g.tag() } else { i.id.eq_ignore_ascii_case(&g.client_ref) })
             .ok_or_else(|| err(404, format!("{} doesn't have {} any more, so there is nothing to seed from", cfg.name, g.title)))?;
-        let have = relative(&backend.files(&item).await.map_err(|e| err(502, e))?, &item.save_path);
-        if have.is_empty() {
-            return Err(err(409, format!("{} doesn't list the files of {}, so they can't be compared", cfg.name, g.title)));
-        }
-        let size: i64 = if g.size > 0 { g.size } else { have.iter().map(|(_, s)| s).sum() };
-        let torrent_indexers: Vec<i64> = self
-            .hub
-            .indexers
-            .list()?
-            .into_iter()
-            .filter(|ix| ix.enabled && ix.id != g.indexer_id && ix.kind != "newznab")
-            .map(|ix| ix.id)
-            .collect();
-        let mut out = Outcome::default();
-        if !torrent_indexers.is_empty() {
-            let q = Query { kind: SearchKind::Search, keywords: g.title.clone(), limit: 100, ..Query::default() };
-            let (found, failed) = self.hub.indexers.search(&torrent_indexers, &q, "Lantern cross-seed").await?;
-            out.failed = failed;
-            let seen = self.seen(g.id)?;
-            let candidates: Vec<Release> = found
-                .into_iter()
-                .filter(|r| r.protocol == Protocol::Torrent && r.indexer_id != g.indexer_id)
-                .filter(|r| same_release(&g.title, &r.title) && close_size(size, r.size))
-                .filter(|r| !seen.contains(&(r.indexer_id, r.title.clone())))
-                .collect();
-            let mut client_hashes: Vec<String> =
-                backend.items().await.unwrap_or_default().into_iter().map(|i| i.id.to_lowercase()).collect();
-            client_hashes.push(item.id.to_lowercase());
-            for r in candidates {
-                out.candidates += 1;
-                let (decision, hash, detail) = self.try_one(&g, cfg.id, &item.save_path, &have, &client_hashes, &r).await;
-                if decision == Decision::Injected {
-                    out.injected += 1;
-                    client_hashes.push(hash.clone());
-                }
-                self.db().execute(
-                    "INSERT INTO cross_seeds (grab_id, indexer_id, indexer, title, info_hash, decision, detail, client_id, at) VALUES (?,?,?,?,?,?,?,?,?)",
-                    p![g.id, r.indexer_id, r.indexer, r.title, hash, decision.as_str(), detail, cfg.id, crate::auth::now()],
-                )?;
-            }
-        }
+        let mut s = self.client_searchee(&cfg, &backend, &item, Label::Search).await?;
+        // the grab's own name is the release's name as the app grabbed it
+        s.name = g.title.clone();
+        s.title = searchee::parse_title(&g.title, &s.files, None).unwrap_or_else(|| g.title.clone());
+        let target = Target {
+            client_id: cfg.id,
+            save_path: item.save_path.clone(),
+            category: g.category.clone(),
+            grab_id: g.id,
+            indexer_id: g.indexer_id,
+            complete: item.state.done(),
+        };
+        let out = self.search_searchee(&s, &target, o, ContentOptions { ignore_cross_seeds: true, ..ContentOptions::default() }).await?;
         self.db().execute(
             "INSERT INTO cross_seed_searches (grab_id, at, times, found) VALUES (?,?,1,?)
              ON CONFLICT(grab_id) DO UPDATE SET at=excluded.at, times=times+1, found=found+excluded.found",
@@ -258,83 +374,362 @@ impl CrossSeed {
         Ok(out)
     }
 
-    /// The candidates already decided for grab `id`: (indexer, title).
-    fn seen(&self, id: i64) -> Result<Vec<(i64, String)>> {
+    /// The candidates already decided for searchee `title` in a way that doesn't change (a match, or a decision
+    /// from the name alone): (indexer, candidate name).
+    fn decided(&self, title: &str, grab_id: i64) -> Result<HashSet<(i64, String)>> {
         Ok(self
             .db()
-            .query("SELECT indexer_id, title FROM cross_seeds WHERE grab_id=? AND decision != 'failed'", p![id])?
+            .query(
+                "SELECT indexer_id, title, match_decision, decision FROM cross_seeds WHERE (grab_id=? AND grab_id<>0) OR searchee=?",
+                p![grab_id, title],
+            )?
             .iter()
+            .filter(|r| {
+                Decision::parse(&r.s("match_decision")).map(|d| d.is_any_match() || d.is_static()).unwrap_or(r.s("decision") != "failed")
+            })
             .map(|r| (r.i("indexer_id"), r.s("title")))
             .collect())
     }
 
-    /// Fetches candidate `r`'s torrent, compares it with the files on disk and adds it when they match:
-    /// (decision, its info hash, words).
-    async fn try_one(
+    /// `findOnOtherSites` for one searchee: filters it, searches the other torrent indexers, decides on every
+    /// candidate and adds the matches next to its files.
+    pub async fn search_searchee(&self, s: &Searchee, target: &Target, o: &Override, opts: ContentOptions) -> Result<Outcome> {
+        let (base, _) = self.config();
+        let cfg = base.with(o);
+        let mut out = Outcome::default();
+        if let Err(why) = filter_by_content(s, &cfg, opts) {
+            tracing::info!("cross-seed: did not search for {}: {why}", s.title);
+            out.filtered = Some(why);
+            return Ok(out);
+        }
+        let indexers = self.torrent_indexers(target.indexer_id)?;
+        if indexers.is_empty() {
+            return Ok(out);
+        }
+        let q = Query { kind: SearchKind::Search, keywords: s.title.clone(), limit: 100, ..Query::default() };
+        let (found, failed) = self.hub.indexers.search(&indexers, &q, "Lantern cross-seed").await?;
+        let names: HashMap<i64, String> = self.hub.indexers.list()?.into_iter().map(|ix| (ix.id, ix.name)).collect();
+        let searched: Vec<i64> = indexers.iter().copied().filter(|i| !failed.iter().any(|(n, _)| names.get(i) == Some(n))).collect();
+        out.failed = failed;
+        let decided = self.decided(&s.title, target.grab_id)?;
+        let mut exclude = self.info_hashes_to_exclude().await;
+        for r in found {
+            if r.protocol != Protocol::Torrent || r.indexer_id == target.indexer_id || decided.contains(&(r.indexer_id, r.title.clone())) {
+                continue;
+            }
+            let link = if r.link.is_empty() { r.magnet.clone() } else { r.link.clone() };
+            let candidate = Candidate {
+                name: r.title.clone(),
+                guid: r.guid.clone(),
+                link,
+                tracker: r.indexer.clone(),
+                size: r.size.and_then(|v| i64::try_from(v).ok()),
+                pub_date: r.date.map(|d| d.timestamp_millis() as f64),
+                indexer_id: Some(r.indexer_id),
+                cookie: None,
+            };
+            let (assessment, result, detail) = self.assess_and_act(s, candidate, &exclude, &cfg, target).await;
+            if !matches!(
+                assessment.decision,
+                Decision::ReleaseGroupMismatch
+                    | Decision::ResolutionMismatch
+                    | Decision::SourceMismatch
+                    | Decision::ProperRepackMismatch
+                    | Decision::FuzzySizeMismatch
+                    | Decision::NoDownloadLink
+            ) {
+                out.candidates += 1;
+            }
+            if assessment.decision.is_any_match() {
+                out.matches += 1;
+            }
+            let hash = assessment.metafile.as_ref().map(|m| m.info_hash.clone()).unwrap_or_else(|| r.infohash.to_lowercase());
+            if result == Some(InjectionResult::Success) {
+                out.injected += 1;
+                exclude.insert(hash.clone());
+            }
+            self.record(target, s, r.indexer_id, &r.indexer, &r.title, &hash, assessment.decision, result, &detail)?;
+        }
+        self.update_search_timestamps(&s.title, &searched)?;
+        Ok(out)
+    }
+
+    /// Keeps one candidate's outcome.
+    #[allow(clippy::too_many_arguments)]
+    fn record(
         &self,
-        g: &Grab,
-        client_id: i64,
-        save_path: &str,
-        have: &[(String, i64)],
-        client_hashes: &[String],
-        r: &Release,
-    ) -> (Decision, String, String) {
-        if r.link.starts_with("magnet:") {
-            return (Decision::MagnetOnly, r.infohash.to_lowercase(), String::new());
+        target: &Target,
+        s: &Searchee,
+        indexer_id: i64,
+        indexer: &str,
+        title: &str,
+        hash: &str,
+        decision: Decision,
+        result: Option<InjectionResult>,
+        detail: &str,
+    ) -> Result<()> {
+        self.db().execute(
+            "INSERT INTO cross_seeds (grab_id, indexer_id, indexer, title, info_hash, decision, detail, client_id, at, match_decision, result, searchee)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            p![
+                target.grab_id,
+                indexer_id,
+                indexer,
+                title,
+                hash,
+                outcome_word(decision, result),
+                detail,
+                target.client_id,
+                crate::auth::now(),
+                decision.as_str(),
+                result.map(|r| r.as_str()).unwrap_or(""),
+                s.title.clone()
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Fetches a candidate's `.torrent` through its Lantern indexer (or straight from its link with its cookie,
+    /// for an announce), as cross-seed's `snatch`.
+    async fn snatch(&self, c: Candidate) -> std::result::Result<Metafile, SnatchError> {
+        if c.link.starts_with("magnet:") {
+            return Err(SnatchError::MagnetLink);
         }
-        let bytes = match self.hub.indexers.grab(r.indexer_id, &r.link, &r.title, "Lantern cross-seed").await {
-            Ok(Grabbed::File(b)) => b,
-            Ok(Grabbed::Magnet(_)) => return (Decision::MagnetOnly, r.infohash.to_lowercase(), String::new()),
-            Err(e) => return (Decision::Failed, String::new(), e.detail),
+        let bytes = match c.indexer_id {
+            Some(ix) => match self.hub.indexers.grab(ix, &c.link, &c.name, "Lantern cross-seed").await {
+                Ok(Grabbed::File(b)) => b,
+                Ok(Grabbed::Magnet(_)) => return Err(SnatchError::MagnetLink),
+                Err(e) if e.status.as_u16() == 429 => return Err(SnatchError::RateLimited),
+                Err(e) => return Err(SnatchError::Failed(e.detail)),
+            },
+            None => {
+                let mut req = crate::hub::clients::http_client(false).get(&c.link);
+                if let Some(cookie) = &c.cookie {
+                    req = req.header("cookie", cookie);
+                }
+                let resp = req.send().await.map_err(|e| SnatchError::Failed(e.to_string()))?;
+                if resp.status().as_u16() == 429 {
+                    return Err(SnatchError::RateLimited);
+                }
+                if let Some(loc) = resp.headers().get("location").and_then(|v| v.to_str().ok()) {
+                    if loc.starts_with("magnet:") {
+                        return Err(SnatchError::MagnetLink);
+                    }
+                }
+                if !resp.status().is_success() {
+                    return Err(SnatchError::Failed(format!("{} answered {}", c.tracker, resp.status())));
+                }
+                resp.bytes().await.map_err(|e| SnatchError::Failed(e.to_string()))?.to_vec()
+            }
         };
-        let Some(meta) = torrent::parse(&bytes) else {
-            return (Decision::Failed, String::new(), format!("{} sent a file that isn't a torrent", r.indexer));
+        Metafile::decode(&bytes).map_err(SnatchError::Failed)
+    }
+
+    /// Decides on one candidate and, for a match, acts on it: (assessment, injection result, why in cross-seed's
+    /// words).
+    async fn assess_and_act(
+        &self,
+        s: &Searchee,
+        candidate: Candidate,
+        exclude: &HashSet<String>,
+        cfg: &RuntimeConfig,
+        target: &Target,
+    ) -> (Assessment, Option<InjectionResult>, String) {
+        let shown = candidate.clone();
+        let mut input = MetaOrCandidate::Candidate(candidate);
+        let a = assess_candidate(&mut input, s, exclude, &cfg.block_list, cfg, |c| self.snatch(c)).await;
+        let mut detail = reason(a.decision, s, &shown, a.metafile.as_ref(), cfg);
+        let result = match (&a.metafile, a.decision.is_any_match()) {
+            (Some(meta), true) => {
+                let (result, note) = self.perform_action(meta, a.decision, s, &shown.tracker, target).await;
+                if !note.is_empty() {
+                    detail = format!("{detail}. {note}");
+                }
+                Some(result)
+            }
+            _ => None,
         };
-        if client_hashes.contains(&meta.info_hash) {
-            return (Decision::AlreadyThere, meta.info_hash, String::new());
-        }
-        if !files_match(have, &meta.files) {
-            let detail = format!(
-                "{} files of {} bytes here, {} files of {} bytes there",
-                have.len(),
-                have.iter().map(|(_, s)| s).sum::<i64>(),
-                meta.files.len(),
-                meta.total()
+        (a, result, detail)
+    }
+
+    /// cross-seed's `performAction` with action `inject`, without linking: a `MATCH` is added to the client next
+    /// to the files; other matches (and failed injections) are saved for a later try: (result, what happened).
+    async fn perform_action(
+        &self,
+        meta: &Metafile,
+        decision: Decision,
+        s: &Searchee,
+        tracker: &str,
+        target: &Target,
+    ) -> (InjectionResult, String) {
+        if !target.complete {
+            self.save_torrent(meta, s, tracker);
+            return (
+                InjectionResult::TorrentNotComplete,
+                "The torrent it comes from isn't finished yet, so it was kept to add later".into(),
             );
-            return (Decision::FilesDiffer, meta.info_hash, detail);
+        }
+        if decision != Decision::Match {
+            self.save_torrent(meta, s, tracker);
+            return (
+                InjectionResult::Failure,
+                "Its files have other names or some are missing, so it can only be added with linked files (linkDirs); it was kept to add later".into(),
+            );
         }
         let added = async {
-            let cfg = self.hub.client(client_id).map_err(|e| e.detail)?;
+            let cfg = self.hub.client(target.client_id).map_err(|e| e.detail)?;
             let backend = self.hub.backend(&cfg).map_err(|e| e.detail)?;
-            let category = if g.category.is_empty() { "cross-seed".to_string() } else { format!("{}{CATEGORY_SUFFIX}", g.category) };
-            backend.ensure_category(&category, save_path).await?;
-            let req = AddRequest {
-                content: Content::Torrent(bytes),
-                title: r.title.clone(),
-                category,
-                save_path: save_path.to_string(),
-                tag: format!("lantern-xs-{}", g.id),
+            if backend.items().await?.iter().any(|i| i.id.eq_ignore_ascii_case(&meta.info_hash)) {
+                return Ok(false);
+            }
+            let category = if target.category.is_empty() {
+                constants::TORRENT_TAG.to_string()
+            } else {
+                format!("{}{CATEGORY_SUFFIX}", target.category)
             };
-            backend.add(&req).await.map(|_| ())
+            backend.ensure_category(&category, &target.save_path).await?;
+            let tag = if target.grab_id != 0 { format!("lantern-xs-{}", target.grab_id) } else { constants::TORRENT_TAG.to_string() };
+            let req = AddRequest {
+                content: Content::Torrent(meta.raw.clone()),
+                title: meta.name.clone(),
+                category,
+                save_path: target.save_path.clone(),
+                tag,
+            };
+            backend.add(&req).await.map(|_| true)
         }
         .await;
         match added {
-            Ok(()) => (Decision::Injected, meta.info_hash, String::new()),
-            Err(e) => (Decision::Failed, meta.info_hash, e),
+            Ok(true) => (InjectionResult::Success, String::new()),
+            Ok(false) => (InjectionResult::AlreadyExists, String::new()),
+            Err(e) => {
+                self.save_torrent(meta, s, tracker);
+                (InjectionResult::Failure, format!("Adding it failed: {e}. It was kept to add later"))
+            }
         }
+    }
+
+    /// cross-seed's `saveTorrentFile`: `[mediaType][tracker]name[infoHash].torrent` in `cross-seeds/` in the data
+    /// folder (cross-seed's `outputDir`), for the inject job to try again.
+    fn save_torrent(&self, meta: &Metafile, s: &Searchee, tracker: &str) {
+        let dir = self.hub.data_dir.join("cross-seeds");
+        let media = searchee::get_media_type(s).as_str();
+        let safe = |t: &str| t.replace(['/', '\\'], "");
+        let name = format!("[{media}][{}]{}[{}].torrent", safe(tracker), safe(&meta.file_system_safe_name()), meta.info_hash);
+        if let Err(e) = std::fs::create_dir_all(&dir).and_then(|_| std::fs::write(dir.join(name), &meta.raw)) {
+            tracing::warn!("cross-seed: the torrent for {} can't be kept: {e}", meta.name);
+        }
+    }
+
+    /// `searchForLocalTorrentByCriteria` by info hash: the client torrent with it, searched on the other sites.
+    /// `None` when every searchee was left out by the pre-filter (cross-seed logs nothing found then).
+    pub async fn search_info_hash(&self, info_hash: &str, o: &Override, ignore_cross_seeds: bool) -> Result<Option<usize>> {
+        for (cfg, backend) in self.torrent_clients()? {
+            let items = backend.items().await.map_err(|e| err(502, e))?;
+            let Some(item) = items.into_iter().find(|i| i.id.eq_ignore_ascii_case(info_hash)) else { continue };
+            let s = self.client_searchee(&cfg, &backend, &item, Label::Webhook).await?;
+            let grab = self
+                .db()
+                .one(
+                    "SELECT * FROM hub_grabs WHERE client_id=? AND lower(client_ref)=lower(?) AND protocol='torrent'",
+                    p![cfg.id, info_hash],
+                )?
+                .map(|r| Grab::from_row(&r));
+            let target = Target {
+                client_id: cfg.id,
+                save_path: item.save_path.clone(),
+                category: grab.as_ref().map(|g| g.category.clone()).unwrap_or_default(),
+                grab_id: grab.as_ref().map(|g| g.id).unwrap_or(0),
+                indexer_id: grab.as_ref().map(|g| g.indexer_id).unwrap_or(0),
+                complete: item.state.done(),
+            };
+            let opts = ContentOptions { ignore_cross_seeds, allow_season_pack_episodes: true, block_list_only: false };
+            let out = self.search_searchee(&s, &target, o, opts).await?;
+            return Ok(if out.filtered.is_some() { None } else { Some(out.matches) });
+        }
+        Err(err(404, format!("No torrent client has a torrent with the info hash {}", utils::sanitize_info_hash(info_hash))))
+    }
+
+    /// `checkNewCandidateMatch` for an announce: the client torrents like the candidate by name, decided on one at
+    /// a time until one matches and is added: (decision, injection result).
+    pub async fn check_new_candidate_match(&self, candidate: Candidate) -> Result<(Option<Decision>, Option<InjectionResult>)> {
+        let (cfg, _) = self.config();
+        let mut searchees: Vec<(Searchee, Target)> = Vec::new();
+        for (ccfg, backend) in self.torrent_clients()? {
+            for item in backend.items().await.map_err(|e| err(502, e))? {
+                if !similar_by_name(&candidate.name, &item.name) {
+                    continue;
+                }
+                let Ok(s) = self.client_searchee(&ccfg, &backend, &item, Label::Announce).await else { continue };
+                if filter_by_content(&s, &cfg, ContentOptions::default()).is_err() {
+                    continue;
+                }
+                let target = Target {
+                    client_id: ccfg.id,
+                    save_path: item.save_path.clone(),
+                    category: String::new(),
+                    grab_id: 0,
+                    indexer_id: 0,
+                    complete: item.state.done(),
+                };
+                searchees.push((s, target));
+            }
+        }
+        let unique = prefilter::filter_dupes_from_similar(&searchees.iter().map(|(s, _)| s.clone()).collect::<Vec<_>>());
+        searchees.retain(|(s, _)| unique.contains(s));
+        searchees.sort_by_key(|(s, _)| std::cmp::Reverse(s.files.len()));
+        let exclude = self.info_hashes_to_exclude().await;
+        let mut decision = None;
+        let mut action_result: Option<InjectionResult> = None;
+        for (s, target) in &searchees {
+            let (a, result, detail) = self.assess_and_act(s, candidate.clone(), &exclude, &cfg, target).await;
+            let hash = a.metafile.as_ref().map(|m| m.info_hash.clone()).unwrap_or_default();
+            self.record(target, s, 0, &candidate.tracker, &candidate.name, &hash, a.decision, result, &detail)?;
+            if a.decision == Decision::InfoHashAlreadyExists {
+                decision = Some(a.decision);
+                break;
+            }
+            if !a.decision.is_any_match() {
+                continue;
+            }
+            let r = result.unwrap_or(InjectionResult::Failure);
+            if a.decision != Decision::MatchPartial && matches!(r, InjectionResult::Success | InjectionResult::AlreadyExists) {
+                decision = Some(a.decision);
+                action_result = Some(InjectionResult::Success);
+                break;
+            }
+            if action_result == Some(InjectionResult::Success) {
+                continue;
+            }
+            if action_result.is_some() && r == InjectionResult::Failure {
+                continue;
+            }
+            if action_result == Some(InjectionResult::AlreadyExists) && r == InjectionResult::TorrentNotComplete {
+                continue;
+            }
+            decision = Some(a.decision);
+            action_result = Some(r);
+        }
+        Ok((decision, action_result))
     }
 
     /// One pass: searches every grab whose turn has come, waiting [`delay`](Self::delay) between them.
     pub async fn run(&self, limit: i64) -> Result<Outcome> {
+        self.run_with(limit, &Override::default()).await
+    }
+
+    /// [`run`](Self::run) with settings changed for this pass (`POST /api/job`'s `ignoreExclude…`).
+    pub async fn run_with(&self, limit: i64, o: &Override) -> Result<Outcome> {
         let mut all = Outcome::default();
-        for (n, g) in self.due(limit)?.into_iter().enumerate() {
+        for (n, g) in self.due_with(limit, o)?.into_iter().enumerate() {
             if n > 0 {
                 tokio::time::sleep(self.delay()).await;
             }
-            match self.search_grab(g.id).await {
+            match self.search_grab_with(g.id, o).await {
                 Ok(o) => {
                     all.candidates += o.candidates;
                     all.injected += o.injected;
+                    all.matches += o.matches;
                     all.failed.extend(o.failed);
                 }
                 // a grab that can't be searched now (gone from its client) waits for its next turn
@@ -371,25 +766,66 @@ impl CrossSeed {
     }
 }
 
+/// `getSimilarByName`, simplified to the names of client torrents: the same key title and element (season,
+/// episode, year or release) by cross-seed's keys, else cross-seed's fuzzy title comparison.
+pub fn similar_by_name(candidate: &str, have: &str) -> bool {
+    let a = utils::strip_extension(candidate);
+    let b = utils::strip_extension(have);
+    let keys = |s: &str| {
+        searchee::get_episode_keys(s)
+            .or_else(|| searchee::get_season_keys(s))
+            .or_else(|| searchee::get_movie_keys(s))
+            .or_else(|| searchee::get_anime_keys(s))
+    };
+    match (keys(&a), keys(&b)) {
+        (Some(x), Some(y)) => x.element == y.element && x.key_titles.iter().any(|k| y.key_titles.contains(k)),
+        _ => utils::are_media_titles_similar(&a, &b),
+    }
+}
+
+/// The paths of `files` (as the client sees them) inside `save_path`.
+pub fn relative(files: &[(String, i64)], save_path: &str) -> Vec<(String, i64)> {
+    let base = format!("{}/", save_path.trim_end_matches('/'));
+    files.iter().map(|(p, s)| (p.strip_prefix(&base).unwrap_or(p).to_string(), *s)).collect()
+}
+
 fn outcome_json(r: &Row) -> Value {
     json!({
         "id": r.i("id"),
         "grab_id": r.i("grab_id"),
         "grab_title": r.s("grab_title"),
+        "searchee": r.s("searchee"),
         "indexer_id": r.i("indexer_id"),
         "indexer": r.s("indexer"),
         "title": r.s("title"),
         "info_hash": r.s("info_hash"),
         "decision": r.s("decision"),
-        "words": Decision::words(&r.s("decision")),
+        "match_decision": r.s("match_decision"),
+        "result": r.s("result"),
+        "words": words(&r.s("decision")),
         "detail": r.s("detail"),
         "at": r.f("at"),
     })
 }
 
-/// Runs cross-seeding by itself while the `cross_seed` setting is on: a pass every ten minutes, a handful of
-/// grabs at a time.
+/// Runs cross-seeding: the daemon API on its own port (cross-seed's `port`, 2468 by default; 0 for none), and a
+/// pass every ten minutes while the `cross_seed` setting is on, a handful of grabs at a time.
 pub fn spawn(xs: CrossSeed) {
+    if let Some(port) = xs.config().0.port {
+        let app = daemon::router(xs.clone());
+        tokio::spawn(async move {
+            let addr = std::net::SocketAddr::from(([0, 0, 0, 0], port));
+            match tokio::net::TcpListener::bind(addr).await {
+                Ok(l) => {
+                    tracing::info!("cross-seed API listening on {addr}");
+                    let _ = axum::serve(l, app).with_graceful_shutdown(crate::shutdown_signal()).await;
+                }
+                Err(e) => tracing::warn!(
+                    "The cross-seed API can't use port {port}: {e}. Set APP_CROSS_SEED_PORT to a free port, or 0 to turn it off."
+                ),
+            }
+        });
+    }
     tokio::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(600)).await;
@@ -407,30 +843,35 @@ mod tests {
     use super::*;
 
     #[test]
-    fn names_compare_without_punctuation_or_ending() {
-        assert!(same_release("Show.Name.S01E02.1080p.WEB-DL-GRP", "Show Name S01E02 1080p WEB DL GRP"));
-        assert!(same_release("Movie.2025.2160p-GRP.mkv", "movie 2025 2160p grp"));
-        assert!(!same_release("Show.Name.S01E02.1080p-GRP", "Show.Name.S01E03.1080p-GRP"));
-        assert!(!same_release("", ""));
-        assert_eq!(normalize("Some.Band - Album (2025) [FLAC]"), "some band album 2025 flac");
-    }
-
-    #[test]
-    fn sizes_and_files() {
-        assert!(close_size(1000, Some(1015)) && !close_size(1000, Some(1100)) && close_size(1000, None));
-        let have = relative(&[("/dl/tv/Show.S01/e1.mkv".to_string(), 10), ("/dl/tv/Show.S01/e2.mkv".to_string(), 11)], "/dl/tv/");
-        assert_eq!(have[0].0, "Show.S01/e1.mkv");
-        assert!(files_match(&have, &[("Show.S01/e2.mkv".to_string(), 11), ("Show.S01/e1.mkv".to_string(), 10)]));
-        assert!(!files_match(&have, &[("Show.S01/e1.mkv".to_string(), 10)]));
-        assert!(!files_match(&have, &[("Other/e1.mkv".to_string(), 10), ("Other/e2.mkv".to_string(), 11)]));
-        assert!(!files_match(&[], &[]));
-    }
-
-    #[test]
-    fn every_decision_has_words() {
-        for d in [Decision::Injected, Decision::AlreadyThere, Decision::FilesDiffer, Decision::MagnetOnly, Decision::Failed] {
-            assert!(!Decision::words(d.as_str()).is_empty());
+    fn outcome_words_for_every_decision() {
+        assert_eq!(outcome_word(Decision::Match, Some(InjectionResult::Success)), "injected");
+        assert_eq!(outcome_word(Decision::Match, Some(InjectionResult::AlreadyExists)), "already_there");
+        assert_eq!(outcome_word(Decision::MatchSizeOnly, Some(InjectionResult::Failure)), "failed");
+        assert_eq!(outcome_word(Decision::InfoHashAlreadyExists, None), "already_there");
+        assert_eq!(outcome_word(Decision::MagnetLink, None), "magnet_only");
+        assert_eq!(outcome_word(Decision::SizeMismatch, None), "files_differ");
+        assert_eq!(outcome_word(Decision::DownloadFailed, None), "failed");
+        for d in Decision::ALL {
+            assert!(!words(outcome_word(d, None)).is_empty());
         }
-        assert_ne!(Decision::words("injected"), Decision::words("failed"));
+    }
+
+    #[test]
+    fn names_alike_for_announces() {
+        assert!(similar_by_name("Show.Name.S01E02.1080p.WEB-GRP", "Show Name S01E02 720p"));
+        assert!(!similar_by_name("Show.Name.S01E02.1080p.WEB-GRP", "Show.Name.S01E03.1080p.WEB-GRP"));
+        assert!(similar_by_name("Movie.Name.2020.1080p.BluRay-GRP", "Movie Name (2020)"));
+        assert!(!similar_by_name("Movie.Name.2020.1080p", "Other.Film.2020.1080p"));
+    }
+
+    #[test]
+    fn paths_inside_the_save_folder() {
+        let have = relative(&[("/dl/tv/Show.S01/e1.mkv".to_string(), 10)], "/dl/tv/");
+        assert_eq!(have[0].0, "Show.S01/e1.mkv");
+    }
+
+    #[test]
+    fn match_modes_from_settings_text() {
+        assert_eq!(constants::MatchMode::parse("partial"), Some(constants::MatchMode::Partial));
     }
 }
