@@ -14,8 +14,9 @@ One activity in the kit's default theme; every page is a kit-compose part, wired
 | `IndexersPage.kt` | Every indexer: working, failing, on hold or off, what went wrong, the last 7 days' numbers, Test (admins) |
 | `SearchPage.kt` | One search through every indexer, by kind; open a result's page, copy its download or magnet link |
 | `VaultPage.kt` | The vault's accounts; the owner shows secrets and the 2FA code with their password, for two minutes |
+| `DownloadsPage.kt` | Downloads (refreshed every few seconds while something moves; Try again, Remove) and Apps |
 | `Phone.kt` | Opening links in the browser and copying to the clipboard (secrets marked sensitive) |
-| `IndexerRules.kt`, `SearchRules.kt`, `VaultRules.kt` | Reading `/api/indexers`, `/api/indexers/stats`, `/api/search`, `/api/vault…` and the words shown (unit-tested in `src/test`) |
+| `IndexerRules.kt`, `SearchRules.kt`, `VaultRules.kt`, `DownloadRules.kt` | Reading `/api/indexers`, `/api/indexers/stats`, `/api/search`, `/api/vault…`, `/api/hub/grabs`, `/api/hub/apps` and the words shown (unit-tested in `src/test`) |
 | `AdminPages.kt` | Server settings (forms from the server's schema) and Diagnostics (with the app's crash reports) |
 | `Server.kt` | The address and token, the server's API (`KitApi`), What's new calls, the network check |
 | `ServerAddress.kt` | What is tried for a typed address (unit-tested in `src/test`) |
