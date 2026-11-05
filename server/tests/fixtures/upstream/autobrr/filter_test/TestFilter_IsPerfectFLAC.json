@@ -1,0 +1,146 @@
+[
+ {
+  "name": "cd_log_100_lossless",
+  "release": {
+   "Source": "CD",
+   "AudioFormat": "FLAC",
+   "Bitrate": "Lossless",
+   "HasLog": true,
+   "LogScore": 100,
+   "__type": "Release"
+  },
+  "wantOk": true
+ },
+ {
+  "name": "cd_log_100_24bit_lossless",
+  "release": {
+   "Source": "CD",
+   "AudioFormat": "FLAC",
+   "Bitrate": "24bit Lossless",
+   "HasLog": true,
+   "LogScore": 100,
+   "__type": "Release"
+  },
+  "wantOk": true
+ },
+ {
+  "name": "cd_missing_log",
+  "release": {
+   "Source": "CD",
+   "AudioFormat": "FLAC",
+   "Bitrate": "Lossless",
+   "HasLog": false,
+   "LogScore": 0,
+   "__type": "Release"
+  },
+  "wantRejections": [
+   "wanted Log, got false",
+   "wanted Log Score 100, got 0"
+  ],
+  "wantOk": false
+ },
+ {
+  "name": "cd_log_score_99",
+  "release": {
+   "Source": "CD",
+   "AudioFormat": "FLAC",
+   "Bitrate": "Lossless",
+   "HasLog": true,
+   "LogScore": 99,
+   "__type": "Release"
+  },
+  "wantRejections": [
+   "wanted Log Score 100, got 99"
+  ],
+  "wantOk": false
+ },
+ {
+  "name": "web_lossless",
+  "release": {
+   "Source": "WEB",
+   "AudioFormat": "FLAC",
+   "Bitrate": "Lossless",
+   "__type": "Release"
+  },
+  "wantOk": true
+ },
+ {
+  "name": "vinyl_24bit_lossless",
+  "release": {
+   "Source": "Vinyl",
+   "AudioFormat": "FLAC",
+   "Bitrate": "24bit Lossless",
+   "__type": "Release"
+  },
+  "wantOk": true
+ },
+ {
+  "name": "sacd_lossless",
+  "release": {
+   "Source": "SACD",
+   "AudioFormat": "FLAC",
+   "Bitrate": "Lossless",
+   "__type": "Release"
+  },
+  "wantOk": true
+ },
+ {
+  "name": "blu_ray_lossless",
+  "release": {
+   "Source": "Blu-Ray",
+   "AudioFormat": "FLAC",
+   "Bitrate": "24bit Lossless",
+   "__type": "Release"
+  },
+  "wantOk": true
+ },
+ {
+  "name": "dat_lossless",
+  "release": {
+   "Source": "DAT",
+   "AudioFormat": "FLAC",
+   "Bitrate": "Lossless",
+   "__type": "Release"
+  },
+  "wantOk": true
+ },
+ {
+  "name": "web_mp3_320",
+  "release": {
+   "Source": "WEB",
+   "AudioFormat": "MP3",
+   "Bitrate": "320",
+   "__type": "Release"
+  },
+  "wantRejections": [
+   "wanted Format FLAC, got MP3",
+   "wanted Bitrate Lossless / 24bit Lossless, got 320"
+  ],
+  "wantOk": false
+ },
+ {
+  "name": "unknown_source",
+  "release": {
+   "Source": "Unknown",
+   "AudioFormat": "FLAC",
+   "Bitrate": "Lossless",
+   "__type": "Release"
+  },
+  "wantRejections": [
+   "wanted Source CD (100% log) or Vinyl/WEB/DVD/Soundboard/Cassette/SACD/Blu-ray/DAT, got Unknown"
+  ],
+  "wantOk": false
+ },
+ {
+  "name": "empty_release",
+  "release": {
+   "__type": "Release"
+  },
+  "wantRejections": [
+   "wanted Format FLAC, got ",
+   "wanted Bitrate Lossless / 24bit Lossless, got ",
+   "wanted Source CD (100% log) or Vinyl/WEB/DVD/Soundboard/Cassette/SACD/Blu-ray/DAT, got "
+  ],
+  "wantOk": false
+ }
+]

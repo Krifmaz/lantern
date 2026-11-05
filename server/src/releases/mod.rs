@@ -7,7 +7,9 @@
 //! | [`announce`] | the announce definitions (autobrr's files) and reading announce lines |
 //! | [`irc`] | the IRC connections, one per IRC source |
 //! | [`rss`] | the RSS feeds and Lantern's own indexers, polled |
-//! | [`name`], [`filter`], [`torrent`] | reading a release and deciding whether to take it |
+//! | [`rls`], [`release`], [`releasetags`], [`humanize`] | reading a release (autobrr's release parsing, on a port of rls) |
+//! | [`filter`], [`rejections`], [`wildcard`], [`sanitize`], [`torrent`] | deciding whether to take it (autobrr's filters) |
+//! | [`macros`] | autobrr's `{{ .TorrentName }}` macros |
 //! | [`push`] | where a taken release goes |
 //! | [`api`] | the routes |
 //!
@@ -17,17 +19,26 @@
 pub mod announce;
 pub mod api;
 pub mod filter;
+pub mod gotemplate;
+pub mod humanize;
 pub mod irc;
-pub mod name;
+pub mod macros;
 pub mod push;
+pub mod rejections;
+pub mod release;
+pub mod releasetags;
+pub mod rls;
 pub mod rss;
+pub mod sanitize;
 pub mod torrent;
+pub mod wildcard;
 
 use crate::indexers::{Indexers, LinkSigner, MASK};
 use filter::Filter;
 use kit_server_core::{err, p, Db, Result, Row, RowExt, SqliteDb};
-use name::Name;
 use push::{DownloadHub, Grab};
+use rejections::RejectionReasons;
+use release::{IndexerMinimal, Release};
 use serde_json::{json, Map, Value};
 use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
@@ -116,6 +127,52 @@ pub struct Found {
     pub tags: Vec<String>,
     /// The year, when the announce says.
     pub year: Option<u32>,
+    /// The tracker's short name (the announce definition's identifier, `redacted`); empty for feeds.
+    pub identifier: String,
+    /// IRC: every value the announce line gave, by autobrr's names (`torrentName`, `torrentSize` …).
+    pub vars: BTreeMap<String, String>,
+    /// IRC: the unit of a size announced without one (the definition's `forcesizeunit`).
+    pub force_size_unit: String,
+}
+
+impl Found {
+    /// The release as autobrr's filters see it: an announce's values read as autobrr's `MapVars` reads them (a
+    /// feed item's as its feed reader does), then the name read by [`Release::parse_string`].
+    pub fn release(&self) -> Release {
+        let mut r = Release::new(IndexerMinimal {
+            id: self.source_id,
+            name: self.source_name.clone(),
+            identifier: self.identifier.clone(),
+            identifier_external: self.source_name.clone(),
+        });
+        let mut mapped = false;
+        if !self.vars.is_empty() {
+            let mut vars = self.vars.clone();
+            vars.insert("torrentName".into(), self.title.clone());
+            vars.remove("releaseName");
+            mapped = r.map_vars(&vars, &self.force_size_unit, "").is_ok();
+        }
+        if !mapped {
+            r.implementation = "RSS".into();
+            r.torrent_name = self.title.clone();
+            r.category = self.category.clone();
+            r.size = self.size.unwrap_or(0);
+            r.freeleech = self.freeleech || self.freeleech_percent.is_some_and(|p| p > 0);
+            r.freeleech_percent = self.freeleech_percent.map(i64::from).unwrap_or(if self.freeleech { 100 } else { 0 });
+            if r.freeleech {
+                r.bonus.push("Freeleech".into());
+            }
+            r.uploader = self.uploader.clone();
+            r.tags = self.tags.clone();
+            r.year = self.year.map(i64::from).unwrap_or(0);
+        }
+        r.protocol = if self.protocol == "usenet" { "usenet".into() } else { "torrent".into() };
+        r.download_url = self.download_url.clone();
+        r.info_url = self.info_url.clone();
+        let name = r.torrent_name.clone();
+        r.parse_string(&name);
+        r
+    }
 }
 
 /// A place releases come from.
@@ -440,7 +497,8 @@ impl Releases {
     /// A filter from `body` over `cur`, masked API keys keeping the saved ones; the problem in words.
     fn filter_from(body: &Value, cur: Option<&Filter>) -> Result<Filter> {
         let mut base = serde_json::to_value(cur.cloned().unwrap_or_else(|| Filter::new(""))).unwrap_or_default();
-        if let (Value::Object(b), Value::Object(n)) = (&mut base, body) {
+        let body = filter::upgrade(body.clone());
+        if let (Value::Object(b), Value::Object(n)) = (&mut base, &body) {
             for (k, v) in n {
                 b.insert(k.clone(), v.clone());
             }
@@ -454,6 +512,7 @@ impl Releases {
                     .unwrap_or_default();
             }
         }
+        f.sanitize();
         f.validate().map_err(|e| err(400, e))?;
         Ok(f)
     }
@@ -496,7 +555,7 @@ impl Releases {
             }
         }
         v["grabs_today"] = json!(self.grabs_since(f.id, crate::auth::now() - 86400.0));
-        v
+        filter::with_legacy(v)
     }
 
     /// How many releases filter `id` sent on since `since`.
@@ -542,23 +601,48 @@ impl Releases {
 
     // ---- deciding and sending ----
 
+    /// `flt` with its download count in its current window filled in, when it has a download limit.
+    fn with_downloads(&self, flt: &Filter) -> Filter {
+        let mut flt = flt.clone();
+        if flt.is_max_downloads_limit_enabled() {
+            let since = flt.downloads_window_start(chrono::Local::now()).map(|t| t.timestamp() as f64).unwrap_or(0.0);
+            flt.downloads = Some(filter::FilterDownloads { period_count: self.grabs_since(flt.id, since) });
+        }
+        flt
+    }
+
+    /// The checks that need nothing fetched: the source the filter watches, then autobrr's `CheckFilter` on a
+    /// copy of `base`. The release as the filter left it, or why it doesn't pass.
+    fn first_checks(&self, flt: &Filter, f: &Found, base: &Release) -> std::result::Result<Release, Vec<String>> {
+        if !flt.indexers.is_empty() && !flt.indexers.contains(&f.source_id) {
+            return Err(vec![format!("it comes from {}, which this filter doesn't watch", f.source_name)]);
+        }
+        let mut r = base.clone();
+        let (rr, ok) = self.with_downloads(flt).check_filter(&mut r);
+        if ok {
+            Ok(r)
+        } else {
+            Err(rr.lines())
+        }
+    }
+
     /// Which filters `f` passes and why the others don't, sending nothing (a size limit with no size known
     /// passes: Lantern reads the torrent then).
     pub fn dry_run(&self, f: &Found) -> Result<Vec<Value>> {
-        let n = Name::parse(&f.title);
+        let base = f.release();
         Ok(self
             .filters()?
             .iter()
             .filter(|flt| flt.enabled)
-            .map(|flt| match flt.check(f, &n) {
-                Ok(()) => json!({ "id": flt.id, "name": flt.name, "passes": true, "why": [] }),
+            .map(|flt| match self.first_checks(flt, f, &base) {
+                Ok(_) => json!({ "id": flt.id, "name": flt.name, "passes": true, "why": [] }),
                 Err(why) => json!({ "id": flt.id, "name": flt.name, "passes": false, "why": why }),
             })
             .collect())
     }
 
-    /// Checks `f` against the enabled filters, highest priority first; the first one it passes sends it on.
-    /// Every release ends up in the log.
+    /// Checks `f` against the enabled filters, highest priority first, as autobrr's filter service does; the
+    /// first one it passes sends it on. Every release ends up in the log.
     pub async fn handle(&self, mut f: Found) -> Outcome {
         let filters = match self.filters() {
             Ok(l) => l.into_iter().filter(|x| x.enabled).collect::<Vec<_>>(),
@@ -568,45 +652,48 @@ impl Releases {
                 return o;
             }
         };
-        let n = Name::parse(&f.title);
+        let base = f.release();
         let mut reasons: Vec<(String, Vec<String>)> = Vec::new();
         let mut size_read = false;
         for flt in &filters {
-            if let Err(why) = flt.check(&f, &n) {
-                reasons.push((flt.name.clone(), why));
-                continue;
-            }
-            if flt.wants_size() && f.size.is_none() {
-                if !size_read {
-                    size_read = true;
-                    f.size = self.read_size(&f.download_url).await;
-                }
-                match f.size {
-                    None => {
-                        reasons.push((flt.name.clone(), vec!["its size isn't known and the torrent file couldn't be read".into()]));
-                        continue;
-                    }
-                    Some(_) => {
-                        if let Err(why) = flt.check(&f, &n) {
-                            reasons.push((flt.name.clone(), why));
-                            continue;
-                        }
-                    }
-                }
-            }
-            if flt.max_downloads > 0 {
-                let since = flt.window_secs().map(|w| crate::auth::now() - w).unwrap_or(0.0);
-                if self.grabs_since(flt.id, since) >= flt.max_downloads {
-                    reasons.push((
-                        flt.name.clone(),
-                        vec![format!(
-                            "it already took {} releases this {}",
-                            flt.max_downloads,
-                            if flt.max_downloads_per.is_empty() { "day" } else { &flt.max_downloads_per }
-                        )],
-                    ));
+            let r = match self.first_checks(flt, &f, &base) {
+                Ok(r) => r,
+                Err(why) => {
+                    reasons.push((flt.name.clone(), why));
                     continue;
                 }
+            };
+            // autobrr's AdditionalSizeCheck: the announce gave no size, so the torrent is read
+            if r.additional_size_check_required {
+                if !size_read {
+                    size_read = true;
+                    if f.size.is_none() {
+                        f.size = self.read_size(&f.download_url).await;
+                    }
+                }
+                let Some(size) = f.size else {
+                    reasons.push((flt.name.clone(), vec!["its size isn't known and the torrent file couldn't be read".into()]));
+                    continue;
+                };
+                let mut rr = RejectionReasons::new();
+                match flt.check_release_size(size, &mut rr) {
+                    Ok(true) => {}
+                    Ok(false) => {
+                        reasons.push((flt.name.clone(), rr.lines()));
+                        continue;
+                    }
+                    Err(e) => {
+                        reasons.push((flt.name.clone(), vec![e]));
+                        continue;
+                    }
+                }
+            }
+            if r.additional_uploader_check_required || r.additional_record_label_check_required {
+                reasons.push((
+                    flt.name.clone(),
+                    vec!["the announce doesn't say its uploader or record label, and Lantern can't ask this site yet".into()],
+                ));
+                continue;
             }
             if flt.skip_duplicates && self.already_taken(flt.id, &f.title) {
                 reasons.push((flt.name.clone(), vec!["it already took a release with this name".into()]));
@@ -617,7 +704,7 @@ impl Releases {
                 continue;
             }
             if flt.delay > 0 {
-                tokio::time::sleep(Duration::from_secs(flt.delay.min(3600))).await;
+                tokio::time::sleep(Duration::from_secs(flt.delay.clamp(0, 3600) as u64)).await;
             }
             let o = self.send(flt, &f, reasons).await;
             self.write_log(&f, &o);
@@ -725,7 +812,8 @@ impl Releases {
 
 /// A filter from its row.
 fn filter_of(r: &Row) -> Filter {
-    let mut f: Filter = serde_json::from_str(&r.s("body")).unwrap_or_default();
+    let body: Value = serde_json::from_str(&r.s("body")).unwrap_or_default();
+    let mut f: Filter = serde_json::from_value(filter::upgrade(body)).unwrap_or_default();
     f.id = r.i("id");
     f.name = r.s("name");
     f.enabled = r.b("enabled");

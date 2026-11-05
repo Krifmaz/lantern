@@ -1,0 +1,98 @@
+[
+ {
+  "name": "No Whitespace",
+  "input": "Hello",
+  "expectedString": "Hello",
+  "expectedFilter": "Hello"
+ },
+ {
+  "name": "Leading and Trailing Spaces",
+  "input": "  Hello World  ",
+  "expectedString": "Hello World",
+  "expectedFilter": "Hello World"
+ },
+ {
+  "name": "Multiple Words with Tabs",
+  "input": "Hello\tWorld",
+  "expectedString": "Hello\tWorld",
+  "expectedFilter": "Hello World"
+ },
+ {
+  "name": "Comma Separation",
+  "input": "Hello,World",
+  "expectedString": "Hello,World",
+  "expectedFilter": "Hello,World"
+ },
+ {
+  "name": "Newlines and Special Characters",
+  "input": "Hello\nWorld\r\nTest",
+  "expectedString": "Hello\nWorld\r\nTest",
+  "expectedFilter": "Hello,World,Test"
+ },
+ {
+  "name": "Empty String",
+  "input": "",
+  "expectedString": "",
+  "expectedFilter": ""
+ },
+ {
+  "name": "Whitespace Only",
+  "input": "    ",
+  "expectedString": "",
+  "expectedFilter": ""
+ },
+ {
+  "name": "Form Feeds and Vertical Tabs",
+  "input": "Hello\fWorld\u000bTest",
+  "expectedString": "Hello\fWorld\u000bTest",
+  "expectedFilter": "HelloWorld,Test"
+ },
+ {
+  "name": "Multiple Special Characters",
+  "input": "Test,\nWorld\tForm\fFeed\u000bVertical",
+  "expectedString": "Test,\nWorld\tForm\fFeed\u000bVertical",
+  "expectedFilter": "Test,World FormFeed,Vertical"
+ },
+ {
+  "name": "Whitespace with Newlines and Tabs",
+  "input": " \n\t Test \n World \t ",
+  "expectedString": "Test \n World",
+  "expectedFilter": "Test,World"
+ },
+ {
+  "name": "Combination of Special Characters",
+  "input": "\t\n\fTest\u000b,World\n",
+  "expectedString": "Test\u000b,World",
+  "expectedFilter": "Test,World"
+ },
+ {
+  "name": "Special Characters Only",
+  "input": "\r\n\t\f\u000b",
+  "expectedString": "",
+  "expectedFilter": ""
+ },
+ {
+  "name": "No Interesting Characters",
+  "input": ",\n,\r,\t,\f,\u000b,",
+  "expectedString": ",\n,\r,\t,\f,\u000b,",
+  "expectedFilter": ""
+ },
+ {
+  "name": "Complex String with Symbols",
+  "input": "Hello @ World!",
+  "expectedString": "Hello @ World!",
+  "expectedFilter": "Hello @ World!"
+ },
+ {
+  "name": "Whitespace Between Words",
+  "input": "Hello    World",
+  "expectedString": "Hello    World",
+  "expectedFilter": "Hello World"
+ },
+ {
+  "name": "To the Moon Commas",
+  "input": "Hello,,,,,World",
+  "expectedString": "Hello,,,,,World",
+  "expectedFilter": "Hello,World"
+ }
+]

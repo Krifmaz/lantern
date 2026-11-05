@@ -1,0 +1,122 @@
+[
+ {
+  "pattern": "The?Simpsons*",
+  "text": "The Simpsons S12",
+  "matched": true
+ },
+ {
+  "pattern": "The?Simpsons*",
+  "text": "The.Simpsons.S12",
+  "matched": true
+ },
+ {
+  "pattern": "The?Simpsons*",
+  "text": "The.Simps.S12",
+  "matched": false
+ },
+ {
+  "pattern": "The?Simp",
+  "text": "The.Simps.S12",
+  "matched": false
+ },
+ {
+  "pattern": "The?Simp",
+  "text": "The.Simps.S12",
+  "matched": false
+ },
+ {
+  "pattern": "The*Simp",
+  "text": "The.Simp",
+  "matched": true
+ },
+ {
+  "pattern": "*tv*",
+  "text": "tv",
+  "matched": true
+ },
+ {
+  "pattern": "t?",
+  "text": "tv",
+  "matched": true
+ },
+ {
+  "pattern": "?",
+  "text": "z",
+  "matched": true
+ },
+ {
+  "pattern": "*EPUB*",
+  "text": "Translated (Group) / EPUB",
+  "matched": true
+ },
+ {
+  "pattern": "*EP?B*",
+  "text": "ARG THIS IS A STUPID LONG ONG LONG LONG STRING BEFORE AND AFTER \\n ARG THIS IS A STUPID LONG ONG LONG LONG STRING BEFORE AND AFTER \\n ARG THIS IS A STUPID LONG ONG LONG LONG STRING BEFORE AND AFTER \\n ARG THIS IS A STUPID LONG ONG LONG LONG STRING BEFORE AND AFTER \\n Translated (Group) / EPUB WITH OTHER STUFF ON THE OTHER END ARG THIS IS A STUPID LONG ONG LONG LONG STRING BEFORE AND AFTER \\n ARG THIS IS A STUPID LONG ONG LONG LONG STRING BEFORE AND AFTER \\n ARG THIS IS A STUPID LONG ONG LONG LONG STRING BEFORE AND AFTER \\n ",
+  "matched": true
+ },
+ {
+  "pattern": "*shift*",
+  "text": "Good show shift S02 2160p ATVP WEB-DL DDP 5.1 Atmos DV HEVC-GROUP",
+  "matched": true
+ },
+ {
+  "pattern": "The God of the Brr*The Power of Brr",
+  "text": "The Power of Brr",
+  "matched": false
+ },
+ {
+  "pattern": "The God of the Brr*The Power of Brr",
+  "text": "The God of the Brr",
+  "matched": false
+ },
+ {
+  "pattern": "The God of the Brr*The Power of Brr",
+  "text": "The God of the Brr The Power of Brr",
+  "matched": true
+ },
+ {
+  "pattern": "The God of the Brr*The Power of Brr",
+  "text": "The God of the Brr - The Power of Brr",
+  "matched": true
+ },
+ {
+  "pattern": "The God of the Brr*The Power of Brr",
+  "text": "The God of the BrrThe Power of Brr",
+  "matched": true
+ },
+ {
+  "pattern": "mysteries?of?the?abandoned*",
+  "text": "them",
+  "matched": false
+ },
+ {
+  "pattern": "t?q*",
+  "text": "tam e",
+  "matched": false
+ },
+ {
+  "pattern": "Hard?Quiz*",
+  "text": "HardX 24 10 12 Ella Reese XXX 1080p MP4-WRB",
+  "matched": false
+ },
+ {
+  "pattern": "Hard?Quiz*",
+  "text": "HardX",
+  "matched": false
+ },
+ {
+  "pattern": "T?Q*",
+  "text": "T?Q",
+  "matched": true
+ },
+ {
+  "pattern": "Lee*",
+  "text": "Let Go",
+  "matched": false
+ },
+ {
+  "pattern": "*black?metal*",
+  "text": "   ||  Artist......: Vredehammer                                        ||\n   ||  Album.......: Mintaka                                            ||\n   ||  Year........: 2013                                               ||\n   ||                                                                   ||\n   ||  Genre.......: black metal                                        ||\n   ||  Label.......: Indie Recordings                                   ||\n   ||                                                                   ||\n   ||  Source......: FLAC/WEB (16bit)                                   ||\n   ||  Encoder.....: libFLAC                                            ||\n   ||  Bitrate.....: 948 kbps avg.                                      ||\n   ||  F.Rate......: 44.1kHz                                            ||\n   ||                                                                   ||\n   ||  Playtime....: 00:19:27 / 138.70MB                                ||\n   ||  R.Date......: 2024-10-22                                         ||\n   ||  S.Date......: 2013-03-27                                         ||\n   ||                                                                   ||\n   ||                                                                   ||\n   ||  01. The King Has Risen                                  3:53     ||\n   ||  02. H├╕ster av sjeler                                    4:17     ||\n   ||  03. Mintaka                                             4:10     ||\n   ||  04. Ditt siste aandedrag                                7:07     ||\n   ||                                                                   ||\n   ||                                                                   ||\n   ||  Vredehammer combines aggressive guitars and Norse melodies.      ||\n   ",
+  "matched": true
+ }
+]

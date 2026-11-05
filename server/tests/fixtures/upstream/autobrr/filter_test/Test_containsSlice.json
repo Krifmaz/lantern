@@ -1,0 +1,49 @@
+[
+ {
+  "name": "test_1",
+  "args": {
+   "tag": "group1",
+   "filters": [
+    "group1",
+    "group2"
+   ],
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_2",
+  "args": {
+   "tag": "group1",
+   "filters": [
+    "group2",
+    "group3"
+   ],
+   "__type": "args"
+  },
+  "want": false
+ },
+ {
+  "name": "test_3",
+  "args": {
+   "tag": "2160p",
+   "filters": [
+    "1080p",
+    "2160p"
+   ],
+   "__type": "args"
+  },
+  "want": true
+ },
+ {
+  "name": "test_4",
+  "args": {
+   "tag": "",
+   "filters": [
+    ""
+   ],
+   "__type": "args"
+  },
+  "want": false
+ }
+]
