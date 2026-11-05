@@ -43,7 +43,7 @@ fn torrent_of(site: &str) -> Vec<u8> {
 async fn site(Path(s): Path<String>, Query(q): Query<HashMap<String, String>>, h: axum::http::HeaderMap) -> Response {
     let host = h.get(header::HOST).and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
     if q.get("t").map(String::as_str) == Some("caps") {
-        let caps = r#"<?xml version="1.0"?><caps><searching><search available="yes" supportedParams="q"/></searching>
+        let caps = r#"<?xml version="1.0"?><caps><searching><search available="yes" supportedParams="q"/><tv-search available="yes" supportedParams="q,season,ep"/></searching>
 <categories><category id="5000" name="TV"/></categories></caps>"#;
         return ([(header::CONTENT_TYPE, "application/xml")], caps).into_response();
     }
@@ -310,6 +310,8 @@ async fn the_cross_seed_api_answers_as_cross_seed_does() {
     let vars: HashMap<String, String> =
         [("APP_API_KEY", "test-key"), ("APP_CROSS_SEED_DELAY", "30")].iter().map(|(k, v)| (k.to_string(), v.to_string())).collect();
     let st = server::AppState::open(&dir.join("data"), web, move |n| vars.get(n).cloned()).await.unwrap();
+    // no RSS job, so the job API has one that isn't here
+    st.settings.set_many(&json!({ "cross_seed_rss_cadence": "" })).await.unwrap();
     for s in ["a", "b", "c", "d"] {
         let ix = json!({ "kind": "torznab", "name": format!("Site {}", s.to_uppercase()), "base_url": url, "settings": { "api_path": format!("/{s}/api") } });
         st.indexers.add(&ix).unwrap();
@@ -352,7 +354,14 @@ async fn the_cross_seed_api_answers_as_cross_seed_does() {
     let a = recent.iter().find(|r| r["indexer"] == "Site A" && r["title"] == TITLE).unwrap();
     assert_eq!(a["match_decision"], "SAME_INFO_HASH", "the very torrent we have");
 
-    // jobs: one not here, one run ahead of schedule
+    // the webhook asked for the jobs to be checked, so the search job (never run) may be running: wait for it
+    for _ in 0..200 {
+        if st.cross_seed.job("search").is_some_and(|j| !j.is_active) {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    // jobs: one not here (no RSS cadence), one run ahead of schedule
     assert_eq!(daemon(&app, "POST", "/api/job", true, "name=rss").await, (404, "rss: unable to run, disabled in config".into(), false));
     let (status, body, _) = daemon(&app, "POST", "/api/job", true, r#"{"name":"search","ignoreExcludeRecentSearch":true}"#).await;
     assert_eq!((status, body.as_str()), (200, "search: running ahead of schedule"));

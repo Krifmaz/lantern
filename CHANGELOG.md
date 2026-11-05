@@ -3,6 +3,12 @@
 ## Unreleased
 
 ### Changed
+- Cross-seed now searches and runs its jobs as cross-seed v6.13.9 does. Besides your client torrents, it can search
+  the `.torrent` files of a folder (Torrent folder) and the files in your data folders (Data folders, looked into
+  as deep as you set). It makes whole seasons out of single episodes. It asks Sonarr and Radarr for a release's
+  ids, so sites can be searched by id. It sends cross-seed's messages to your notification webhooks. Its jobs run
+  on their own schedule: new releases every 30 minutes, a full search daily, saved matches added hourly, and a
+  daily tidy-up. Announces and the webhook compare with all of these, and `POST /api/job` runs any job now.
 - Cross-seed now adds its matches as cross-seed v6.13.9 does. It talks to qBittorrent, rTorrent, Transmission and
   Deluge itself, several at once (your torrent download clients, or the ones you list in Torrent clients). It can
   link a match's files into your link folders (hard links, symbolic links, reflinks or copies, under the site's name

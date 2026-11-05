@@ -1,4 +1,4 @@
-// Ported from cross-seed v6.13.9 (src/server.ts, and the run-ahead part of src/jobs.ts), Apache-2.0.
+// Ported from cross-seed v6.13.9 (src/server.ts), Apache-2.0.
 //! cross-seed's daemon API, on its own port as cross-seed has it (`cross_seed_port`, 2468 by default), so autobrr,
 //! Sonarr, Radarr and scripts reach Lantern where they reach cross-seed. Answers are cross-seed's: plain text
 //! bodies (no content type), its status codes and its messages.
@@ -23,13 +23,12 @@ use super::constants::{Decision, InjectionResult};
 use super::decide::Candidate;
 use super::prefilter::{human_readable_date, MAX_INT};
 use super::utils::{format_as_list, sanitize_info_hash};
-use super::{now_ms, CrossSeed, Target};
+use super::{now_ms, CrossSeed};
 use axum::body::{Body, Bytes};
 use axum::extract::State;
 use axum::http::{HeaderMap, Method, StatusCode, Uri};
 use axum::response::Response;
 use axum::Router;
-use kit_server_core::{p, Db, RowExt};
 use serde_json::{Map, Number, Value};
 
 /// The daemon API for `xs`: every path goes through [`handle`], as cross-seed's request router.
@@ -347,11 +346,15 @@ async fn webhook(xs: CrossSeed, body: &str) -> Response {
     };
     let ignore_cross_seeds = req.ignore_cross_seeds.unwrap_or(true);
     tokio::spawn(async move {
-        let found = match (&req.info_hash, &req.path) {
-            (Some(h), _) => xs.search_info_hash(h, &o, ignore_cross_seeds).await,
-            (None, Some(p)) => search_path(&xs, p, &o, ignore_cross_seeds).await,
-            _ => Ok(None),
-        };
+        // a saved torrent may now have what it was waiting for
+        if xs.job(super::jobs::INJECT).is_some() {
+            xs.update_job(super::jobs::INJECT, |j| j.run_ahead = true);
+            let me = xs.clone();
+            tokio::spawn(async move { me.check_jobs(false, true).await });
+        }
+        let cfg = xs.config().0;
+        xs.index_torrents_and_data_dirs(&cfg, false).await;
+        let found = xs.search_for_local_torrent_by_criteria(req.info_hash.as_deref(), req.path.as_deref(), &o, ignore_cross_seeds).await;
         match found {
             Ok(Some(n)) => tracing::info!("cross-seed webhook: Found {n} torrents for {criteria}"),
             Ok(None) => {}
@@ -359,18 +362,6 @@ async fn webhook(xs: CrossSeed, body: &str) -> Response {
         }
     });
     reply(204, "")
-}
-
-/// The webhook by path: the data as a searchee, added next to itself in the first torrent client on a match
-/// (cross-seed without linking puts it in the data's folder). Searching data folders as a whole comes with
-/// data-based searching.
-async fn search_path(xs: &CrossSeed, path: &str, o: &Override, ignore_cross_seeds: bool) -> kit_server_core::Result<Option<usize>> {
-    let mut s = super::searchee::create_searchee_from_path(std::path::Path::new(path)).map_err(|e| kit_server_core::err(400, e))?;
-    s.label = super::searchee::Label::Webhook;
-    let target = Target::default();
-    let opts = super::prefilter::ContentOptions { ignore_cross_seeds, allow_season_pack_episodes: true, block_list_only: false };
-    let out = xs.search_searchee(&s, &target, o, opts).await?;
-    Ok(if out.filtered.is_some() { None } else { Some(out.matches) })
 }
 
 /// A zod issue as cross-seed's announce message shows it.
@@ -535,7 +526,14 @@ async fn announce(xs: CrossSeed, body: &str) -> Response {
     };
     tracing::debug!("cross-seed announce: Received announce from {}: {}", candidate.tracker, candidate.name);
     let shown = format!("{} from {}", candidate.name, candidate.tracker);
-    match xs.check_new_candidate_match(candidate).await {
+    let cfg = xs.config().0;
+    if !cfg.use_client_torrents && cfg.torrent_dir.is_none() && cfg.data_dirs.is_empty() {
+        let message = "Announce requires at least one of useClientTorrents, torrentDir, or dataDirs to be set";
+        tracing::error!("cross-seed announce: {message}");
+        return reply(500, message);
+    }
+    xs.index_torrents_and_data_dirs(&cfg, false).await;
+    match xs.check_new_candidate_match(candidate, super::searchee::Label::Announce).await {
         Ok((None, _)) => reply(204, ""),
         Ok((decision, result)) => match determine_response(decision, result) {
             Some((status, state)) => {
@@ -578,11 +576,6 @@ fn job_schema(v: &Value) -> Option<(String, bool, bool)> {
     Some((name, recent, older))
 }
 
-/// `getJobLastRun`.
-fn job_last_run(xs: &CrossSeed, name: &str) -> Option<f64> {
-    xs.hub.db.one("SELECT last_run FROM cross_seed_job_log WHERE name=?", p![name]).ok().flatten().map(|r| r.f("last_run"))
-}
-
 /// `runJob`: `POST /api/job`.
 async fn job(xs: CrossSeed, body: &str) -> Response {
     let (data, shape) = match parse_data(body) {
@@ -600,8 +593,8 @@ async fn job(xs: CrossSeed, body: &str) -> Response {
         return reply(400, message);
     };
     tracing::info!("cross-seed: Received job request: {}", inspect(&data, &shape));
-    let job = xs.jobs.lock().map(|j| j.iter().find(|j| j.name == name).cloned()).unwrap_or(None);
-    let Some(job) = job else {
+    xs.refresh_jobs();
+    let Some(job) = xs.job(&name) else {
         let message = format!("{name}: unable to run, disabled in config");
         tracing::error!("cross-seed: {message}");
         return reply(404, message);
@@ -611,9 +604,8 @@ async fn job(xs: CrossSeed, body: &str) -> Response {
         tracing::error!("cross-seed: {message}");
         return reply(409, message);
     }
-    let last_run = job_last_run(&xs, &name).unwrap_or(0.0);
-    let now = now_ms();
-    if now < last_run {
+    let last_run = xs.job_last_run(&name).unwrap_or(0.0);
+    if now_ms() < last_run {
         let message = format!(
             "{name}: not eligible to run ahead of schedule, next scheduled run is at {} (triggering an early run is allowed after {})",
             human_readable_date(last_run + job.cadence),
@@ -627,35 +619,16 @@ async fn job(xs: CrossSeed, body: &str) -> Response {
         exclude_older: ignore_older.then_some(MAX_INT),
         ..Override::default()
     };
-    set_active(&xs, &name, true);
-    let runner = xs.clone();
-    let job_name = name.clone();
-    tokio::spawn(async move {
-        let ok = runner.run_with(50, &o).await;
-        set_active(&runner, &job_name, false);
-        match ok {
-            Ok(_) => {
-                // a search or RSS run ahead of schedule puts the next one a cadence later (`delayNextRun`)
-                let delayed = matches!(job_name.as_str(), "search" | "rss");
-                let last = if delayed { now + job.cadence } else { now };
-                let _ = runner.hub.db.execute(
-                    "INSERT INTO cross_seed_job_log (name, last_run) VALUES (?,?) ON CONFLICT(name) DO UPDATE SET last_run=excluded.last_run",
-                    p![job_name, last],
-                );
-            }
-            Err(e) => tracing::error!("cross-seed: {job_name}: {}", e.detail),
+    xs.update_job(&name, |j| {
+        j.run_ahead = true;
+        if j.name == super::jobs::SEARCH || j.name == super::jobs::RSS {
+            j.delay_next_run = true;
         }
+        j.config_override = o;
     });
+    let me = xs.clone();
+    tokio::spawn(async move { me.check_jobs(false, true).await });
     reply(200, format!("{name}: running ahead of schedule"))
-}
-
-/// Marks job `name` as running or not.
-fn set_active(xs: &CrossSeed, name: &str, active: bool) {
-    if let Ok(mut jobs) = xs.jobs.lock() {
-        if let Some(j) = jobs.iter_mut().find(|j| j.name == name) {
-            j.is_active = active;
-        }
-    }
 }
 
 #[cfg(test)]
