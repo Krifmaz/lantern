@@ -184,6 +184,18 @@ pub enum MediaType {
 }
 
 impl MediaType {
+    /// Every media type, in cross-seed's order.
+    pub const ALL: [MediaType; 8] = [
+        MediaType::Episode,
+        MediaType::Season,
+        MediaType::Movie,
+        MediaType::Anime,
+        MediaType::Video,
+        MediaType::Audio,
+        MediaType::Book,
+        MediaType::Other,
+    ];
+
     /// cross-seed's name for it.
     pub fn as_str(self) -> &'static str {
         match self {
