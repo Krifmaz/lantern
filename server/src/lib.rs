@@ -354,8 +354,8 @@ pub fn app(st: AppState) -> Router {
         .merge(releases::api::router())
         .merge(crossseed::api::router())
         .merge(prowlarr_ui::router(&st))
-        // autobrr's frontend; its API (track A-api, server/src/releases/) goes in place of the empty router
-        .merge(autobrr_ui::router(&st, Router::new()))
+        // autobrr's frontend, with its API (server/src/releases/autobrr_api.rs) at /autobrr/api
+        .merge(autobrr_ui::router(&st, releases::autobrr_api::router()))
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))
