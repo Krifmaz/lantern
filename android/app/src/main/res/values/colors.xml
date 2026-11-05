@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- the default theme's background (the kit's design tokens), for the window behind Compose -->
+    <color name="app_bg">#FF161617</color>
+</resources>

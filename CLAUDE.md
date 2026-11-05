@@ -17,6 +17,8 @@ and the kit's default theme. Read the kit's `CHANGELOG.md` before bumping the ki
 - **Desktop.** `cd desktop && cargo test` draws every page headless; every server path lives in
   `desktop/src/paths.rs`; release file names from `scripts/desktop-package.sh` must match `desktop/src/release.rs`
   (`file_for`).
+- **Android.** `android/` is a Gradle build of its own on kit-compose (same kit tag); ktlint and `./gradlew test`
+  pass; the kit's `kit-android.yml` builds and tests it in CI.
 - **Safety.** The container is distroless and runs as a non-root user with a read-only root filesystem; write
   only to the data folder (`APP_DATA_DIR`, `/data` in the image).
 - **Releases.** Every merge to main is a normal release `vMAJOR.MINOR.PATCH` (never a pre-release). PATCH by

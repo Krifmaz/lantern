@@ -12,6 +12,7 @@ ease-of-use features from the first commit.
 | `server/` | Axum server with the kit server crates: health, changelog (What's new), notices, bug reports, diagnostics, settings |
 | `web/` | Leptos web app with the kit components and the kit's default theme, served at `/` by the server |
 | `desktop/` | Desktop app (Linux, Windows, macOS) on Iced with kit-iced: connect, app-token sign-in, every kit feature, the update notice on the app's own releases |
+| `android/` | Android app (Kotlin, Jetpack Compose) on kit-compose, the kit's features on the phone; see [android/README.md](android/README.md) |
 | `docs/releases/` | one Markdown file per release: the release notes and What's new |
 
 ## Add Lantern to Sonarr, Radarr, Lidarr or Readarr

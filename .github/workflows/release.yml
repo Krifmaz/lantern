@@ -6,7 +6,9 @@ name: release
 # ghcr.io/krifmaz/lantern:<version> and :latest, and SHA256SUMS.
 # Actions → release → Run workflow with "apps" ticked also builds the desktop app for Linux, Windows and macOS
 # (scripts/desktop-package.sh; optional signing secrets WINDOWS_CERT_PFX_BASE64, WINDOWS_CERT_PASSWORD,
-# MACOS_CERT_P12_BASE64, MACOS_CERT_PASSWORD, MACOS_SIGN_IDENTITY, APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD); a release without them keeps the previous release's app files.
+# MACOS_CERT_P12_BASE64, MACOS_CERT_PASSWORD, MACOS_SIGN_IDENTITY, APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD)
+# and the signed APK (secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS,
+# ANDROID_KEY_PASSWORD); a release without them keeps the previous release's app files.
 on:
   push:
     branches: [main]
@@ -22,7 +24,7 @@ on:
         type: string
         default: ""
       apps:
-        description: "Also build the apps (the desktop app)"
+        description: "Also build the apps (the desktop app and the Android APK)"
         type: boolean
         default: false
 
@@ -66,6 +68,22 @@ jobs:
       build-args: |
         APP_VERSION=${{ needs.prepare.outputs.version }}
 
+  android:
+    needs: prepare
+    if: inputs.apps
+    uses: Krifmaz/kit/.github/workflows/kit-android.yml@v0.2.1
+    with:
+      app-name: Lantern
+      version: ${{ needs.prepare.outputs.version }}
+      code: ${{ needs.prepare.outputs.code }}
+      project-dir: android
+      baseline-profile: true
+    secrets:
+      android-keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      android-keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      android-key-alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+      android-key-password: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
   desktop:
     needs: prepare
     if: inputs.apps
@@ -92,7 +110,7 @@ jobs:
       apple-app-password: ${{ secrets.APPLE_APP_PASSWORD }}
 
   publish:
-    needs: [prepare, docker, desktop]
+    needs: [prepare, docker, desktop, android]
     if: always() && needs.prepare.result == 'success' && needs.docker.result == 'success'
     uses: Krifmaz/kit/.github/workflows/kit-release.yml@v0.2.1
     with:
@@ -100,6 +118,6 @@ jobs:
       app-name: Lantern
       version: ${{ needs.prepare.outputs.version }}
       # success when every app built, skipped when none ran, failure when only some did
-      apps-result: ${{ needs.desktop.result }}
-      app-files: "Lantern-*-linux-x86_64.tar.gz Lantern-*-windows-x86_64.zip Lantern-*-macos-universal.dmg"
-      carry-over: "Lantern-*-linux-x86_64.tar.gz Lantern-*-windows-x86_64.zip Lantern-*-macos-universal.dmg"
+      apps-result: ${{ needs.desktop.result == needs.android.result && needs.desktop.result || 'failure' }}
+      app-files: "Lantern-*-linux-x86_64.tar.gz Lantern-*-windows-x86_64.zip Lantern-*-macos-universal.dmg Lantern-android-*.apk"
+      carry-over: "Lantern-*-linux-x86_64.tar.gz Lantern-*-windows-x86_64.zip Lantern-*-macos-universal.dmg Lantern-android-*.apk"

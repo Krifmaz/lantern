@@ -1,0 +1,46 @@
+# Every version is pinned, equal to the kit's android/gradle/libs.versions.toml . Bump the kit
+# first (`kit`, the kit release without its v), then the rest to the kit's versions of that release.
+[versions]
+kit = "0.2.1"
+agp = "9.4.0"
+kotlin = "2.4.21"                 # also in the root build.gradle.kts buildscript classpath
+composeBom = "2026.06.01"         # Compose 1.11.4, material3 1.4.0
+activityCompose = "1.13.0"
+okhttp = "5.3.2"
+kotlinxSerialization = "1.11.0"
+kotlinxCoroutines = "1.11.0"
+coil = "3.5.0"
+jankstats = "1.0.0"
+junit = "4.13.2"
+benchmark = "1.5.0"                # Macrobenchmark + androidx.baselineprofile plugin; 1.5 works with AGP 9 without android.newDsl=false
+profileinstaller = "1.4.1"
+androidxTestJunit = "1.3.0"
+uiautomator = "2.3.0"
+
+[libraries]
+kit-compose = { group = "dev.krifmaz.kit", name = "kit-compose", version.ref = "kit" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-metrics-performance = { group = "androidx.metrics", name = "metrics-performance", version.ref = "jankstats" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
+coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
+coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+coil-network-cache-control = { group = "io.coil-kt.coil3", name = "coil-network-cache-control", version.ref = "coil" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmark" }
+androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
+androidx-test-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-test = { id = "com.android.test", version.ref = "agp" }
+baselineprofile = { id = "androidx.baselineprofile", version.ref = "benchmark" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
