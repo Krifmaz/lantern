@@ -1430,7 +1430,7 @@ dependencies = [
 [[package]]
 name = "kit-rules"
 version = "0.1.0"
-source = "git+https://github.com/Krifmaz/kit?tag=v0.2.1#e2ce353683c05d515df64da086d5c38a24adc781"
+source = "git+https://github.com/Krifmaz/kit?tag=v0.8.0#37f6530471378e219957559c5b95356c4f83883b"
 dependencies = [
  "serde",
  "serde_json",
@@ -1439,7 +1439,7 @@ dependencies = [
 [[package]]
 name = "kit-server-bugreports"
 version = "0.1.0"
-source = "git+https://github.com/Krifmaz/kit?tag=v0.2.1#e2ce353683c05d515df64da086d5c38a24adc781"
+source = "git+https://github.com/Krifmaz/kit?tag=v0.8.0#37f6530471378e219957559c5b95356c4f83883b"
 dependencies = [
  "axum",
  "image",
@@ -1455,7 +1455,7 @@ dependencies = [
 [[package]]
 name = "kit-server-changelog"
 version = "0.1.0"
-source = "git+https://github.com/Krifmaz/kit?tag=v0.2.1#e2ce353683c05d515df64da086d5c38a24adc781"
+source = "git+https://github.com/Krifmaz/kit?tag=v0.8.0#37f6530471378e219957559c5b95356c4f83883b"
 dependencies = [
  "axum",
  "kit-rules",
@@ -1467,7 +1467,7 @@ dependencies = [
 [[package]]
 name = "kit-server-core"
 version = "0.1.0"
-source = "git+https://github.com/Krifmaz/kit?tag=v0.2.1#e2ce353683c05d515df64da086d5c38a24adc781"
+source = "git+https://github.com/Krifmaz/kit?tag=v0.8.0#37f6530471378e219957559c5b95356c4f83883b"
 dependencies = [
  "async-trait",
  "axum",
@@ -1480,7 +1480,7 @@ dependencies = [
 [[package]]
 name = "kit-server-diagnostics"
 version = "0.1.0"
-source = "git+https://github.com/Krifmaz/kit?tag=v0.2.1#e2ce353683c05d515df64da086d5c38a24adc781"
+source = "git+https://github.com/Krifmaz/kit?tag=v0.8.0#37f6530471378e219957559c5b95356c4f83883b"
 dependencies = [
  "axum",
  "futures-util",
@@ -1493,7 +1493,7 @@ dependencies = [
 [[package]]
 name = "kit-server-health"
 version = "0.1.0"
-source = "git+https://github.com/Krifmaz/kit?tag=v0.2.1#e2ce353683c05d515df64da086d5c38a24adc781"
+source = "git+https://github.com/Krifmaz/kit?tag=v0.8.0#37f6530471378e219957559c5b95356c4f83883b"
 dependencies = [
  "axum",
  "serde_json",
@@ -1502,7 +1502,7 @@ dependencies = [
 [[package]]
 name = "kit-server-notices"
 version = "0.1.0"
-source = "git+https://github.com/Krifmaz/kit?tag=v0.2.1#e2ce353683c05d515df64da086d5c38a24adc781"
+source = "git+https://github.com/Krifmaz/kit?tag=v0.8.0#37f6530471378e219957559c5b95356c4f83883b"
 dependencies = [
  "axum",
  "futures-util",
@@ -1516,12 +1516,25 @@ dependencies = [
 [[package]]
 name = "kit-server-settings"
 version = "0.1.0"
-source = "git+https://github.com/Krifmaz/kit?tag=v0.2.1#e2ce353683c05d515df64da086d5c38a24adc781"
+source = "git+https://github.com/Krifmaz/kit?tag=v0.8.0#37f6530471378e219957559c5b95356c4f83883b"
 dependencies = [
  "axum",
  "kit-server-core",
  "serde_json",
  "toml",
+ "tracing",
+]
+
+[[package]]
+name = "kit-server-setup"
+version = "0.1.0"
+source = "git+https://github.com/Krifmaz/kit?tag=v0.8.0#37f6530471378e219957559c5b95356c4f83883b"
+dependencies = [
+ "axum",
+ "getrandom 0.3.4",
+ "kit-server-core",
+ "serde",
+ "serde_json",
  "tracing",
 ]
 
@@ -1556,6 +1569,7 @@ dependencies = [
  "kit-server-health",
  "kit-server-notices",
  "kit-server-settings",
+ "kit-server-setup",
  "lettre",
  "percent-encoding",
  "quick-xml",

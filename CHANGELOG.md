@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- First-run setup: a new Lantern asks for "Create your account" (username, password twice, optional email) on the
+  web, desktop and Android apps, instead of making `admin` with a printed password. The screen needs the one-time
+  setup code Lantern prints in its log at start, so nobody else on the network can claim it first; the code stops
+  working once the owner exists. `APP_ADMIN_USER` and `APP_ADMIN_PASSWORD` still make the owner for unattended
+  installs. Built on the kit's new first-run setup (kit v0.8.0, up from v0.2.1).
 - Indexer logins, API keys and session cookies are sealed with the vault's key at rest; ones saved earlier are
   sealed at the next start. With the vault locked, an indexer says why instead of signing in with nothing.
 - Cloudflare solving: a headless Chromium (in the image) gets past Cloudflare and DDoS-Guard checks by itself when an

@@ -29,6 +29,9 @@ pub const DIAGNOSTICS: &str = "/api/diagnostics";
 pub const SETTINGS: &str = "/api/settings";
 /// `GET`: the settings form's schema (admins).
 pub const SETTINGS_SCHEMA: &str = "/api/settings/schema";
+/// `GET`: whether a new server wants its owner made on "Create your account"; `POST {code, username, password,
+/// email}`: makes it with the setup code from the server's log (kit-server-setup).
+pub const SETUP: &str = "/api/setup";
 
 /// `GET`: one report with its thread.
 pub fn bug_report(id: i64) -> String {

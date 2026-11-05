@@ -55,6 +55,8 @@ pub enum Stage {
     Connect,
     /// Asking for a username and password.
     SignIn,
+    /// A new server with no owner yet: "Create your account" with the setup code from its log.
+    Setup,
     /// Signed in: the sidebar and the pages.
     Shell,
 }
@@ -119,6 +121,10 @@ pub enum Message {
     SignedIn(Result<signin::LoginResult, ApiError>),
     /// Use a different account (forgets the code step) or go back to the connect page.
     SignInBack,
+    /// `GET /api/setup`'s answer: whether the server wants "Create your account" instead of the sign-in page.
+    SetupChecked(Result<Value, ApiError>),
+    /// The first-run "Create your account" page.
+    Setup(kit_iced::setup::SetupMsg),
     /// Ask before signing out or changing the server.
     Ask(Confirm),
     /// The confirm dialog's OK or Cancel (or its X, the backdrop, Escape).
@@ -280,6 +286,8 @@ pub struct App {
     pub form: Form,
     /// The Diagnostics page.
     pub diagnostics: diagnostics::State,
+    /// The first-run "Create your account" page.
+    pub setup: kit_iced::setup::Setup,
     /// The updater.
     pub phase: Phase,
     /// The newer release found.
@@ -342,10 +350,35 @@ impl App {
             settings_tab: String::new(),
             form: Form::new(),
             diagnostics: diagnostics::State::default(),
+            setup: kit_iced::setup::Setup::default(),
             phase: Phase::Idle,
             found: None,
             told: String::new(),
             window: Size::new(1200.0, 800.0),
+        }
+    }
+
+    /// Asks the server whether it wants its owner made on "Create your account" (a new server, no owner yet).
+    fn check_setup(&self) -> Task<Message> {
+        let c = self.client.clone();
+        ask(async move { c.get(paths::SETUP.to_string()).await }, Message::SetupChecked)
+    }
+
+    /// Does what the setup page asks: sends its request, or signs in with the account it made.
+    fn setup_out(&mut self, out: kit_iced::setup::Out) -> Task<Message> {
+        use kit_iced::setup::{Out, SetupMsg};
+        match out {
+            Out::None => Task::none(),
+            Out::Send(r) => {
+                let c = self.client.clone();
+                ask(async move { c.post(r.path, r.body).await }, |res| Message::Setup(SetupMsg::Answer(res.map_err(|e| e.message))))
+            }
+            Out::SignIn { username, password } => {
+                self.stage = Stage::SignIn;
+                self.username = username;
+                self.password = password;
+                self.update(Message::SignIn)
+            }
         }
     }
 
@@ -355,7 +388,11 @@ impl App {
         let stored = path.as_deref().map(store::load_from).unwrap_or_default();
         let mut app = App::new(stored, path, store::server_override());
         app.save();
-        let task = if app.stage == Stage::Shell { app.start_shell() } else { Task::none() };
+        let task = match app.stage {
+            Stage::Shell => app.start_shell(),
+            Stage::SignIn => app.check_setup(),
+            _ => Task::none(),
+        };
         (app, task)
     }
 
@@ -573,6 +610,7 @@ impl App {
                         self.save();
                         self.client = Client::new(&base, "");
                         self.stage = Stage::SignIn;
+                        return self.check_setup();
                     }
                     Err(e) => self.error = e,
                 }
@@ -619,6 +657,17 @@ impl App {
                 } else if crate::store::server_override().is_none() {
                     self.stage = Stage::Connect;
                 }
+            }
+            Message::SetupChecked(r) => {
+                // a server without setup, or one that doesn't answer: the sign-in page as before
+                if self.stage == Stage::SignIn && r.is_ok_and(|v| kit_rules::setup::needed(&v)) {
+                    self.setup = kit_iced::setup::Setup::default();
+                    self.stage = Stage::Setup;
+                }
+            }
+            Message::Setup(m) => {
+                let out = self.setup.update(m);
+                return self.setup_out(out);
             }
             Message::Ask(c) => self.confirm = Some(c.dialog()),
             Message::Dialog(m) => {

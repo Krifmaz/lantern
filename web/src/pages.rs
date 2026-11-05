@@ -45,6 +45,23 @@ fn s(v: &Value, k: &str) -> String {
     v.get(k).and_then(Value::as_str).unwrap_or("").to_string()
 }
 
+/// First-run setup: the kit's "Create your account" page while Lantern has no owner (setup code from the server's
+/// log); once the owner is made, signed in with it.
+#[component]
+pub fn FirstRun() -> impl IntoView {
+    let done = Callback::new(|(username, password): (String, String)| {
+        kit_leptos::rt::spawn(async move {
+            // signed in or not, the reload shows the app (or the sign-in page, with the server's words in a toast)
+            if let Err(e) = api::post("/auth/login", json!({ "username": username, "password": password })).await {
+                kit_leptos::toasts::toast(&e.message, "err");
+            }
+            navigate("/");
+            kit_leptos::rt::reload();
+        });
+    });
+    view! { <kit_leptos::setup::SetupPage app=app_name() on_done=done/> }
+}
+
 /// The sign-in page (username and password).
 #[component]
 pub fn SignIn() -> impl IntoView {
