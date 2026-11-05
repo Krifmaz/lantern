@@ -14,6 +14,15 @@ ease-of-use features from the first commit.
 | `desktop/` | Desktop app (Linux, Windows, macOS) on Iced with kit-iced: connect, app-token sign-in, every kit feature, the update notice on the app's own releases |
 | `docs/releases/` | one Markdown file per release: the release notes and What's new |
 
+## Add Lantern to Sonarr, Radarr, Lidarr or Readarr
+
+1. In Lantern, open **Indexers** and add your sites. **Settings → General** shows the API key.
+2. In the app, add an indexer of type **Torznab** (torrent sites) or **Newznab** (Usenet):
+   - URL: `http://<lantern>:9696/all/` for every indexer at once, or `http://<lantern>:9696/<id>/` for one
+     (the id is on the Indexers page).
+   - API path: `/api`. API key: Lantern's.
+3. Apps made for Prowlarr also find Lantern's Prowlarr API at `http://<lantern>:9696/api/v1`.
+
 ## First steps
 
 1. Make the lock files and commit them (CI and the Docker build use `--locked`):
@@ -29,16 +38,16 @@ cd web && trunk build && cd ..
 cd server && APP_DATA_DIR=../data APP_STATIC_DIR=../web/dist cargo run
 ```
 
-Then open <http://localhost:8080>. With Docker:
+Then open <http://localhost:9696>. With Docker:
 
 ```
 docker build -t lantern .
-docker run --read-only -p 8080:8080 -v lantern-data:/data lantern
+docker run --read-only -p 9696:9696 -v lantern-data:/data lantern
 ```
 
 | Variable | Meaning | Default |
 | --- | --- | --- |
-| `APP_PORT` | the port the server listens on | `8080` |
+| `APP_PORT` | the port the server listens on | `9696` (Prowlarr's) |
 | `APP_DATA_DIR` | where the database and uploads live (the only folder it writes to) | `/data` |
 | `APP_STATIC_DIR` | the built web app | `/app/static` |
 | `APP_ADMIN_USER`, `APP_ADMIN_PASSWORD` | the owner made at the first start | `admin`, a printed password |

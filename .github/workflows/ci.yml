@@ -1,7 +1,7 @@
 name: ci
 
 # Every pull request: the kit's checks (fmt, clippy -D warnings, tests of server/, desktop/ and web/), the Docker image
-# built (not pushed). Required to pass before a merge.
+# built (not pushed), and real Sonarr, Radarr, Lidarr and Readarr adding Lantern as an indexer. Required to pass before a merge.
 on:
   pull_request:
   workflow_dispatch:
@@ -31,3 +31,18 @@ jobs:
       push: false
       platforms: linux/amd64
 
+
+  # Real Sonarr, Radarr, Lidarr and Readarr add Lantern as a Torznab indexer (scripts/contract-arrs.sh)
+  contract:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server
+      - name: Build Lantern and the test tracker
+        run: cd server && cargo build --release --locked && cargo build --release --locked --example mock_tracker
+      - name: Sonarr, Radarr, Lidarr and Readarr add Lantern
+        run: bash scripts/contract-arrs.sh

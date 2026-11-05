@@ -178,7 +178,7 @@ impl Limits {
 }
 
 /// Whether `a` and `b` are equal, in time that does not depend on where they differ.
-fn ct_eq(a: &str, b: &str) -> bool {
+pub fn ct_eq(a: &str, b: &str) -> bool {
     a.len() == b.len() && a.bytes().zip(b.bytes()).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
 }
 

@@ -9,11 +9,13 @@
 //! | `/api/diagnostics`, `/api/diagnostics/{id}/test` | kit-server-diagnostics |
 //! | `/api/settings`, `/api/settings/schema`, `/api/settings/secret/{key}` | kit-server-settings |
 //! | `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` | [`auth`] |
+//! | `/api/indexers/*`, `/api/search`, `/{id}/api` (Torznab/Newznab), `/{id}/download`, `/api/v1/*` (Prowlarr API) | [`indexers`] |
 //!
 //! Everything the app adds of its own goes into [`app`] next to them.
 
 pub mod auth;
 pub mod checks;
+pub mod indexers;
 
 use axum::http::{header, HeaderValue};
 use axum::Router;
@@ -51,9 +53,10 @@ pub const VERSION: &str = match option_env!("APP_VERSION") {
 /// answer.
 pub const NAME: &str = env!("CARGO_PKG_NAME");
 
-/// The port from `APP_PORT`, 8080 when it is not set or not a number.
+/// The port from `APP_PORT`, 9696 (Prowlarr's, so apps find Lantern where they expect it) when it is not set or not
+/// a number.
 pub fn port() -> u16 {
-    std::env::var("APP_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(8080)
+    std::env::var("APP_PORT").ok().and_then(|p| p.parse().ok()).unwrap_or(9696)
 }
 
 /// The app's state, handed to every route; clones share everything.
@@ -77,6 +80,10 @@ pub struct AppState {
     pub notices: kit_server_notices::Notices<AppState>,
     /// Sign-in and bug report limits per address or account.
     pub limits: Arc<auth::Limits>,
+    /// The indexers and their definitions.
+    pub indexers: indexers::Indexers,
+    /// Signs the download links handed to apps.
+    pub signer: indexers::LinkSigner,
 }
 
 impl AppState {
@@ -87,6 +94,7 @@ impl AppState {
         let static_dir = PathBuf::from(std::env::var("APP_STATIC_DIR").unwrap_or_else(|_| "/app/static".into()));
         let st = AppState::open(&data, static_dir, |name| std::env::var(name).ok()).await?;
         auth::ensure_owner(&st, std::env::var("APP_ADMIN_USER").ok(), std::env::var("APP_ADMIN_PASSWORD").ok())?;
+        st.ensure_api_key().await?;
         Ok(st)
     }
 
@@ -97,18 +105,30 @@ impl AppState {
         static_dir: PathBuf,
         env: impl Fn(&str) -> Option<String> + Send + Sync + 'static,
     ) -> anyhow::Result<AppState> {
+        let env = Arc::new(env);
+        let env_settings = {
+            let env = env.clone();
+            move |name: &str| env(name)
+        };
         std::fs::create_dir_all(data).map_err(|e| anyhow::anyhow!("The data folder {} can't be made: {e}", data.display()))?;
         let db = SqliteDb::open(&data.join("app.db")).map_err(|e| anyhow::anyhow!("The database can't be opened: {}", e.detail))?;
         auth::migrate(&db)?;
+        indexers::migrate(&db)?;
+        let bundled = PathBuf::from(env("APP_DEFINITIONS_DIR").unwrap_or_else(|| "/app/definitions".into()));
+        let library = indexers::library::Library::new(Some(bundled), data);
+        let signer = indexers::LinkSigner::open(data)?;
         let kit = |e: kit_server_core::Error| anyhow::anyhow!("The kit's tables can't be made: {}", e.detail);
         let prefs = SqlitePrefs::new(db.clone()).map_err(kit)?;
         let reports = kit_server_bugreports::SqliteReports::new(db.clone()).map_err(kit)?;
         let saved = SqliteSettings::new(db.clone()).map_err(kit)?;
         let notices = checks::notices().keep_in(Arc::new(kit_server_notices::SqliteNotices::new(db.clone()).map_err(kit)?));
         notices.restore().await.map_err(kit)?;
-        let settings =
-            Store::load_with(saved, SETTINGS, env).await.map_err(|e| anyhow::anyhow!("The settings can't be read: {}", e.detail))?;
+        let settings = Store::load_with(saved, SETTINGS, env_settings)
+            .await
+            .map_err(|e| anyhow::anyhow!("The settings can't be read: {}", e.detail))?;
         let changelog = Arc::new(Changelog::new(&settings.str("app_name"), VERSION, changelog_gen::NOTES));
+        let db_for_indexers = db.clone();
+        let settings_for_indexers = settings.clone();
         Ok(AppState {
             db,
             reports,
@@ -119,7 +139,27 @@ impl AppState {
             changelog,
             notices,
             limits: Arc::new(auth::Limits::default()),
+            indexers: indexers::Indexers::new(db_for_indexers, library).with_settings(settings_for_indexers),
+            signer,
         })
+    }
+
+    /// Makes the API key apps use (Torznab, the Prowlarr API) when there is none yet, so apps can be pointed at
+    /// Lantern straight away. One set in the environment is left alone.
+    pub async fn ensure_api_key(&self) -> anyhow::Result<()> {
+        if self.settings.str("api_key").is_empty() && !self.settings.env_locked("api_key") {
+            let key = {
+                use rand::Rng;
+                let mut b = [0u8; 16];
+                rand::rng().fill(&mut b[..]);
+                hex::encode(b)
+            };
+            self.settings
+                .set_many(&serde_json::json!({ "api_key": key }))
+                .await
+                .map_err(|e| anyhow::anyhow!("The API key can't be saved: {}", e.detail))?;
+        }
+        Ok(())
     }
 
     /// The app's name as people see it (the `app_name` setting).
@@ -214,10 +254,33 @@ pub fn app(st: AppState) -> Router {
         .merge(kit_server_diagnostics::router())
         .merge(kit_server_settings::router())
         .merge(auth::router())
+        .merge(indexers::api::router())
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))
         .layer(tower_http::compression::CompressionLayer::new())
+}
+
+/// Keeps the indexer definitions current: at start when there are none, then once a day, while the
+/// `definitions_auto_update` setting is on.
+pub fn spawn_definition_updates(st: AppState) {
+    tokio::spawn(async move {
+        let mut first = true;
+        loop {
+            let due = st.settings.bool("definitions_auto_update")
+                && (!first || st.indexers.library.is_empty() || std::env::var("APP_UPDATE_DEFINITIONS_AT_START").is_ok());
+            if due {
+                let source = st.settings.str("definitions_source");
+                let source = if source.is_empty() { indexers::library::DEFAULT_SOURCE.to_string() } else { source };
+                match st.indexers.library.update(&source).await {
+                    Ok(n) => tracing::info!("{n} indexer definitions updated"),
+                    Err(e) => tracing::warn!("{e}"),
+                }
+            }
+            first = false;
+            tokio::time::sleep(std::time::Duration::from_secs(24 * 3600)).await;
+        }
+    });
 }
 
 /// Middleware: the security headers, the `x-<name>` mark and the cache policy on every answer.

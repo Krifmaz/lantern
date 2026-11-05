@@ -15,12 +15,12 @@ use leptos::prelude::*;
 use serde_json::{json, Value};
 use std::rc::Rc;
 
-/// The data folder notice: `GET /api/notices/data`, Check again posts `/api/notices/data/check` (the server's
-/// `checks.rs`). Check again's words name the data folder.
+/// The app's notices: `GET /api/notices` (the data folder and the failing indexers, the server's `checks.rs`);
+/// Check again posts `/api/notices/check`. Check again's words name the data folder or the indexers.
 pub fn data_notice() -> NoticeSource {
     NoticeSource {
-        path: "/notices/data".into(),
-        check_path: "/notices/data/check".into(),
+        path: "/notices".into(),
+        check_path: "/notices/check".into(),
         part: String::new(),
         words: CheckWords {
             failing: "The data folder still can't be written",
@@ -30,6 +30,14 @@ pub fn data_notice() -> NoticeSource {
         words_for: Vec::new(),
         after_check: None,
     }
+    .words_for(
+        "indexers",
+        CheckWords {
+            failing: "Some indexers still aren't working",
+            checking: "Still checking the indexers",
+            fixed: "Every indexer is working again",
+        },
+    )
 }
 
 /// A string field of a JSON object, "" when missing.
