@@ -1,0 +1,233 @@
+{
+ "source": "autobrr v1.90.0 internal/domain",
+ "structs": {
+  "Downloader": {
+   "always": [
+    "id",
+    "name",
+    "type",
+    "enabled",
+    "host",
+    "port",
+    "tls",
+    "tls_skip_verify",
+    "username",
+    "password",
+    "settings"
+   ],
+   "omitempty": []
+  },
+  "DownloaderSettings": {
+   "always": [
+    "basic",
+    "rules",
+    "auth"
+   ],
+   "omitempty": [
+    "apikey",
+    "external_download_client_id",
+    "external_download_client"
+   ]
+  },
+  "DownloaderAuth": {
+   "always": [],
+   "omitempty": [
+    "enabled",
+    "type",
+    "username",
+    "password"
+   ]
+  },
+  "DownloaderRules": {
+   "always": [
+    "enabled",
+    "max_active_downloads",
+    "ignore_slow_torrents",
+    "download_speed_threshold",
+    "upload_speed_threshold"
+   ],
+   "omitempty": [
+    "ignore_slow_torrents_condition"
+   ]
+  },
+  "Action": {
+   "always": [
+    "id",
+    "name",
+    "type",
+    "enabled"
+   ],
+   "omitempty": [
+    "exec_cmd",
+    "exec_args",
+    "watch_folder",
+    "category",
+    "tags",
+    "label",
+    "save_path",
+    "download_path",
+    "paused",
+    "ignore_rules",
+    "first_last_piece_prio",
+    "skip_hash_check",
+    "content_layout",
+    "limit_upload_speed",
+    "limit_download_speed",
+    "limit_ratio",
+    "limit_seed_time",
+    "priority",
+    "ratio_group",
+    "reannounce_skip",
+    "reannounce_delete",
+    "reannounce_interval",
+    "reannounce_max_attempts",
+    "webhook_host",
+    "webhook_type",
+    "webhook_method",
+    "webhook_data",
+    "webhook_headers",
+    "external_download_client_id",
+    "external_download_client",
+    "filter_id",
+    "client_id",
+    "client"
+   ]
+  },
+  "Filter": {
+   "always": [
+    "id",
+    "name",
+    "enabled",
+    "created_at",
+    "updated_at",
+    "priority",
+    "smart_episode",
+    "actions_count",
+    "actions_enabled_count",
+    "is_auto_updated",
+    "indexers",
+    "release_profile_duplicate"
+   ],
+   "omitempty": [
+    "min_size",
+    "max_size",
+    "delay",
+    "max_downloads",
+    "max_downloads_unit",
+    "max_downloads_period",
+    "max_downloads_window_type",
+    "match_releases",
+    "except_releases",
+    "use_regex",
+    "match_release_groups",
+    "except_release_groups",
+    "announce_types",
+    "scene",
+    "origins",
+    "except_origins",
+    "bonus",
+    "freeleech",
+    "freeleech_percent",
+    "shows",
+    "seasons",
+    "episodes",
+    "resolutions",
+    "codecs",
+    "sources",
+    "containers",
+    "match_hdr",
+    "except_hdr",
+    "match_other",
+    "except_other",
+    "years",
+    "months",
+    "days",
+    "artists",
+    "albums",
+    "match_release_types",
+    "except_release_types",
+    "formats",
+    "quality",
+    "media",
+    "perfect_flac",
+    "cue",
+    "log",
+    "log_score",
+    "match_categories",
+    "except_categories",
+    "match_uploaders",
+    "except_uploaders",
+    "match_record_labels",
+    "except_record_labels",
+    "match_language",
+    "except_language",
+    "tags",
+    "except_tags",
+    "tags_any",
+    "except_tags_any",
+    "tags_match_logic",
+    "except_tags_match_logic",
+    "match_release_tags",
+    "except_release_tags",
+    "use_regex_release_tags",
+    "match_description",
+    "except_description",
+    "use_regex_description",
+    "min_seeders",
+    "max_seeders",
+    "min_leechers",
+    "max_leechers",
+    "actions",
+    "external",
+    "release_profile_duplicate_id",
+    "downloads",
+    "notifications"
+   ]
+  },
+  "FilterExternal": {
+   "always": [
+    "id",
+    "name",
+    "index",
+    "type",
+    "enabled",
+    "on_error"
+   ],
+   "omitempty": [
+    "exec_cmd",
+    "exec_args",
+    "exec_expect_status",
+    "webhook_host",
+    "webhook_method",
+    "webhook_data",
+    "webhook_headers",
+    "webhook_expect_status",
+    "webhook_retry_status",
+    "webhook_retry_attempts",
+    "webhook_retry_delay_seconds"
+   ]
+  },
+  "FilterExternalTestResult": {
+   "always": [
+    "type",
+    "success",
+    "status",
+    "expect_status",
+    "output",
+    "duration_ms"
+   ],
+   "omitempty": [
+    "error"
+   ]
+  },
+  "FilterNotification": {
+   "always": [
+    "filter_id",
+    "filter_name",
+    "notification_id",
+    "events"
+   ],
+   "omitempty": []
+  }
+ }
+}

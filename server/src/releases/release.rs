@@ -53,6 +53,8 @@ pub struct Release {
     pub download_url: String,
     /// Its magnet link.
     pub magnet_uri: String,
+    /// When the site published it, when the source says (feeds); Sonarr and Radarr get it.
+    pub publish_date: Option<chrono::DateTime<chrono::Utc>>,
     /// The site's group id.
     pub group_id: String,
     /// The site's torrent id.

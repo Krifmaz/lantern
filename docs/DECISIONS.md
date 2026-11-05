@@ -327,3 +327,28 @@ Non-obvious calls, one line each, newest last.
   `SchemaBuilder`) is generic over a `Family` (table, fields, test, hooks), so download clients, notifications and
   indexer proxies reuse it. Removing apps in bulk also removes their indexer maps and status, which Prowlarr leaves
   to its housekeeping.
+- 2026-11-05 — autobrr's `/api` is served at `/autobrr/api` (`releases::autobrr_api::router()`, paths relative to
+  autobrr's `/api`), where the forked autobrr frontend calls it: `lib.rs` passes it to `autobrr_ui::router(&st, api)`,
+  so paths Lantern doesn't answer yet keep the frontend's plain 404.
+- 2026-11-05 — autobrr API errors answer autobrr's `{"code", "message"}` with its status codes (RECORD_NOT_FOUND 404,
+  BAD_REQUEST_PARAMS 400, INTERNAL_SERVER_ERROR 500, including for a body that can't be read, as autobrr does) and
+  also `detail` with the same sentence, so the kit's toasts show it.
+- 2026-11-05 — The download hub stays: an autobrr action whose download client is also one of the hub's clients
+  (same kind, same host, same port; Deluge by host only) goes through the hub instead of straight to the client. The
+  hub app is the action's category when the hub has an app of that name, else "Releases". On this route autobrr's
+  per-download client options (limits, paths, reannounce) are not applied; the hub's own settings are. An extra
+  action type `DOWNLOAD_HUB` always sends through the hub.
+- 2026-11-05 — Lantern's own filter actions (from before the port) stay in the filter and still run next to the
+  autobrr actions, but the autobrr API doesn't show them; nothing is migrated. Lantern's release sources stand in
+  for autobrr's indexers, so `prune-deprecated` always removes 0.
+- 2026-11-05 — autobrr actions, download clients and filter notifications are stored in their own tables
+  (`autobrr_actions`, `autobrr_downloaders`, `autobrr_filter_notifications`, and a small `autobrr_notifications`
+  until the notifications slice), each row's body in autobrr's JSON. External filters live in the filter's body.
+  `created_at` and `updated_at` both come from the row's added time. Filter notifications are stored and checked
+  but not sent until the notifications slice.
+- 2026-11-05 — Torrent files the actions need on disk go to `$APP_DATA_DIR/tmp` (`/data/tmp` in the image), the only
+  folder Lantern may write to; they are removed after the filter's actions ran. WATCH_FOLDER writes where the action
+  says, so that folder has to be a mounted volume.
+- 2026-11-05 — EXEC actions and exec external filters run the program with an argument list split the way
+  go-shellquote splits autobrr's ExecArgs, never through a shell. Webhook headers are taken but not stored, as in
+  autobrr; webhook type and method are stored but, as in autobrr, the webhook action always POSTs JSON.

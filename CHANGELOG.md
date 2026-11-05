@@ -23,6 +23,11 @@
   (`/api/v1/appprofile`), seeding settings, every 6 hours and when an indexer is added, changed or removed. The
   `ApplicationIndexerSync` command runs a sync now, and the health page says when apps keep failing. Apps imported
   from Prowlarr are taken over.
+- autobrr's actions and its filter, action and download client API (served at `/autobrr/api`): every autobrr action
+  type (qBittorrent, Deluge 1 and 2, rTorrent, Transmission, Porla, Aria2, the *arr apps, SABnzbd, NZBGet, watch
+  folder, webhook, exec and test), every action field, external exec and webhook filters, and filter notification
+  settings. A release goes through the download hub when its client is one of the hub's. Exec actions never use a
+  shell.
 - Import never skips an indexer: custom definitions in a Prowlarr backup become your custom definitions, Prowlarr's
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
   Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition
