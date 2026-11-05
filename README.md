@@ -89,6 +89,10 @@ result's `token` or any `url`), and hear back through their callback address or 
 `X-Lantern-Signature: sha256=<HMAC-SHA256 of the body with the API key>`. All routes are listed in
 `server/src/hub/api.rs`.
 
+When an app has its files it can say so (`POST /api/hub/grabs/{id}/imported`). Under Settings → Downloads, a download
+that seeded enough (`APP_SEED_RATIO`, `APP_SEED_HOURS`) is then kept, removed from its client, or removed with its
+files (`APP_CLEANUP`: `off`, `remove`, `delete`; `off` by default).
+
 ## Checks
 
 In `server/`, `web/` and `desktop/`: `cargo fmt --all --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`.

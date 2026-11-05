@@ -6,8 +6,8 @@
 //!   └──┴─ retrying (sending or the client failed) ┴─▶ failed (after the last attempt)
 //! ```
 //!
-//! [`Hub::tick`] does one step for every grab: sends the queued ones whose turn has come, then asks each client
-//! where its downloads are. Sending again waits 30 seconds, 2, 10, 30 then 60 minutes.
+//! [`Hub::tick`] does one step for every grab: sends the queued ones whose turn has come, asks each client where
+//! its downloads are, then cleans up what apps imported (see [`super::cleanup`]). Sending again waits 30 seconds, 2, 10, 30 then 60 minutes.
 
 use super::apps::App;
 use super::clients::{AddRequest, ClientConfig, Content, Item, ItemState};
@@ -76,6 +76,12 @@ pub struct Grab {
     pub updated: f64,
     /// When its files were all there (or it failed for good).
     pub finished: f64,
+    /// Uploaded divided by downloaded, as its client last said (torrents).
+    pub ratio: f64,
+    /// Seconds it has seeded, as its client last said (torrents).
+    pub seed_secs: i64,
+    /// When its app said it imported the files (0: not yet).
+    pub imported: f64,
 }
 
 impl Grab {
@@ -106,6 +112,9 @@ impl Grab {
             added: r.f("added"),
             updated: r.f("updated"),
             finished: r.f("finished"),
+            ratio: r.f("ratio"),
+            seed_secs: r.i("seed_secs"),
+            imported: r.f("imported"),
         }
     }
 
@@ -228,7 +237,8 @@ impl Hub {
             "size": g.size, "speed": g.speed, "eta": g.eta, "path": view(&g.path),
             "files": g.files.iter().map(|(p, s)| json!({ "path": view(p), "size": s })).collect::<Vec<_>>(),
             "error": g.error, "attempts": g.attempts, "next_try": g.next_try, "added": g.added,
-            "updated": g.updated, "finished": g.finished,
+            "updated": g.updated, "finished": g.finished, "ratio": g.ratio, "seed_secs": g.seed_secs,
+            "imported": g.imported, "seeded": matches!(g.state.as_str(), "seeding" | "completed") && self.seeded(g),
         })
     }
 
@@ -297,6 +307,9 @@ impl Hub {
             tracing::warn!("download hub: {}", e.detail);
         }
         if let Err(e) = self.follow().await {
+            tracing::warn!("download hub: {}", e.detail);
+        }
+        if let Err(e) = self.clean_up().await {
             tracing::warn!("download hub: {}", e.detail);
         }
     }
@@ -512,6 +525,8 @@ impl Hub {
             ("size", json!(if item.size > 0 { item.size } else { g.size })),
             ("speed", json!(if item.state.done() { 0 } else { item.speed })),
             ("eta", json!(if item.state.done() { 0 } else { item.eta })),
+            ("ratio", json!(item.ratio)),
+            ("seed_secs", json!(item.seed_secs)),
         ];
         if item.state.done() && !was_done {
             let root = self.root();

@@ -21,6 +21,7 @@
 //!   GET    /api/hub/grabs?app=&state=&limit=    the newest grabs
 //!   GET    /api/hub/grabs/{id}            one
 //!   POST   /api/hub/grabs/{id}/retry      send a failed grab again
+//!   POST   /api/hub/grabs/{id}/imported   the app has its files: clean up once seeded (the `cleanup` setting)
 //!   DELETE /api/hub/grabs/{id}?delete_files=    stop it and remove it from its client
 //!   GET    /api/hub/events?app=           the live event stream (server-sent events)
 //! ```
@@ -48,6 +49,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/hub/grabs", get(grabs).post(grab))
         .route("/api/hub/grabs/{id}", get(one_grab).delete(remove_grab))
         .route("/api/hub/grabs/{id}/retry", post(retry))
+        .route("/api/hub/grabs/{id}/imported", post(imported))
         .route("/api/hub/events", get(events))
 }
 
@@ -185,6 +187,13 @@ async fn one_grab(State(st): State<AppState>, _: SignedIn, Path(id): Path<i64>) 
 
 async fn retry(State(st): State<AppState>, _: Admin, Path(id): Path<i64>) -> Result<Json<Value>> {
     let g = st.hub.retry(id)?;
+    let hub = st.hub.clone();
+    tokio::spawn(async move { hub.tick().await });
+    Ok(Json(st.hub.grab_json(&g, &st.hub.app(g.app_id)?)))
+}
+
+async fn imported(State(st): State<AppState>, _: Admin, Path(id): Path<i64>) -> Result<Json<Value>> {
+    let g = st.hub.imported(id)?;
     let hub = st.hub.clone();
     tokio::spawn(async move { hub.tick().await });
     Ok(Json(st.hub.grab_json(&g, &st.hub.app(g.app_id)?)))

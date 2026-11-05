@@ -70,3 +70,7 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — Race-friendly defaults: a filter sends at once (no delay), the torrent file is only fetched when a size
   limit needs a size the announce didn't give, the first filter that takes a release wins (highest priority first),
   and a release name a filter already sent is skipped. A new RSS source's first look only notes what is there.
+- 2026-11-05 — Cleanup is off by default and only ever touches grabs an app has marked imported and that have
+  seeded enough, since it can delete downloaded files. Lantern checks the seeding goals itself instead of setting
+  share limits in each client, so the rules work the same for every client. Per-tracker minimums (hit-and-run
+  rules) come from the account keeper when it lands.
