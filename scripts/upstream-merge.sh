@@ -5,8 +5,8 @@
 #   1. Fetches only the requested upstream commit (shallow) into a cache repository, .upstream/<project>.git
 #      (git-ignored), so this repository never gets the upstream's history or its other folders.
 #   2. Builds a snapshot commit there whose tree holds only the tracked paths, moved under the fork's folder
-#      (for Prowlarr: frontend/ and the root build files, under ui/prowlarr/), with the previous snapshot as
-#      its parent, and keeps it as branch upstream/<project>: a straight line of upstream snapshots.
+#      (for Prowlarr: frontend/ and the root build files, under ui/prowlarr/; for autobrr: the contents of web/
+#      and the licence, under ui/autobrr/), with the previous snapshot as its parent, and keeps it as branch upstream/<project>: a straight line of upstream snapshots.
 #   3. Merges the snapshot into the current branch with a three-way merge whose base is the snapshot of the
 #      commit imported last (named in <folder>/UPSTREAM), so only the upstream's changes since then are
 #      applied on top of ours. The base is rebuilt from the upstream itself, so this also works after the
@@ -15,9 +15,9 @@
 # Exit status: 0 merged (or already up to date), 1 conflicts (the merge is left in progress, files listed),
 # 2 wrong use or a precondition failed (nothing changed).
 #
-# Usage: scripts/upstream-merge.sh [--project prowlarr] [--ref REF] [--repo URL] [--no-merge]
+# Usage: scripts/upstream-merge.sh [--project prowlarr|autobrr] [--ref REF] [--repo URL] [--no-merge]
 #                                  [--abort-on-conflict]
-#   --project NAME       the section of UPSTREAM.lock to import (default prowlarr)
+#   --project NAME       the section of UPSTREAM.lock to import: prowlarr (default) or autobrr
 #   --ref REF            upstream tag, branch or commit (default: the commit UPSTREAM.lock pins)
 #   --repo URL           upstream repository (default: UPSTREAM.lock's repo; file:// for testing)
 #   --no-merge           only update upstream/<project>; merge it yourself later
@@ -37,7 +37,7 @@ die() {
 }
 
 usage() {
-    sed -n '2,25p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '2,24p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
     exit 2
 }
 
@@ -54,6 +54,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # What each project's fork takes from the upstream, and where it goes. To fork another frontend, add a case.
+# A path that ends in / brings that folder's contents, not the folder itself, straight into $dest.
 case "$project" in
     prowlarr)
         dest="ui/prowlarr"
@@ -61,7 +62,13 @@ case "$project" in
         # settings, and the licence.
         paths=(frontend package.json yarn.lock tsconfig.json .yarnrc .editorconfig LICENSE)
         ;;
-    *) die "unknown project: $project (known: prowlarr)" ;;
+    autobrr)
+        dest="ui/autobrr"
+        # web/ is a whole Vite app of its own (package.json, pnpm-lock.yaml, pnpm-workspace.yaml, the Vite,
+        # Tailwind and TypeScript settings, src/ and public/): its contents, plus the licence from the root.
+        paths=(web/ LICENSE)
+        ;;
+    *) die "unknown project: $project (known: prowlarr, autobrr)" ;;
 esac
 branch="upstream/$project"
 
@@ -111,7 +118,12 @@ fetch_commit() {
 snapshot_tree() {
     local sha="$1" entries="" p line t
     for p in "${paths[@]}"; do
-        line="$(ucache ls-tree "$sha" -- "$p")"
+        if [[ "$p" == */ ]]; then
+            # the folder's own entries
+            line="$(ucache ls-tree "$sha:${p%/}" 2>/dev/null || true)"
+        else
+            line="$(ucache ls-tree "$sha" -- "$p")"
+        fi
         if [[ -n "$line" ]]; then
             entries+="$line"$'\n'
         else
