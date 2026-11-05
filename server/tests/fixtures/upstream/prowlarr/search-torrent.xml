@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="1.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:torznab="http://torznab.com/schemas/2015/feed">
+  <channel>
+    <atom:link rel="self" type="application/rss+xml" />
+    <title>Prowlarr</title>
+    <item>
+      <title>Show.Name.S01E02.1080p.WEB-DL-GRP</title>
+      <description />
+      <guid>https://tracker.test/details.php?id=11</guid>
+      <prowlarrindexer id="3" type="private">Test Tracker</prowlarrindexer>
+      <comments>https://tracker.test/details.php?id=11</comments>
+      <pubDate>Wed, 04 Nov 2026 10:30:00 +0000</pubDate>
+      <size>1610612736</size>
+      <link>http://prowlarr.test:9696/3/download?apikey=k&amp;link=x&amp;file=Show.Name.S01E02.1080p.WEB-DL-GRP</link>
+      <category>5040</category>
+      <category>100002</category>
+      <enclosure url="http://prowlarr.test:9696/3/download?apikey=k&amp;link=x&amp;file=Show.Name.S01E02.1080p.WEB-DL-GRP" length="1610612736" type="application/x-bittorrent" />
+      <torznab:attr name="category" value="5040" />
+      <torznab:attr name="category" value="100002" />
+      <torznab:attr name="tag" value="internal" />
+      <torznab:attr name="tag" value="freeleech" />
+      <torznab:attr name="genre" value="Drama, Comedy" />
+      <torznab:attr name="tvdbid" value="123" />
+      <torznab:attr name="imdb" value="0111161" />
+      <torznab:attr name="seeders" value="12" />
+      <torznab:attr name="files" value="2" />
+      <torznab:attr name="grabs" value="40" />
+      <torznab:attr name="peers" value="15" />
+      <torznab:attr name="infohash" value="0123456789abcdef0123456789abcdef01234567" />
+      <torznab:attr name="minimumratio" value="1" />
+      <torznab:attr name="minimumseedtime" value="172800" />
+      <torznab:attr name="downloadvolumefactor" value="0" />
+      <torznab:attr name="uploadvolumefactor" value="1" />
+      <torznab:attr name="coverurl" value="https://img.test/p.jpg" />
+    </item>
+    <item>
+      <title>A &amp; B &lt;Live&gt; "2026"</title>
+      <description>Internal &amp; scene</description>
+      <guid>magnet:?xt=urn:btih:abc&amp;dn=A</guid>
+      <prowlarrindexer id="3" type="private">Test Tracker</prowlarrindexer>
+      <pubDate>Wed, 04 Nov 2026 10:30:00 +0000</pubDate>
+      <size />
+      <link>http://prowlarr.test:9696/3/download?apikey=k&amp;link=m&amp;file=A+%26+B</link>
+      <enclosure url="http://prowlarr.test:9696/3/download?apikey=k&amp;link=m&amp;file=A+%26+B" type="application/x-bittorrent" />
+      <torznab:attr name="tag" value="halfleech" />
+      <torznab:attr name="tag" value="doubleupload" />
+      <torznab:attr name="language" value="English" />
+      <torznab:attr name="subs" value="French" />
+      <torznab:attr name="genre" value="" />
+      <torznab:attr name="rageid" value="7" />
+      <torznab:attr name="traktid" value="8" />
+      <torznab:attr name="year" value="2026" />
+      <torznab:attr name="artist" value="A" />
+      <torznab:attr name="album" value="B" />
+      <torznab:attr name="downloadvolumefactor" value="0.5" />
+      <torznab:attr name="uploadvolumefactor" value="2" />
+    </item>
+  </channel>
+</rss>
