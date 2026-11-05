@@ -198,6 +198,12 @@ pub struct FieldSpec {
     pub options: Options,
     /// Its value in a new provider.
     pub default: Initial,
+    /// How it is hidden (`hidden`, `hiddenIfNotSet`), none when it is shown.
+    pub hidden: Option<&'static str>,
+    /// The provider action that gives a select field's choices (`getUrls`), in place of fixed ones.
+    pub options_action: Option<&'static str>,
+    /// The tokens its help text is filled in with (`FieldToken`).
+    pub help_tokens: &'static [(&'static str, &'static str)],
 }
 
 impl FieldSpec {
@@ -215,6 +221,9 @@ impl FieldSpec {
         placeholder: None,
         options: Options::None,
         default: Initial::Null,
+        hidden: None,
+        options_action: None,
+        help_tokens: &[],
     };
 }
 
@@ -526,7 +535,8 @@ pub fn to_schema(imp: &Implementation, settings: &Map<String, Value>, lang: &str
                 v.insert("unit".into(), json!(u));
             }
             if let Some(h) = f.help_text {
-                v.insert("helpText".into(), json!(say(h)));
+                let tokens: Vec<(&str, String)> = f.help_tokens.iter().map(|(k, v)| (*k, v.to_string())).collect();
+                v.insert("helpText".into(), json!(localization::localized(lang, h, &tokens).unwrap_or_default()));
             }
             let mut value = settings.get(f.name).cloned().unwrap_or_else(|| f.default.value());
             if f.privacy.secret() && !value.is_null() && value != json!("") {
@@ -537,7 +547,11 @@ pub fn to_schema(imp: &Implementation, settings: &Map<String, Value>, lang: &str
             }
             v.insert("type".into(), json!(f.field_type.name()));
             v.insert("advanced".into(), json!(f.advanced));
+            if let Some(a) = f.options_action {
+                v.insert("selectOptionsProviderAction".into(), json!(a));
+            }
             match f.options {
+                _ if f.options_action.is_some() => {}
                 Options::None => {}
                 Options::Categories => {
                     v.insert("selectOptions".into(), Value::Array(super::categories::select_options()));
@@ -549,6 +563,9 @@ pub fn to_schema(imp: &Implementation, settings: &Map<String, Value>, lang: &str
                         .collect();
                     v.insert("selectOptions".into(), Value::Array(list));
                 }
+            }
+            if let Some(h) = f.hidden {
+                v.insert("hidden".into(), json!(h));
             }
             v.insert("privacy".into(), json!(f.privacy.name()));
             if let Some(p) = f.placeholder {

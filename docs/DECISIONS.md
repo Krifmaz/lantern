@@ -407,6 +407,21 @@ Non-obvious calls, one line each, newest last.
   by `POST /api/job` or the webhook always happens. The job list follows the settings without a restart, and
   `updateIndexerCaps` is always there since Lantern always has its own indexers. The notification title stays
   `cross-seed`, so tools made for cross-seed read it. The `lantern cross-seed <command>` CLI is the next slice.
+- 2026-11-05 — Prowlarr's v1 indexer resource (`prowlarr/indexers.rs`) maps Lantern's indexers both ways. Only
+  Cardigann, Newznab and Torznab indexers exist: Prowlarr's native C# indexers are not in the schema, and an
+  implementation Lantern doesn't have answers 400. A Cardigann site's secret settings are masked as `********` like
+  every other secret (Prowlarr sends them in the clear), and a masked value keeps the saved one. A PUT can't change
+  an indexer's kind or definition (add a new one instead). A Newznab/Torznab indexer that hasn't answered its caps
+  yet shows Lantern's fallback capabilities. A definition template has no encoding until saved, as in Prowlarr.
+- 2026-11-05 — The search page's grab (`POST /api/v1/search`) sends to Lantern's own download clients (the
+  indexer's client, else the first enabled one for the protocol); Prowlarr's download client API is a later slice.
+  Found releases are kept in memory for 30 minutes per data folder, as Prowlarr's cache is.
+- 2026-11-05 — v1 history leaves out Lantern's own indexer tests and keeps no download ids. Lantern's searches
+  don't keep whether an offset was given, so a query's history has an `offset` whenever it has a `limit` (the web
+  app and the apps always send both).
+- 2026-11-05 — SignalR (`/signalr/messages`) offers WebSockets only (no server-sent events or long polling); the
+  web app connects that way. One broadcast channel per data folder carries indexer and command updates;
+  the access token is the API key, or the signed-in session.
 - 2026-11-05 — autobrr's indexers are rows of `release_sources` (kind `irc`, or `feed` for Torznab, Newznab and RSS
   indexers; `definition` = identifier, `settings` = the indexer's settings) plus a row of `autobrr_indexer_meta` for
   what sources lack (external identifier, implementation, base URL, proxy, archive state), so the ids filters already

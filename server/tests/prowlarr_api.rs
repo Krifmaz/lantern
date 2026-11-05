@@ -347,8 +347,9 @@ async fn localization_and_health() {
     for (name, until) in [("Alpha", later), ("Beta", 0.0)] {
         st.db
             .execute(
-                "INSERT INTO indexers (kind, name, disabled_until, added) VALUES ('torznab', ?, ?, ?)",
-                p![name, until, server::auth::now()],
+                // failing since a minute ago: IndexerStatusCheck counts failures that began in the last 6 hours
+                "INSERT INTO indexers (kind, name, disabled_until, initial_failure, added) VALUES ('torznab', ?, ?, ?, ?)",
+                p![name, until, server::auth::now() - 60.0, server::auth::now()],
             )
             .unwrap();
     }
