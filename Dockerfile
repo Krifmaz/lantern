@@ -41,8 +41,9 @@ RUN apk add --no-cache curl tar \
  && ls /defs | grep -c yml
 
 # The browser for Cloudflare checks: Debian's Chromium headless shell and every file of the packages it needs
-# (libraries, fonts, their settings), gathered into /out to copy into the distroless image. glibc is in both
-# images already, from the same Debian release, so it isn't copied.
+# (libraries, fonts, their settings), gathered into /out to copy into the distroless image, plus every library
+# they link that Debian's base image already had (ldd). glibc is in both images already, from the same Debian
+# release, so it isn't copied.
 FROM debian:trixie-slim AS browser
 RUN dpkg-query -W -f='${Package}\n' | sort > /base.txt \
  && apt-get update \
@@ -56,6 +57,13 @@ RUN dpkg-query -W -f='${Package}\n' | sort > /base.txt \
  && shell=$(find /usr/lib/chromium -maxdepth 1 -type f -perm -u+x \( -name headless_shell -o -name 'chromium-headless-shell' \) | head -n1) \
  && test -n "$shell" && { [ "$shell" = /usr/lib/chromium/headless_shell ] || cp -a "$shell" /out/usr/lib/chromium/headless_shell; } \
  && rm -rf /out/usr/bin /out/usr/sbin /out/bin /out/sbin \
+ && find /out -type f \( -name '*.so*' -o -path '/out/usr/lib/chromium/*' \) -exec ldd {} \; 2>/dev/null \
+    | awk '$2 == "=>" && $3 ~ /^\// {print $3}' | sort -u \
+    | grep -vE '/(libc|libm|libdl|libpthread|librt|libresolv|libutil|ld-linux[^/]*)\.so' \
+    | while read -r lib; do lib="$(readlink -f "$(dirname "$lib")")/$(basename "$lib")"; \
+        [ -e "/out$lib" ] || cp -L --parents "$lib" /out/; done \
+ && for d in lib lib64; do if [ -d "/out/$d" ] && [ ! -L "/out/$d" ]; then \
+      mkdir -p "/out/usr/$d" && cp -a "/out/$d/." "/out/usr/$d/" && rm -rf "/out/$d"; fi; done \
  && /usr/lib/chromium/headless_shell --version 2>/dev/null || "$shell" --version
 
 # Distroless: no shell, no package manager, only glibc and CA certificates. Runs as the image's non-root user
