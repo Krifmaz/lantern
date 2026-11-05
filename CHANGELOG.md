@@ -7,6 +7,11 @@
   or slow machine no longer fails a check before the browser is ready.
 
 ### Added
+- Indexer proxies work as in Prowlarr v2.7.0.5723: HTTP, SOCKS4, SOCKS5 and FlareSolverr proxies under
+  `/api/v1/indexerproxy` (add, change, remove, schema, test, test all), used by the indexers that share a tag with
+  them. A FlareSolverr proxy is asked only when a site shows a Cloudflare check; pointed at Lantern, Lantern's own
+  solver answers. Indexers keep their tags, app profile and download client in Prowlarr's shape, wait between
+  requests to one site as Prowlarr does, and generic Newznab/Torznab indexers read the site's own capabilities.
 - Apps that search through Lantern's Newznab/Torznab feeds now get exactly what Prowlarr v2.7.0.5723 answers: every
   search parameter, the same feed and capabilities, the same error messages, and Prowlarr's test indexer (number 0).
   Indexers have Prowlarr's query and grab limits per hour or day, its "Prefer magnet links" and "Redirect" options,

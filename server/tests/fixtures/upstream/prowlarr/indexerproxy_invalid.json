@@ -1,0 +1,14 @@
+[
+  {
+    "propertyName": "Host",
+    "errorMessage": "'Host' must not be empty.",
+    "attemptedValue": "",
+    "severity": "error"
+  },
+  {
+    "propertyName": "Port",
+    "errorMessage": "'Port' must not be empty.",
+    "attemptedValue": 0,
+    "severity": "error"
+  }
+]

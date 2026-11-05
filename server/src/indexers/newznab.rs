@@ -142,6 +142,19 @@ impl Newznab {
         u
     }
 
+    /// The API's capabilities answer as it came (`NewznabCapabilitiesProvider.FetchCapabilities`: the address with
+    /// its API path, `?t=caps` and the key).
+    pub async fn caps_text(&self) -> Result<String, String> {
+        let path = if self.api_path.is_empty() { "/api" } else { self.api_path.trim_end_matches('/') };
+        let mut url = format!("{}{path}?t=caps", self.base.trim_end_matches('/'));
+        if !self.apikey.trim().is_empty() {
+            url.push_str("&apikey=");
+            url.push_str(&self.apikey);
+        }
+        let f = self.get(&url).headers(vec![("Accept".into(), "application/rss+xml, text/rss+xml, application/xml, text/xml".into())]);
+        Ok(self.http.fetch(f).await?.text)
+    }
+
     /// Checks the API answers its capabilities.
     pub async fn test(&self) -> Result<(), String> {
         let page = self.http.fetch(self.get(&self.url(&[("t", "caps".into())]))).await?;
