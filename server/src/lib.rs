@@ -10,12 +10,14 @@
 //! | `/api/settings`, `/api/settings/schema`, `/api/settings/secret/{key}` | kit-server-settings |
 //! | `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` | [`auth`] |
 //! | `/api/indexers/*`, `/api/search`, `/{id}/api` (Torznab/Newznab), `/{id}/download`, `/api/v1/*` (Prowlarr API) | [`indexers`] |
+//! | `/api/vault`, `/api/vault/*` (the account vault) | [`vault`] |
 //!
 //! Everything the app adds of its own goes into [`app`] next to them.
 
 pub mod auth;
 pub mod checks;
 pub mod indexers;
+pub mod vault;
 
 use axum::http::{header, HeaderValue};
 use axum::Router;
@@ -84,6 +86,8 @@ pub struct AppState {
     pub indexers: indexers::Indexers,
     /// Signs the download links handed to apps.
     pub signer: indexers::LinkSigner,
+    /// The account vault: site logins and keys, encrypted at rest.
+    pub vault: vault::Vault,
 }
 
 impl AppState {
@@ -117,6 +121,7 @@ impl AppState {
         let bundled = PathBuf::from(env("APP_DEFINITIONS_DIR").unwrap_or_else(|| "/app/definitions".into()));
         let library = indexers::library::Library::new(Some(bundled), data);
         let signer = indexers::LinkSigner::open(data)?;
+        let vault = vault::Vault::open(db.clone(), data, env("APP_VAULT_PASSPHRASE"))?;
         let kit = |e: kit_server_core::Error| anyhow::anyhow!("The kit's tables can't be made: {}", e.detail);
         let prefs = SqlitePrefs::new(db.clone()).map_err(kit)?;
         let reports = kit_server_bugreports::SqliteReports::new(db.clone()).map_err(kit)?;
@@ -141,6 +146,7 @@ impl AppState {
             limits: Arc::new(auth::Limits::default()),
             indexers: indexers::Indexers::new(db_for_indexers, library).with_settings(settings_for_indexers),
             signer,
+            vault,
         })
     }
 
@@ -255,6 +261,7 @@ pub fn app(st: AppState) -> Router {
         .merge(kit_server_settings::router())
         .merge(auth::router())
         .merge(indexers::api::router())
+        .merge(vault::api::router())
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))

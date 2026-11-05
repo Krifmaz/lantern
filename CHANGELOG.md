@@ -11,6 +11,9 @@
 - Indexers and Search pages, a notice and a Diagnostics check for indexers that stop working.
 - Contract test in CI: real Sonarr, Radarr, Lidarr and Readarr add Lantern and search through it.
 - Lantern listens on port 9696 (Prowlarr's), and makes an API key at first start.
+- Account vault (Vault page): tracker and Usenet logins, passwords, cookies, passkeys, API keys, 2FA seeds and invite
+  notes, encrypted at rest (argon2id + XChaCha20-Poly1305). Secrets are never listed or logged; the owner sees them
+  only after typing their password again, with the 2FA code. Encrypted backups, and restore with a check first.
 
 ## 0.0.1
 
