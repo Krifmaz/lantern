@@ -16,6 +16,10 @@
 - Account vault (Vault page): tracker and Usenet logins, passwords, cookies, passkeys, API keys, 2FA seeds and invite
   notes, encrypted at rest (argon2id + XChaCha20-Poly1305). Secrets are never listed or logged; the owner sees them
   only after typing their password again, with the 2FA code. Encrypted backups, and restore with a check first.
+- Account keeper (Accounts page): each vault account's site rules (minimum ratio, hit-and-runs, sign-in and activity
+  deadlines, login and cookie end dates) and numbers (ratio, upload, download, seed time, bonus points), with what is
+  at risk in words. Linked accounts are signed in to on their own before a deadline. Warnings show as a banner and go
+  once to ntfy, Discord or email (Settings → Accounts → Alerts), with Test alerts.
 - Android: Indexers (how every site is doing, what went wrong, the last week's numbers, Test) and Search (every
   indexer at once, by kind; open a result's page or copy its link), and the server's notices on the home page.
 - Download hub: qBittorrent and SABnzbd behind one download-client layer; apps register with their name, media type

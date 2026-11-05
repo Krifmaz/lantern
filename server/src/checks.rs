@@ -3,6 +3,8 @@
 //! - Notice `data`: the data folder can't be written (the kit's storage notice, for the one folder this app
 //!   writes to), checked every minute and on Check again. Served at `/api/notices/data` (and in `/api/notices`).
 //! - Notice `indexers`: one or more switched-on indexers failed their last search, checked every five minutes.
+//! - Notice `accounts`: an account in the vault will break its site's rule soon (the account keeper), checked
+//!   every ten minutes.
 //! - Diagnostics: the data folder, the database and the indexers. An app adds its own services, folders and
 //!   tools here.
 
@@ -18,6 +20,9 @@ pub const DATA_NOTICE: &str = "data";
 
 /// The id of the failing indexers notice.
 pub const INDEXERS_NOTICE: &str = "indexers";
+
+/// The id of the accounts at risk notice.
+pub const ACCOUNTS_NOTICE: &str = "accounts";
 
 /// The failing indexers notice's sentence for `(name, error)` pairs, `None` when every indexer works.
 pub fn indexers_text(failing: &[(String, String)]) -> Option<String> {
@@ -52,7 +57,7 @@ pub fn data_notice_text(dir: &Path, why: &str) -> String {
     format!("The data folder {} is {why} – check the disk (dmesg, fsck) or the mount", dir.display())
 }
 
-/// The app's notices: the data folder, probed every minute, and the failing indexers.
+/// The app's notices: the data folder, probed every minute, the failing indexers and the accounts at risk.
 pub fn notices() -> Notices<AppState> {
     Notices::new()
         .register(
@@ -74,6 +79,15 @@ pub fn notices() -> Notices<AppState> {
                 }
             })
             .every(Duration::from_secs(300)),
+        )
+        .register(
+            NoticeCheck::kept(ACCOUNTS_NOTICE, Severity::Warn, |st: AppState| async move {
+                match crate::keeper::all_risks(&st) {
+                    Ok(r) => crate::keeper::notice_text(&r).map(Notice::failing).unwrap_or_else(Notice::fine),
+                    Err(e) => Notice::failing(e.detail),
+                }
+            })
+            .every(Duration::from_secs(600)),
         )
 }
 

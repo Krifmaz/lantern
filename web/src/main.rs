@@ -7,6 +7,7 @@
 //! | `#/` | Home: the app's own start page (a bug report button to begin with) |
 //! | `#/indexers` | the indexers: add, edit, test and remove sites, update the definitions |
 //! | `#/search` | search every indexer at once |
+//! | `#/accounts` | the account keeper (admins): each account's risks, numbers and site rules, Sign in now, Test alerts |
 //! | `#/vault` | the account vault (admins): tracker and Usenet logins, Show with the password, Back up and Restore |
 //! | `#/bug-reports` | the account's bug reports and the New report sheet |
 //! | `#/settings?s=<page>` | the server settings form from the server's schema, Diagnostics and What's new |
@@ -14,6 +15,7 @@
 //! The app's own pages go next to [`Home`], one component each, with a link in [`Shell`].
 
 mod indexers;
+mod keeper;
 mod pages;
 mod vault;
 
@@ -179,6 +181,7 @@ fn Shell(me: Value) -> impl IntoView {
         match r.path.as_str() {
             "/indexers" => view! { <indexers::Indexers admin=admin/> }.into_any(),
             "/search" => view! { <indexers::Search/> }.into_any(),
+            "/accounts" if admin => view! { <keeper::Accounts/> }.into_any(),
             "/vault" if admin => view! { <vault::Vault owner=owner/> }.into_any(),
             "/bug-reports" => view! { <pages::BugReports/> }.into_any(),
             "/settings" => view! { <pages::Settings page=r.param("s")/> }.into_any(),
@@ -193,6 +196,7 @@ fn Shell(me: Value) -> impl IntoView {
                     <NavLink href="/" label="Home" route=route/>
                     <NavLink href="/indexers" label="Indexers" route=route/>
                     <NavLink href="/search" label="Search" route=route/>
+                    {admin.then(|| view! { <NavLink href="/accounts" label="Accounts" route=route/> })}
                     {admin.then(|| view! { <NavLink href="/vault" label="Vault" route=route/> })}
                 </nav>
                 <nav class="nav nav-under">
