@@ -482,6 +482,120 @@ help = "Empty: Lantern's torrent download clients. Otherwise one per line as cro
 type = "textarea"
 advanced = true
 
+[keys.cross_seed_use_client_torrents]
+env = "APP_CROSS_SEED_USE_CLIENT_TORRENTS"
+default = true
+group = "cross_seed"
+label = "Search the torrents in the clients"
+help = "Search for every torrent in the torrent clients (cross-seed's useClientTorrents). Turn it off to search only a torrent folder or data folders."
+type = "bool"
+advanced = true
+
+[keys.cross_seed_torrent_dir]
+env = "APP_CROSS_SEED_TORRENT_DIR"
+default = ""
+group = "cross_seed"
+label = "Torrent folder"
+help = "A folder of .torrent files to search for instead of the clients' torrents, such as qBittorrent's BT_backup (cross-seed's torrentDir). Empty: none. It can't be used with 'Search the torrents in the clients'."
+type = "text"
+advanced = true
+
+[keys.cross_seed_data_dirs]
+env = "APP_CROSS_SEED_DATA_DIRS"
+default = ""
+group = "cross_seed"
+label = "Data folders"
+help = "Folders of downloaded files to search for, one per line (cross-seed's dataDirs). Lantern only reads them; matches are linked into the link folders."
+type = "textarea"
+advanced = true
+
+[keys.cross_seed_max_data_depth]
+env = "APP_CROSS_SEED_MAX_DATA_DEPTH"
+default = 2
+group = "cross_seed"
+label = "Data folder depth"
+help = "How many folder levels down the data folders are looked through for releases (cross-seed's maxDataDepth, usually 1 to 3)."
+type = "number"
+min = 1
+max = 10
+advanced = true
+
+[keys.cross_seed_rss_cadence]
+env = "APP_CROSS_SEED_RSS_CADENCE"
+default = "30 minutes"
+group = "cross_seed"
+label = "Check new releases every"
+help = "How often the newest releases of every indexer are compared with what you have, such as 30 minutes (cross-seed's rssCadence, 10 to 120 minutes). Empty: never."
+type = "text"
+advanced = true
+
+[keys.cross_seed_search_cadence]
+env = "APP_CROSS_SEED_SEARCH_CADENCE"
+default = "1 day"
+group = "cross_seed"
+label = "Search everything every"
+help = "How often everything you have is searched on the indexers, such as 1 day (cross-seed's searchCadence, at least 1 day). Empty: never."
+type = "text"
+advanced = true
+
+[keys.cross_seed_search_limit]
+env = "APP_CROSS_SEED_SEARCH_LIMIT"
+default = 400
+group = "cross_seed"
+label = "Searches per indexer each time"
+help = "The most searches each indexer gets in one run of the search (cross-seed's searchLimit). 0: no limit."
+type = "number"
+min = 0
+advanced = true
+
+[keys.cross_seed_snatch_timeout]
+env = "APP_CROSS_SEED_SNATCH_TIMEOUT"
+default = "30 seconds"
+group = "cross_seed"
+label = "Wait for a .torrent file up to"
+help = "How long a site may take to send a .torrent file (cross-seed's snatchTimeout). Empty: no limit."
+type = "text"
+advanced = true
+
+[keys.cross_seed_search_timeout]
+env = "APP_CROSS_SEED_SEARCH_TIMEOUT"
+default = "2 minutes"
+group = "cross_seed"
+label = "Wait for a search up to"
+help = "How long an indexer may take to answer a search (cross-seed's searchTimeout). Empty: no limit."
+type = "text"
+advanced = true
+
+[keys.cross_seed_notification_webhook_urls]
+env = "APP_CROSS_SEED_NOTIFICATION_WEBHOOK_URLS"
+default = ""
+secret = true
+group = "cross_seed"
+label = "Notification addresses"
+help = "Addresses that get cross-seed's JSON message after each match is added or saved, or fails, one per line (cross-seed's notificationWebhookUrls), such as an Apprise or Notifiarr address."
+type = "textarea"
+advanced = true
+
+[keys.cross_seed_sonarr]
+env = "APP_CROSS_SEED_SONARR"
+default = ""
+secret = true
+group = "cross_seed"
+label = "Sonarr addresses"
+help = "Sonarr addresses with their API key, one per line, such as http://sonarr:8989/?apikey=KEY (cross-seed's sonarr). Shows and episodes are then searched by their ids, which finds more."
+type = "textarea"
+advanced = true
+
+[keys.cross_seed_radarr]
+env = "APP_CROSS_SEED_RADARR"
+default = ""
+secret = true
+group = "cross_seed"
+label = "Radarr addresses"
+help = "Radarr addresses with their API key, one per line, such as http://radarr:7878/?apikey=KEY (cross-seed's radarr). Movies are then searched by their ids."
+type = "textarea"
+advanced = true
+
 [groups.soulseek]
 section = "downloads"
 title = "Soulseek"

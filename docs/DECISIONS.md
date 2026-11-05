@@ -390,6 +390,23 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — EXEC actions and exec external filters run the program with an argument list split the way
   go-shellquote splits autobrr's ExecArgs, never through a shell. Webhook headers are taken but not stored, as in
   autobrr; webhook type and method are stored but, as in autobrr, the webhook action always POSTs JSON.
+- 2026-11-05 — Cross-seed's data folders are looked at again at most once a minute, by each folder's file count,
+  sizes and newest time, instead of cross-seed's file watcher; no new dependency is needed and only changed folders
+  are read again.
+- 2026-11-05 — Cross-seed searches Lantern's own torrent indexers in place of Torznab addresses. Their capabilities
+  come from Lantern's caps (music search counts as audio search), and a site on hold after failures counts as
+  cross-seed's disabled indexer; a `RATE_LIMITED` site is left to Lantern's holds rather than snoozed again.
+- 2026-11-05 — Cross-seed's cache of fetched `.torrent` files and decisions (`torrent_cache`, `decision`) is not
+  ported: each candidate's decision stays in `cross_seeds`, and cleanup has nothing of it to prune. Saved torrents
+  whose file names don't name a tracker get the indexer whose site host matches one of their trackers, since
+  Lantern doesn't keep each indexer's tracker hosts.
+- 2026-11-05 — Season episodes found in data folders are kept with an empty client host (not NULL) so the same
+  path is stored once. The search job no longer leaves out the site a grab came from (cross-seed doesn't know it);
+  searching one grab from Lantern's page still does.
+- 2026-11-05 — The cross-seed jobs run on their schedule only while the `cross_seed` setting is on; a run asked for
+  by `POST /api/job` or the webhook always happens. The job list follows the settings without a restart, and
+  `updateIndexerCaps` is always there since Lantern always has its own indexers. The notification title stays
+  `cross-seed`, so tools made for cross-seed read it. The `lantern cross-seed <command>` CLI is the next slice.
 - 2026-11-05 — Prowlarr's v1 indexer resource (`prowlarr/indexers.rs`) maps Lantern's indexers both ways. Only
   Cardigann, Newznab and Torznab indexers exist: Prowlarr's native C# indexers are not in the schema, and an
   implementation Lantern doesn't have answers 400. A Cardigann site's secret settings are masked as `********` like

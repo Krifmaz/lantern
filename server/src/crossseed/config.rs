@@ -28,8 +28,21 @@
 //! | `ignoreNonRelevantFilesToResume` | `cross_seed_ignore_non_relevant_files_to_resume` |
 //! | `torrentClients` | `cross_seed_torrent_clients` (one per line; empty: Lantern's torrent download clients) |
 //! | `outputDir` | `cross-seeds` in the data folder |
+//! | `useClientTorrents` | `cross_seed_use_client_torrents` |
+//! | `torrentDir` | `cross_seed_torrent_dir` (empty: none) |
+//! | `dataDirs` | `cross_seed_data_dirs` (one folder per line) |
+//! | `maxDataDepth` | `cross_seed_max_data_depth` |
+//! | `rssCadence` | `cross_seed_rss_cadence` (empty: off) |
+//! | `searchCadence` | `cross_seed_search_cadence` (empty: off) |
+//! | `snatchTimeout` | `cross_seed_snatch_timeout` (empty: none) |
+//! | `searchTimeout` | `cross_seed_search_timeout` (empty: none) |
+//! | `searchLimit` | `cross_seed_search_limit` (0: none) |
+//! | `notificationWebhookUrls` | `cross_seed_notification_webhook_urls` (one per line) |
+//! | `sonarr` | `cross_seed_sonarr` (one address with its `apikey` per line) |
+//! | `radarr` | `cross_seed_radarr` (one address with its `apikey` per line) |
 //!
-//! The other settings keep cross-seed's defaults until the parts that use them are ported.
+//! `torznab` stays empty: Lantern searches its own indexers. `host`, `verbose` and `injectDir` keep cross-seed's
+//! defaults (the CLI sets `injectDir`).
 
 use super::clients::{clients_are_unique, parse_client_entry, CLIENT_TYPES};
 use super::constants::{parse_blocklist_entry, Action, BlocklistType, LinkType, MatchMode, INFO_HASH_REGEX};
@@ -288,6 +301,36 @@ impl RuntimeConfig {
         }
         let api_key = s.str("api_key");
         c.api_key = if api_key.is_empty() { None } else { Some(api_key) };
+        c.use_client_torrents = s.bool("cross_seed_use_client_torrents");
+        let torrent_dir = s.str("cross_seed_torrent_dir");
+        c.torrent_dir = if torrent_dir.trim().is_empty() { None } else { Some(torrent_dir.trim().to_string()) };
+        c.data_dirs = block_list_lines(&s.str("cross_seed_data_dirs")).into_iter().map(|d| d.trim().to_string()).collect();
+        c.max_data_depth = s.int("cross_seed_max_data_depth");
+        for (key, slot) in [
+            ("cross_seed_rss_cadence", &mut c.rss_cadence),
+            ("cross_seed_search_cadence", &mut c.search_cadence),
+            ("cross_seed_snatch_timeout", &mut c.snatch_timeout),
+            ("cross_seed_search_timeout", &mut c.search_timeout),
+        ] {
+            let text = s.str(key);
+            *slot = if text.trim().is_empty() {
+                None
+            } else {
+                match ms(&text) {
+                    Some(v) => Some(v),
+                    None => {
+                        problems.push(issue(&text, VERCEL));
+                        None
+                    }
+                }
+            };
+        }
+        let limit = s.int("cross_seed_search_limit");
+        c.search_limit = if limit == 0 { None } else { Some(limit) };
+        let lines = |k: &str| block_list_lines(&s.str(k)).into_iter().map(|d| d.trim().to_string()).collect::<Vec<_>>();
+        c.notification_webhook_urls = lines("cross_seed_notification_webhook_urls");
+        c.sonarr = lines("cross_seed_sonarr");
+        c.radarr = lines("cross_seed_radarr");
         problems.extend(validate(&mut c));
         (c, problems)
     }
@@ -415,6 +458,74 @@ pub const DUPLICATE_CLIENTS: &str = "Duplicate torrent client URLs are not allow
 pub const INJECT_NEEDS_CLIENTS: &str = "You need to specify torrentClients when using 'inject'";
 /// `needsClient`.
 pub const NEEDS_CLIENT: &str = "You need to have a client configured for useClientTorrents.";
+/// `torrentDirAndUseClientTorrents`.
+pub const TORRENT_DIR_AND_USE_CLIENT_TORRENTS: &str = "You cannot have both torrentDir and useClientTorrents.";
+/// `multipleClientsTorrentFile`.
+pub const MULTIPLE_CLIENTS_TORRENT_FILE: &str =
+    "torrentDir and --torrents arg does not support multiple clients, use useClientTorrents instead.";
+/// `multipleClientsNoLinking`.
+pub const MULTIPLE_CLIENTS_NO_LINKING: &str = "dataDirs is not supported with multiple clients if not linking. To configure linking, please read: https://www.cross-seed.org/docs/tutorials/linking";
+/// `needSearchees`.
+pub const NEED_SEARCHEES: &str = "You need to have torrentDir, useClientTorrents or dataDirs for search/rss/announce matching to work.";
+/// `ensembleNeedsClient`.
+pub const ENSEMBLE_NEEDS_CLIENT: &str =
+    "seasonFromEpisodes requires a torrent client to connect to when using torrentDir or useClientTorrents.";
+/// `linkDirsInOtherDirs`.
+pub const LINK_DIRS_IN_OTHER_DIRS: &str =
+    "You cannot have your linkDirs inside of your torrentDir/dataDirs/outputDir. Please adjust your paths to correct this.";
+/// `dataDirsInOtherDirs`.
+pub const DATA_DIRS_IN_OTHER_DIRS: &str =
+    "You cannot have your dataDirs inside of your torrentDir/linkDirs/outputDir. Please adjust your paths to correct this.";
+/// `torrentDirInOtherDirs`.
+pub const TORRENT_DIR_IN_OTHER_DIRS: &str =
+    "You cannot have your torrentDir inside of your dataDirs/linkDirs/outputDir. Please adjust your paths to correct this.";
+/// `outputDirInOtherDirs`.
+pub const OUTPUT_DIR_IN_OTHER_DIRS: &str =
+    "You cannot have your outputDir inside of your torrentDir/dataDirs/linkDirs. Please adjust your paths to correct this.";
+/// zod's message for an address that isn't one (`z.string().url()`).
+pub const INVALID_URL: &str = "Invalid url";
+
+/// `isChildPath`: whether `child` is `parent` or inside one of `parents`, as paths are resolved (not on disk).
+pub fn is_child_path(child: &str, parents: &[String]) -> bool {
+    let resolve = |p: &str| -> Vec<String> {
+        let start = if p.starts_with('/') {
+            std::path::PathBuf::from("/")
+        } else {
+            std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("/"))
+        };
+        let mut parts: Vec<String> = start.to_string_lossy().split('/').filter(|x| !x.is_empty()).map(str::to_string).collect();
+        for seg in p.split('/') {
+            match seg {
+                "" | "." => {}
+                ".." => {
+                    parts.pop();
+                }
+                s => parts.push(s.to_string()),
+            }
+        }
+        parts
+    };
+    let c = resolve(child);
+    parents.iter().any(|parent| {
+        let p = resolve(parent);
+        c.len() >= p.len() && c[..p.len()] == p[..]
+    })
+}
+
+/// `validateUArrLs`'s first check: every Sonarr and Radarr address carries its `apikey`.
+pub fn arr_url_problems(c: &RuntimeConfig) -> Vec<String> {
+    let mut p = Vec::new();
+    for (name, list) in [("Sonarr", &c.sonarr), ("Radarr", &c.radarr)] {
+        for u in list {
+            if let Ok(url) = url::Url::parse(u) {
+                if !url.query_pairs().any(|(k, _)| k == "apikey") {
+                    p.push(format!("{name} url {url} does not specify an apikey"));
+                }
+            }
+        }
+    }
+    p
+}
 
 /// `clientType`: a torrent client entry with a type cross-seed doesn't know.
 pub fn client_type_message() -> String {
@@ -556,17 +667,44 @@ pub fn validate(c: &mut RuntimeConfig) -> Vec<String> {
     if !(0..=52_428_800).contains(&c.auto_resume_max_download) {
         p.push(AUTO_RESUME_MAX_DOWNLOAD_UNSUPPORTED.to_string());
     }
+    if c.max_data_depth < 1 {
+        p.push("Number must be greater than or equal to 1".to_string());
+    } else if c.max_data_depth > 3 {
+        tracing::warn!("Your maxDataDepth is most likely incorrect, please read: https://www.cross-seed.org/docs/tutorials/data-based-matching#setting-up-data-based-matching");
+    }
+    for u in &c.notification_webhook_urls {
+        if url::Url::parse(u).is_err() {
+            p.push(issue(u, INVALID_URL));
+        }
+    }
     for entry in &c.torrent_clients {
         if !parse_client_entry(entry).is_some_and(|e| CLIENT_TYPES.contains(&e.client_type.as_str())) {
             p.push(issue(entry, &client_type_message()));
         }
     }
+    if c.search_limit.is_some_and(|l| l < 0) {
+        p.push("Number must be greater than or equal to 0".to_string());
+    }
     p.extend(check_block_list(&mut c.block_list));
+    for u in c.radarr.iter().chain(c.sonarr.iter()) {
+        if url::Url::parse(u).is_err() {
+            p.push(issue(u, INVALID_URL));
+        }
+    }
+    if c.torrent_dir.is_some() && c.use_client_torrents {
+        p.push(TORRENT_DIR_AND_USE_CLIENT_TORRENTS.to_string());
+    }
     if c.use_client_torrents && c.torrent_clients.is_empty() {
         p.push(NEEDS_CLIENT.to_string());
     }
     if c.action == Action::Inject && !c.torrent_clients.iter().any(|t| !t.contains(":readonly:")) {
         p.push(CLIENT_TYPE_READ_ONLY.to_string());
+    }
+    if c.torrent_clients.len() > 1 && c.torrent_dir.is_some() {
+        p.push(MULTIPLE_CLIENTS_TORRENT_FILE.to_string());
+    }
+    if c.torrent_clients.len() > 1 && c.link_dirs.is_empty() && !c.data_dirs.is_empty() {
+        p.push(MULTIPLE_CLIENTS_NO_LINKING.to_string());
     }
     let entries_ok = c.torrent_clients.iter().all(|t| parse_client_entry(t).is_some_and(|e| url::Url::parse(&e.url).is_ok()));
     if entries_ok {
@@ -599,14 +737,50 @@ pub fn validate(c: &mut RuntimeConfig) -> Vec<String> {
     if c.torrent_clients.is_empty() && c.action == Action::Inject {
         p.push(INJECT_NEEDS_CLIENTS.to_string());
     }
+    if !c.use_client_torrents
+        && c.torrent_dir.is_none()
+        && c.data_dirs.is_empty()
+        && (c.rss_cadence.is_some() || c.search_cadence.is_some())
+    {
+        p.push(NEED_SEARCHEES.to_string());
+    }
     if c.link_dirs.is_empty() && c.match_mode != MatchMode::Strict && c.action != Action::Save {
         p.push(MATCH_MODE_NEEDS_LINK_DIRS.to_string());
+    }
+    if c.season_from_episodes.is_some() && c.torrent_dir.is_some() && c.torrent_clients.is_empty() {
+        p.push(ENSEMBLE_NEEDS_CLIENT.to_string());
     }
     if c.season_from_episodes.is_some() && c.action != Action::Save && c.link_dirs.is_empty() {
         p.push(ENSEMBLE_NEEDS_LINK_DIRS.to_string());
     }
     if c.season_from_episodes.is_some_and(|s| s < 1.0) && c.match_mode != MatchMode::Partial {
         p.push(ENSEMBLE_NEEDS_PARTIAL.to_string());
+    }
+    p.extend(dir_problems(c));
+    p
+}
+
+/// The checks that no folder is inside another kind (`linkDirsInOtherDirs` and the three after it); `outputDir`
+/// counts only when it is set.
+pub fn dir_problems(c: &RuntimeConfig) -> Vec<String> {
+    let mut p = Vec::new();
+    let output: Vec<String> = c.output_dir.iter().cloned().collect();
+    let torrent: Vec<String> = c.torrent_dir.iter().cloned().collect();
+    if c.link_dirs.iter().any(|l| is_child_path(l, &output) || is_child_path(l, &c.data_dirs) || is_child_path(l, &torrent)) {
+        p.push(LINK_DIRS_IN_OTHER_DIRS.to_string());
+    }
+    if c.data_dirs.iter().any(|d| is_child_path(d, &output) || is_child_path(d, &torrent) || is_child_path(d, &c.link_dirs)) {
+        p.push(DATA_DIRS_IN_OTHER_DIRS.to_string());
+    }
+    if let Some(t) = &c.torrent_dir {
+        if is_child_path(t, &output) || is_child_path(t, &c.data_dirs) || is_child_path(t, &c.link_dirs) {
+            p.push(TORRENT_DIR_IN_OTHER_DIRS.to_string());
+        }
+    }
+    if let Some(o) = &c.output_dir {
+        if is_child_path(o, &torrent) || is_child_path(o, &c.data_dirs) || is_child_path(o, &c.link_dirs) {
+            p.push(OUTPUT_DIR_IN_OTHER_DIRS.to_string());
+        }
     }
     p
 }

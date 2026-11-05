@@ -14,11 +14,22 @@
 //! | match or not, and why | [`decide`] | `decide.ts` |
 //! | save, link and inject a match | [`action`] | `action.ts` |
 //! | qBittorrent, rTorrent, Transmission, Deluge | [`clients`] | `clients/*.ts` |
-//! | the daemon API (its own port) | [`daemon`] | `server.ts`, `jobs.ts` (run ahead) |
+//! | the daemon API (its own port) | [`daemon`] | `server.ts` |
+//! | the jobs and their cadence | [`jobs`] | `jobs.ts`, `db.ts` (`cleanupDB`) |
+//! | the searches, announces and RSS | [`pipeline`] | `pipeline.ts`, `torznab.ts` (paging, indexers) |
+//! | what an indexer can search | [`search`] | `torznab.ts` (queries, caps) |
+//! | client torrents, `torrentDir`, similar names | [`index`] | `torrent.ts` |
+//! | `dataDirs` | [`data`] | `dataFiles.ts` |
+//! | seasons from episodes | [`ensemble`] | `torrent.ts` (`createEnsembleSearchees`) |
+//! | Sonarr and Radarr ids | [`arr`] | `arr.ts` |
+//! | notification webhooks | [`notify`] | `pushNotifier.ts` |
+//! | adding saved torrents | [`inject`] | `inject.ts` |
 //! | Lantern's page | [`api`] | – |
 //!
-//! Searchees are the torrents of cross-seed's torrent clients (by default Lantern's torrent download clients;
-//! [`CrossSeed::search_grab`], the automatic pass [`CrossSeed::run`], and `POST /api/webhook` by info hash). Every candidate's decision is kept in
+//! Searchees are the torrents of cross-seed's torrent clients (by default Lantern's torrent download clients), or
+//! the `.torrent` files of `torrentDir`, and the data of `dataDirs` ([`CrossSeed::find_all_searchees`]); the jobs
+//! ([`jobs`]) search them, read the RSS feeds and add saved torrents. [`CrossSeed::search_grab`] searches one
+//! grab from Lantern's page. Every candidate's decision is kept in
 //! `cross_seeds`: cross-seed's decision (`match_decision`), what was done (`result`, cross-seed's injection result)
 //! and Lantern's outcome word for the page and the hub (`decision`: `injected` keeps a grab's files on disk).
 //!
@@ -28,13 +39,22 @@
 
 pub mod action;
 pub mod api;
+pub mod arr;
 pub mod clients;
 pub mod config;
 pub mod constants;
 pub mod daemon;
+pub mod data;
 pub mod decide;
+pub mod ensemble;
+pub mod index;
+pub mod inject;
+pub mod jobs;
 pub mod jsre;
+pub mod notify;
+pub mod pipeline;
 pub mod prefilter;
+pub mod search;
 pub mod searchee;
 pub mod torrent;
 pub mod utils;
@@ -43,14 +63,14 @@ use crate::hub::clients::ClientConfig;
 use crate::hub::grabs::Grab;
 use crate::hub::Hub;
 use crate::indexers::cardigann::Grabbed;
-use crate::indexers::release::{Protocol, Query, SearchKind};
+use crate::indexers::release::Protocol;
 use action::ActionReturn;
 use clients::{Client, SearcheeOptions};
 use config::{Override, RuntimeConfig};
 use constants::{Decision, InjectionResult};
 use decide::{assess_candidate, reason, Assessment, Candidate, MetaOrCandidate, SnatchError};
 use kit_server_core::{err, p, Db, Result, Row, RowExt, SqliteDb};
-use prefilter::{filter_by_content, filter_timestamps, ContentOptions, Timestamps, MAX_INT};
+use prefilter::{filter_timestamps, ContentOptions, Timestamps, MAX_INT};
 use searchee::{Label, Searchee};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
@@ -62,8 +82,9 @@ use torrent::Metafile;
 pub const CATEGORY_SUFFIX: &str = constants::TORRENT_CATEGORY_SUFFIX;
 
 /// The tables cross-seeding keeps: each candidate's outcome, when each grab was last searched, each searchee's
-/// search times per indexer (cross-seed's `timestamp`), the client torrents (cross-seed's `client_searchee`) and
-/// each job's last run (cross-seed's `job_log`).
+/// search times per indexer (cross-seed's `timestamp`), the client torrents (cross-seed's `client_searchee`),
+/// each job's last run (cross-seed's `job_log`), the `.torrent` files of `torrentDir` (`torrent`), the data of
+/// `dataDirs` (`data`), the episodes that make up seasons (`ensemble`) and each indexer's last RSS item (`rss`).
 pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
     let fail = |e: kit_server_core::Error| anyhow::anyhow!("The cross-seed tables can't be made: {}", e.detail);
     db.execute_batch(
@@ -109,6 +130,30 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
         CREATE TABLE IF NOT EXISTS cross_seed_job_log (
             name TEXT PRIMARY KEY,
             last_run REAL NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS cross_seed_torrents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            info_hash TEXT NOT NULL,
+            name TEXT NOT NULL,
+            file_path TEXT NOT NULL UNIQUE
+        );
+        CREATE INDEX IF NOT EXISTS cross_seed_torrents_by_hash ON cross_seed_torrents(info_hash);
+        CREATE TABLE IF NOT EXISTS cross_seed_data (
+            path TEXT PRIMARY KEY,
+            title TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS cross_seed_ensemble (
+            client_host TEXT NOT NULL DEFAULT '',
+            path TEXT NOT NULL,
+            info_hash TEXT,
+            ensemble TEXT NOT NULL,
+            element TEXT NOT NULL,
+            PRIMARY KEY (client_host, path)
+        );
+        CREATE INDEX IF NOT EXISTS cross_seed_ensemble_by_name ON cross_seed_ensemble(ensemble);
+        CREATE TABLE IF NOT EXISTS cross_seed_rss (
+            indexer_id INTEGER PRIMARY KEY,
+            last_seen_guid TEXT
         );",
     )
     .map_err(fail)?;
@@ -176,17 +221,6 @@ pub struct Target {
     pub indexer_id: i64,
 }
 
-/// A job that can be run ahead of schedule (cross-seed's `Job`).
-#[derive(Debug, Clone)]
-pub struct Job {
-    /// Its name (`search`).
-    pub name: &'static str,
-    /// How often it runs, in milliseconds.
-    pub cadence: f64,
-    /// Whether it is running now.
-    pub is_active: bool,
-}
-
 /// The torrent clients made from the settings, kept until the settings change.
 #[derive(Default)]
 struct ClientCache {
@@ -201,12 +235,22 @@ struct ClientCache {
 pub struct CrossSeed {
     /// The hub: its grabs, clients and indexers.
     pub hub: Hub,
-    /// The jobs the daemon API can run ahead of schedule.
-    pub jobs: Arc<Mutex<Vec<Job>>>,
+    /// The jobs (cross-seed's `jobs`), made from the settings by [`jobs::create_jobs`].
+    pub jobs: Arc<Mutex<Vec<jobs::Job>>>,
     /// cross-seed's torrent clients.
     clients: Arc<tokio::sync::Mutex<ClientCache>>,
     /// `Mutex.CLIENT_INJECTION`: one injection at a time.
     injection: Arc<tokio::sync::Mutex<()>>,
+    /// `Mutex.INDEX_TORRENTS_AND_DATA_DIRS`: one look over the torrents and data at a time.
+    indexing: Arc<tokio::sync::Mutex<()>>,
+    /// What was seen in `dataDirs` last time, so only changed folders are looked at again.
+    data_index: Arc<Mutex<data::DataIndex>>,
+    /// `Mutex.CREATE_ALL_SEARCHEES`: one gathering of every searchee at a time.
+    create_all: Arc<tokio::sync::Mutex<()>>,
+    /// `Mutex.CHECK_NEW_CANDIDATE`: one announce or RSS candidate looked up at a time.
+    candidates: Arc<tokio::sync::Mutex<()>>,
+    /// `checkJobs`' lock: one check of the jobs at a time.
+    checking: Arc<tokio::sync::Mutex<()>>,
 }
 
 /// Now in milliseconds since 1970, as cross-seed counts.
@@ -245,15 +289,21 @@ pub fn client_entry(c: &ClientConfig) -> Option<String> {
 }
 
 impl CrossSeed {
-    /// Cross-seeding for `hub`, with the jobs ported so far: `search` (Lantern's pass over finished torrents).
+    /// Cross-seeding for `hub`, with the jobs its settings ask for.
     pub fn new(hub: Hub) -> CrossSeed {
-        let cadence = RuntimeConfig::default().search_cadence.unwrap_or(86_400_000.0);
-        CrossSeed {
+        let xs = CrossSeed {
             hub,
-            jobs: Arc::new(Mutex::new(vec![Job { name: "search", cadence, is_active: false }])),
+            jobs: Arc::new(Mutex::new(Vec::new())),
             clients: Arc::new(tokio::sync::Mutex::new(ClientCache::default())),
             injection: Arc::new(tokio::sync::Mutex::new(())),
-        }
+            indexing: Arc::new(tokio::sync::Mutex::new(())),
+            data_index: Arc::new(Mutex::new(data::DataIndex::default())),
+            create_all: Arc::new(tokio::sync::Mutex::new(())),
+            candidates: Arc::new(tokio::sync::Mutex::new(())),
+            checking: Arc::new(tokio::sync::Mutex::new(())),
+        };
+        xs.refresh_jobs();
+        xs
     }
 
     fn db(&self) -> &SqliteDb {
@@ -270,8 +320,13 @@ impl CrossSeed {
 
     /// cross-seed's settings from Lantern's, and the problems found in them (cross-seed's words).
     pub fn config(&self) -> (RuntimeConfig, Vec<String>) {
-        let (mut c, problems) = RuntimeConfig::from_settings_with(&self.hub.settings, &self.lantern_client_entries());
+        let (mut c, mut problems) = RuntimeConfig::from_settings_with(&self.hub.settings, &self.lantern_client_entries());
         c.output_dir = Some(self.output_dir().to_string_lossy().into_owned());
+        // the folder checks again, now that outputDir is known
+        let dir_messages = config::dir_problems(&RuntimeConfig { output_dir: None, ..c.clone() });
+        problems.retain(|p| !dir_messages.contains(p));
+        problems.extend(config::dir_problems(&c));
+        problems.extend(config::arr_url_problems(&c));
         (c, problems)
     }
 
@@ -463,69 +518,6 @@ impl CrossSeed {
             .collect())
     }
 
-    /// `findOnOtherSites` for one searchee: filters it, searches the other torrent indexers, decides on every
-    /// candidate and acts on the matches (`performActions`).
-    pub async fn search_searchee(&self, s: &Searchee, target: &Target, o: &Override, opts: ContentOptions) -> Result<Outcome> {
-        let (base, _) = self.config();
-        let cfg = base.with(o);
-        let mut out = Outcome::default();
-        if let Err(why) = filter_by_content(s, &cfg, opts) {
-            tracing::info!("cross-seed: did not search for {}: {why}", s.title);
-            out.filtered = Some(why);
-            return Ok(out);
-        }
-        let indexers = self.torrent_indexers(target.indexer_id)?;
-        if indexers.is_empty() {
-            return Ok(out);
-        }
-        let q = Query { kind: SearchKind::Search, keywords: s.title.clone(), limit: 100, ..Query::default() };
-        let (found, failed) = self.hub.indexers.search(&indexers, &q, "Lantern cross-seed").await?;
-        let names: HashMap<i64, String> = self.hub.indexers.list()?.into_iter().map(|ix| (ix.id, ix.name)).collect();
-        let searched: Vec<i64> = indexers.iter().copied().filter(|i| !failed.iter().any(|(n, _)| names.get(i) == Some(n))).collect();
-        out.failed = failed;
-        let decided = self.decided(&s.title, target.grab_id)?;
-        let mut exclude = self.info_hashes_to_exclude();
-        for r in found {
-            if r.protocol != Protocol::Torrent || r.indexer_id == target.indexer_id || decided.contains(&(r.indexer_id, r.title.clone())) {
-                continue;
-            }
-            let link = if r.link.is_empty() { r.magnet.clone() } else { r.link.clone() };
-            let candidate = Candidate {
-                name: r.title.clone(),
-                guid: r.guid.clone(),
-                link,
-                tracker: r.indexer.clone(),
-                size: r.size.and_then(|v| i64::try_from(v).ok()),
-                pub_date: r.date.map(|d| d.timestamp_millis() as f64),
-                indexer_id: Some(r.indexer_id),
-                cookie: None,
-            };
-            let (assessment, result, detail) = self.assess_and_act(s, candidate, &exclude, &cfg).await;
-            if !matches!(
-                assessment.decision,
-                Decision::ReleaseGroupMismatch
-                    | Decision::ResolutionMismatch
-                    | Decision::SourceMismatch
-                    | Decision::ProperRepackMismatch
-                    | Decision::FuzzySizeMismatch
-                    | Decision::NoDownloadLink
-            ) {
-                out.candidates += 1;
-            }
-            if assessment.decision.is_any_match() {
-                out.matches += 1;
-            }
-            let hash = assessment.metafile.as_ref().map(|m| m.info_hash.clone()).unwrap_or_else(|| r.infohash.to_lowercase());
-            if result == Some(InjectionResult::Success) {
-                out.injected += 1;
-                exclude.insert(hash.clone());
-            }
-            self.record(target, s, r.indexer_id, &r.indexer, &r.title, &hash, assessment.decision, result, &detail)?;
-        }
-        self.update_search_timestamps(&s.title, &searched)?;
-        Ok(out)
-    }
-
     /// Keeps one candidate's outcome.
     #[allow(clippy::too_many_arguments)]
     fn record(
@@ -652,80 +644,6 @@ impl CrossSeed {
         })
     }
 
-    /// `searchForLocalTorrentByCriteria` by info hash: the client torrent with it, searched on the other sites.
-    /// `None` when every searchee was left out by the pre-filter (cross-seed logs nothing found then).
-    pub async fn search_info_hash(&self, info_hash: &str, o: &Override, ignore_cross_seeds: bool) -> Result<Option<usize>> {
-        let (cfg, _) = self.config();
-        let want = info_hash.to_lowercase();
-        let Some(mut s) = self.index_clients(&cfg).await.into_iter().find(|s| s.info_hash.as_deref() == Some(want.as_str())) else {
-            return Err(err(404, format!("No torrent client has a torrent with the info hash {}", utils::sanitize_info_hash(info_hash))));
-        };
-        s.label = Label::Webhook;
-        let target = self.grab_of(Some(&want))?;
-        let opts = ContentOptions { ignore_cross_seeds, allow_season_pack_episodes: true, block_list_only: false };
-        let out = self.search_searchee(&s, &target, o, opts).await?;
-        Ok(if out.filtered.is_some() { None } else { Some(out.matches) })
-    }
-
-    /// `checkNewCandidateMatch` for an announce: the client torrents like the candidate by name, decided on one at
-    /// a time until one matches and is added: (decision, action result).
-    pub async fn check_new_candidate_match(&self, candidate: Candidate) -> Result<(Option<Decision>, Option<InjectionResult>)> {
-        let (cfg, _) = self.config();
-        let clients = self.clients(&cfg).await;
-        let mut searchees: Vec<Searchee> = self
-            .index_clients(&cfg)
-            .await
-            .into_iter()
-            .filter(|s| similar_by_name(&candidate.name, &s.name))
-            .map(|s| Searchee { label: Label::Announce, ..s })
-            .filter(|s| filter_by_content(s, &cfg, ContentOptions::default()).is_ok())
-            .collect();
-        let unique = prefilter::filter_dupes_from_similar(&searchees);
-        searchees.retain(|s| unique.contains(s));
-        searchees.sort_by_key(|s| {
-            (clients::by_client_host_priority(&clients, s.client_host.as_deref()), s.info_hash.is_none(), std::cmp::Reverse(s.files.len()))
-        });
-        let exclude = self.info_hashes_to_exclude();
-        let mut decision = None;
-        let mut action_result: Option<InjectionResult> = None;
-        for s in &searchees {
-            let (a, result, detail) = self.assess_and_act(s, candidate.clone(), &exclude, &cfg).await;
-            let hash = a.metafile.as_ref().map(|m| m.info_hash.clone()).unwrap_or_default();
-            let target = Target { indexer_id: 0, ..self.grab_of(s.info_hash.as_deref())? };
-            self.record(&target, s, 0, &candidate.tracker, &candidate.name, &hash, a.decision, result, &detail)?;
-            if a.decision == Decision::InfoHashAlreadyExists {
-                decision = Some(a.decision);
-                break;
-            }
-            if !a.decision.is_any_match() {
-                continue;
-            }
-            let r = result.unwrap_or(InjectionResult::Failure);
-            if r == InjectionResult::Saved {
-                decision = Some(a.decision);
-                action_result = Some(r);
-                break;
-            }
-            if a.decision != Decision::MatchPartial && matches!(r, InjectionResult::Success | InjectionResult::AlreadyExists) {
-                decision = Some(a.decision);
-                action_result = Some(InjectionResult::Success);
-                break;
-            }
-            if action_result == Some(InjectionResult::Success) {
-                continue;
-            }
-            if action_result.is_some() && r == InjectionResult::Failure {
-                continue;
-            }
-            if action_result == Some(InjectionResult::AlreadyExists) && r == InjectionResult::TorrentNotComplete {
-                continue;
-            }
-            decision = Some(a.decision);
-            action_result = Some(r);
-        }
-        Ok((decision, action_result))
-    }
-
     /// One pass: searches every grab whose turn has come, waiting [`delay`](Self::delay) between them.
     pub async fn run(&self, limit: i64) -> Result<Outcome> {
         self.run_with(limit, &Override::default()).await
@@ -792,23 +710,6 @@ pub fn action_words(result: InjectionResult, destination_dir: Option<&str>, link
     }
 }
 
-/// `getSimilarByName`, simplified to the names of client torrents: the same key title and element (season,
-/// episode, year or release) by cross-seed's keys, else cross-seed's fuzzy title comparison.
-pub fn similar_by_name(candidate: &str, have: &str) -> bool {
-    let a = utils::strip_extension(candidate);
-    let b = utils::strip_extension(have);
-    let keys = |s: &str| {
-        searchee::get_episode_keys(s)
-            .or_else(|| searchee::get_season_keys(s))
-            .or_else(|| searchee::get_movie_keys(s))
-            .or_else(|| searchee::get_anime_keys(s))
-    };
-    match (keys(&a), keys(&b)) {
-        (Some(x), Some(y)) => x.element == y.element && x.key_titles.iter().any(|k| y.key_titles.contains(k)),
-        _ => utils::are_media_titles_similar(&a, &b),
-    }
-}
-
 /// The paths of `files` (as the client sees them) inside `save_path`.
 pub fn relative(files: &[(String, i64)], save_path: &str) -> Vec<(String, i64)> {
     let base = format!("{}/", save_path.trim_end_matches('/'));
@@ -834,8 +735,9 @@ fn outcome_json(r: &Row) -> Value {
     })
 }
 
-/// Runs cross-seeding: the daemon API on its own port (cross-seed's `port`, 2468 by default; 0 for none), and a
-/// pass every ten minutes while the `cross_seed` setting is on, a handful of grabs at a time.
+/// Runs cross-seeding: the daemon API on its own port (cross-seed's `port`, 2468 by default; 0 for none), the
+/// first look over the torrents and data (cross-seed's start-up `indexTorrentsAndDataDirs`), then the jobs
+/// ([`jobs`]), which run on schedule while the `cross_seed` setting is on.
 pub fn spawn(xs: CrossSeed) {
     if let Some(port) = xs.config().0.port {
         let app = daemon::router(xs.clone());
@@ -853,14 +755,9 @@ pub fn spawn(xs: CrossSeed) {
         });
     }
     tokio::spawn(async move {
-        loop {
-            tokio::time::sleep(Duration::from_secs(600)).await;
-            if xs.enabled() {
-                if let Err(e) = xs.run(5).await {
-                    tracing::warn!("cross-seed: {}", e.detail);
-                }
-            }
-        }
+        let cfg = xs.config().0;
+        xs.index_torrents_and_data_dirs(&cfg, true).await;
+        xs.jobs_loop().await;
     });
 }
 
@@ -880,14 +777,6 @@ mod tests {
         for d in Decision::ALL {
             assert!(!words(outcome_word(d, None)).is_empty());
         }
-    }
-
-    #[test]
-    fn names_alike_for_announces() {
-        assert!(similar_by_name("Show.Name.S01E02.1080p.WEB-GRP", "Show Name S01E02 720p"));
-        assert!(!similar_by_name("Show.Name.S01E02.1080p.WEB-GRP", "Show.Name.S01E03.1080p.WEB-GRP"));
-        assert!(similar_by_name("Movie.Name.2020.1080p.BluRay-GRP", "Movie Name (2020)"));
-        assert!(!similar_by_name("Movie.Name.2020.1080p", "Other.Film.2020.1080p"));
     }
 
     #[test]
