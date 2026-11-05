@@ -7,7 +7,7 @@
 //! `apiPath`, `apiKey` and `additionalParameters`. Prowlarr's API sends `********` instead of passwords and keys;
 //! those come over as settings to fill in again.
 
-use super::{masked, Action, Options, Plan, Secrets, Source, SourceApp, SourceIndexer, SourceProxy, Step};
+use super::{masked, Action, Options, Owner, Plan, Secrets, Source, SourceApp, SourceIndexer, SourceProxy, Step};
 use crate::indexers::definition::{Definition, Setting};
 use crate::indexers::library::Library;
 use crate::indexers::{newznab, Indexer};
@@ -653,6 +653,9 @@ pub async fn run(st: &AppState, src: &Source, opts: Options, secrets: &dyn Secre
             if src.notifications == 1 { "connection" } else { "connections" }
         ));
     }
+    if !opts.dry_run {
+        plan.notes.extend(secrets.note());
+    }
     plan.notes.push("Prowlarr's history, stats, sign-in users and per-indexer query, grab and seed limits aren't brought over.".into());
     plan.summarize();
     tracing::info!("Import from {}: {}", plan.from, plan.summary);
@@ -663,9 +666,16 @@ pub async fn run(st: &AppState, src: &Source, opts: Options, secrets: &dyn Secre
 /// new id and whether Prowlarr's number was kept.
 fn add(st: &AppState, s: &SourceIndexer, m: &Mapped, secrets: &dyn Secrets) -> Result<(i64, bool)> {
     let mut settings = m.settings.clone();
+    let username = settings.get("username").cloned().unwrap_or_default();
+    let owner = Owner {
+        kind: if m.kind == "newznab" { "usenet_indexer" } else { "tracker" },
+        name: &m.name,
+        site: if m.kind == "cardigann" { &m.definition } else { &m.base_url },
+        username: &username,
+    };
     for k in &m.secrets {
         if let Some(v) = settings.get(k).cloned() {
-            settings.insert(k.clone(), secrets.keep(&format!("indexer {}", m.name), k, &v)?);
+            settings.insert(k.clone(), secrets.keep(&owner, k, &v)?);
         }
     }
     let body = json!({
@@ -719,7 +729,11 @@ fn apps(st: &AppState, src: &Source, opts: Options, secrets: &dyn Secrets, plan:
             a.api_key.clone()
         };
         if !opts.dry_run {
-            let key = if key.is_empty() { key } else { secrets.keep(&format!("app {}", a.name), "api_key", &key)? };
+            let key = if key.is_empty() {
+                key
+            } else {
+                secrets.keep(&Owner { kind: "other", name: &a.name, site: &a.base_url, username: "" }, "api_key", &key)?
+            };
             st.db.execute(
                 "INSERT INTO imported_apps (name, kind, base_url, api_key, source_url, sync_level, tags, categories, imported) VALUES (?,?,?,?,?,?,?,?,?)",
                 p![

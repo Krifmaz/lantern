@@ -20,8 +20,8 @@ pub mod auth;
 pub mod checks;
 pub mod hub;
 pub mod indexers;
-pub mod vault;
 pub mod migrate;
+pub mod vault;
 
 use axum::http::{header, HeaderValue};
 use axum::Router;

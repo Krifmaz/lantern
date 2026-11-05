@@ -9,7 +9,7 @@
 //!
 //! `dry_run` is true unless it is sent as false: a look first, then the same request again to import.
 
-use super::{flaresolverr, prowlarr, InPlace, Options};
+use super::{flaresolverr, prowlarr, InVault, Options};
 use crate::AppState;
 use axum::extract::{DefaultBodyLimit, Multipart, State};
 use axum::routing::{get, post};
@@ -95,14 +95,14 @@ async fn prowlarr_file(State(st): State<AppState>, _: Admin, mut form: Multipart
     let src = tokio::task::spawn_blocking(move || prowlarr::read_upload(&upload, &unpacked))
         .await
         .map_err(|e| err(500, format!("Reading the upload stopped: {e}")))??;
-    Ok(Json(json!(prowlarr::run(&st, &src, opts, &InPlace).await?)))
+    Ok(Json(json!(prowlarr::run(&st, &src, opts, &InVault::new(&st.vault)).await?)))
 }
 
 async fn prowlarr_api(State(st): State<AppState>, _: Admin, Json(body): Json<Value>) -> Result<Json<Value>> {
     let text = |k: &str| body.get(k).map(|v| v.as_str().map(str::to_string).unwrap_or_else(|| v.to_string()));
     let opts = Options { dry_run: flag(text("dry_run").as_deref(), true), take_api_key: flag(text("take_api_key").as_deref(), true) };
     let src = prowlarr::read_api(&text("url").unwrap_or_default(), &text("key").unwrap_or_default()).await?;
-    Ok(Json(json!(prowlarr::run(&st, &src, opts, &InPlace).await?)))
+    Ok(Json(json!(prowlarr::run(&st, &src, opts, &InVault::new(&st.vault)).await?)))
 }
 
 async fn flaresolverr_text(_: Admin, Json(body): Json<Value>) -> Result<Json<Value>> {

@@ -168,6 +168,21 @@ async fn a_prowlarr_backup_is_looked_at_then_imported_once() {
     assert_eq!(apps["apps"][0]["api_key"], "••••");
     assert_eq!(apps["apps"][0]["categories"], json!([5000, 5040]));
 
+    // the logins went into the vault too, encrypted, one account each
+    assert!(plan["notes"].to_string().contains("saved in the vault"), "{plan}");
+    let items = st.vault.list().unwrap();
+    assert_eq!(items.len(), 3, "{items:?}");
+    assert!(!serde_json::to_string(&items).unwrap().contains("hunter2"));
+    let tracker = items.iter().find(|i| i["name"] == "Lantern Test Tracker").unwrap();
+    assert_eq!((tracker["kind"].as_str(), tracker["site"].as_str()), (Some("tracker"), Some("lantern-test")));
+    let secrets = st.vault.secrets(tracker["id"].as_str().unwrap()).unwrap();
+    assert_eq!(secrets.get("password").map(|s| s.expose()), Some("hunter2"));
+    assert_eq!(secrets.get("username").map(|s| s.expose()), Some("me"));
+    let geek = items.iter().find(|i| i["name"] == "NZBgeek").unwrap();
+    assert_eq!(geek["kind"], "usenet_indexer");
+    assert_eq!(st.vault.secrets(geek["id"].as_str().unwrap()).unwrap().get("api_key").map(|s| s.expose()), Some("geek-key"));
+    assert!(items.iter().any(|i| i["name"] == "Sonarr" && i["kind"] == "other"));
+
     // a new indexer after the import gets a number of its own
     let id = st.indexers.add(&json!({"kind": "torznab", "name": "Later", "base_url": "http://t.test"})).unwrap();
     assert!(id > 7);
@@ -179,6 +194,7 @@ async fn a_prowlarr_backup_is_looked_at_then_imported_once() {
     assert_eq!(step(&plan, "apps", "Sonarr")["action"], "already_there");
     assert_eq!(step(&plan, "settings", "API key")["action"], "already_there");
     assert_eq!(st.indexers.list().unwrap().len(), 3);
+    assert_eq!(st.vault.list().unwrap().len(), 3, "nothing is saved twice in the vault");
 
     // the uploads are cleaned up
     assert_eq!(std::fs::read_dir(st.data_dir.join("import")).unwrap().count(), 0);

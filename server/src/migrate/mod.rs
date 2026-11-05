@@ -10,8 +10,8 @@
 //! already in Lantern, what is skipped and why, and what a person has to do by hand. Nothing already in Lantern is
 //! changed or removed. Secret values (passwords, cookies, API keys) never appear in a plan: only their names do.
 //!
-//! Secrets go through the [`Secrets`] trait, so the account vault can take them over without changing the
-//! importers. Until the vault is wired in, [`InPlace`] keeps them where Lantern keeps them today.
+//! Secrets go through the [`Secrets`] trait: [`InVault`] saves them in the account vault as well as where indexers
+//! read them today.
 
 pub mod api;
 pub mod flaresolverr;
@@ -19,7 +19,7 @@ pub mod prowlarr;
 
 use kit_server_core::{p, Db, Result, RowExt, SqliteDb};
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 use std::collections::BTreeMap;
 
 /// What one line of a plan does (or would do, in a dry run).
@@ -160,21 +160,127 @@ impl Default for Options {
     }
 }
 
-/// Where imported secrets (passwords, cookies, API keys) are kept. The account vault implements this to take them
-/// over; until then [`InPlace`] keeps them where Lantern keeps them today.
-pub trait Secrets: Send + Sync {
-    /// Keeps `value`, the secret `field` of `owner` (`indexer 1337x`, `app Sonarr`), and gives back what to save
-    /// in its place (the value itself, or a reference the vault understands).
-    fn keep(&self, owner: &str, field: &str, value: &str) -> Result<String>;
+/// Who an imported secret belongs to.
+#[derive(Debug, Clone, Copy)]
+pub struct Owner<'a> {
+    /// The vault's kind for it: `tracker`, `usenet_indexer` or `other`.
+    pub kind: &'a str,
+    /// Its name (`1337x`, `Sonarr`).
+    pub name: &'a str,
+    /// The site it is for: a definition's id or an address.
+    pub site: &'a str,
+    /// The user name it signs in with, "" for none.
+    pub username: &'a str,
 }
 
-/// Keeps each secret where it was going anyway: in the indexer's settings or the app's row, as the rest of Lantern
-/// does until the account vault is wired in.
+/// Where imported secrets (passwords, cookies, API keys) are kept: [`InVault`] saves them in the account vault,
+/// [`InPlace`] only where the importer puts them anyway.
+pub trait Secrets: Send + Sync {
+    /// Keeps `value`, the secret `field` of `owner`, and gives back what to save in its place (the value itself while
+    /// indexers still read their secrets from their own settings).
+    fn keep(&self, owner: &Owner, field: &str, value: &str) -> Result<String>;
+
+    /// A sentence for the plan's notes on where the secrets went, after an import.
+    fn note(&self) -> Option<String> {
+        None
+    }
+}
+
+/// Keeps each secret only where the importer puts it: the indexer's settings or the app's row (tests, and a server
+/// without the vault).
 pub struct InPlace;
 
 impl Secrets for InPlace {
-    fn keep(&self, _owner: &str, _field: &str, value: &str) -> Result<String> {
+    fn keep(&self, _owner: &Owner, _field: &str, value: &str) -> Result<String> {
         Ok(value.to_string())
+    }
+}
+
+/// The vault's field for an imported secret's name (`apikey` → `api_key`), `None` for one the vault has no field for.
+pub fn vault_field(name: &str) -> Option<&'static str> {
+    let n = name.to_lowercase().replace(['_', '-'], "");
+    Some(match n.as_str() {
+        "password" => "password",
+        "cookie" | "cookies" => "cookie",
+        "passkey" => "passkey",
+        "apikey" => "api_key",
+        "rsskey" => "rss_key",
+        "2fa" | "totp" | "otp" | "totpseed" => "totp_seed",
+        _ => return None,
+    })
+}
+
+/// Saves imported secrets in the account vault too, one item per account (found by name and site, or made), so they
+/// are encrypted, backed up with the vault and shown on the Vault page. The value is also given back, because
+/// indexers still sign in with the copy in their own settings. A vault that can't be written (locked) is noted in the
+/// plan, and the import goes on.
+pub struct InVault<'a> {
+    /// The vault.
+    pub vault: &'a crate::vault::Vault,
+    /// name and site (lowercase) → the vault item made or found for it.
+    items: std::sync::Mutex<std::collections::HashMap<String, String>>,
+    /// The vault's answer when it couldn't be written, if it couldn't.
+    failed: std::sync::Mutex<Option<String>>,
+}
+
+impl<'a> InVault<'a> {
+    /// Keeping secrets in `vault`.
+    pub fn new(vault: &'a crate::vault::Vault) -> InVault<'a> {
+        InVault { vault, items: Default::default(), failed: Default::default() }
+    }
+
+    /// Saves `field` = `value` in the item of `owner`, making it when there is none.
+    fn save(&self, owner: &Owner, field: &str, value: &str) -> Result<()> {
+        let key = format!("{}\n{}", owner.name.to_lowercase(), owner.site.to_lowercase());
+        let known = self.items.lock().unwrap_or_else(|e| e.into_inner()).get(&key).cloned();
+        let found = match known {
+            Some(id) => Some(id),
+            None => self.vault.list()?.into_iter().find_map(|it| {
+                let text = |k: &str| it.get(k).and_then(Value::as_str).unwrap_or("").to_lowercase();
+                (text("name") == owner.name.to_lowercase() && text("site") == owner.site.to_lowercase())
+                    .then(|| it.get("id").and_then(Value::as_str).map(str::to_string))
+                    .flatten()
+            }),
+        };
+        let id = match found {
+            Some(id) => {
+                self.vault.update(&id, &json!({ "fields": { field: value } }))?;
+                id
+            }
+            None => {
+                let mut fields = Map::new();
+                if !owner.username.is_empty() {
+                    fields.insert("username".into(), json!(owner.username));
+                }
+                fields.insert(field.into(), json!(value));
+                let made = self.vault.create(&json!({ "kind": owner.kind, "name": owner.name, "site": owner.site, "fields": fields }))?;
+                made.get("id").and_then(Value::as_str).unwrap_or_default().to_string()
+            }
+        };
+        self.items.lock().unwrap_or_else(|e| e.into_inner()).insert(key, id);
+        Ok(())
+    }
+}
+
+impl Secrets for InVault<'_> {
+    fn keep(&self, owner: &Owner, field: &str, value: &str) -> Result<String> {
+        if let Some(f) = vault_field(field) {
+            if let Err(e) = self.save(owner, f, value) {
+                tracing::warn!("Import: {}'s {f} couldn't be saved in the vault: {}", owner.name, e.detail);
+                self.failed.lock().unwrap_or_else(|e| e.into_inner()).get_or_insert(e.detail);
+            }
+        }
+        Ok(value.to_string())
+    }
+
+    fn note(&self) -> Option<String> {
+        if let Some(why) = self.failed.lock().unwrap_or_else(|e| e.into_inner()).clone() {
+            return Some(format!("Some logins couldn't be saved in the vault ({why}); they stay with their indexers and apps."));
+        }
+        let n = self.items.lock().unwrap_or_else(|e| e.into_inner()).len();
+        (n > 0).then(|| {
+            format!("The logins and keys of {n} {} were also saved in the vault, encrypted.", if n == 1 { "account" } else { "accounts" })
+        })
     }
 }
 
@@ -349,6 +455,9 @@ mod tests {
         assert!(masked("********"));
         assert!(!masked("hunter2"));
         assert!(!masked(""));
+        assert_eq!(vault_field("apiKey"), Some("api_key"));
+        assert_eq!(vault_field("rss_key"), Some("rss_key"));
+        assert_eq!(vault_field("sort"), None);
     }
 
     #[test]

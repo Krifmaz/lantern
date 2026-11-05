@@ -54,7 +54,9 @@ Non-obvious calls, one line each, newest last.
   address, is left as it is); only an empty proxy for sites and the API key are set.
 - 2026-11-05 — Prowlarr's tagged indexer proxies are not imported: Lantern has one proxy for every site, and making a
   per-tag proxy global would change sites Prowlarr never sent through it. Prowlarr's own proxy is imported.
-- 2026-11-05 — Imported secrets go through `migrate::Secrets`; until the account vault is wired in, `InPlace` keeps
-  them where indexers keep them today. Imported apps wait in `imported_apps` for app sync (Lantern pushing indexers to apps).
+- 2026-11-05 — Imported secrets go through `migrate::Secrets`: `InVault` saves each account's logins and keys in the
+  vault (one item per account, found by name and site) and also leaves them in the indexer's settings, since indexers
+  still sign in from there. A locked vault doesn't stop the import; the plan says so. Imported apps wait in
+  `imported_apps` for app sync (Lantern pushing indexers to apps).
 - 2026-11-05 — FlareSolverr has no settings file, so its import reads pasted compose/.env/docker run text and only
   gives steps; nothing is saved, since Lantern solves by itself.
