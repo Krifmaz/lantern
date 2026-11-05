@@ -30,6 +30,9 @@ sealed interface Page {
     /** One search through every indexer. */
     data object Search : Page
 
+    /** The accounts in the vault; the [owner] may see their secrets (null: not known yet). */
+    data class Vault(val owner: Boolean?) : Page
+
     /** What's new: every release's notes ([ChangelogScreen]). */
     data object Changelog : Page
 
@@ -76,6 +79,8 @@ fun AppShell(app: App) {
         is Page.Indexers -> IndexersPage(app, page.admin, onBack = back)
 
         Page.Search -> SearchPage(app, onBack = back)
+
+        is Page.Vault -> VaultPage(app, page.owner, onBack = back)
 
         Page.Changelog ->
             Column(Modifier.fillMaxSize()) {

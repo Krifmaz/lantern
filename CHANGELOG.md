@@ -24,6 +24,9 @@
   files' exact paths in their own view.
 - Download hub: Transmission, Deluge, rTorrent and NZBGet join qBittorrent and SABnzbd behind the same client
   layer (qBittorrent and SABnzbd stay the defaults).
+- Android: the Vault page. Every saved account with its plain values and which secrets are saved; the owner sees
+  the secrets and the 2FA code after typing their password again, for two minutes, with screenshots blocked. Every
+  value can be copied, secrets marked sensitive on the clipboard.
 
 ## 0.0.1
 
