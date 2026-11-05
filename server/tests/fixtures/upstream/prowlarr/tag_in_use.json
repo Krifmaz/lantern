@@ -1,0 +1,4 @@
+{
+  "message": "Tag with ID 1 'movies' cannot be deleted since it's still in use",
+  "description": "NzbDrone.Core.Datastore.ModelConflictException: Tag with ID 1 'movies' cannot be deleted since it's still in use\n   at NzbDrone.Core.Tags.TagService.Delete(Int32 tagId)"
+}

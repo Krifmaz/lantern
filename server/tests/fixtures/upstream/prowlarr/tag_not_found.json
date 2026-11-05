@@ -1,0 +1,4 @@
+{
+  "message": "Tag with ID 99 does not exist",
+  "description": "NzbDrone.Core.Datastore.ModelNotFoundException: Tag with ID 99 does not exist\n   at NzbDrone.Core.Datastore.BasicRepository`1.Get(Int32 id)"
+}

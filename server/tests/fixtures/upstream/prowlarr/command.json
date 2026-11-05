@@ -1,0 +1,29 @@
+{
+  "id": 7,
+  "name": "Test",
+  "commandName": "Test",
+  "message": "Completed Test command",
+  "body": {
+    "duration": 0,
+    "sendUpdatesToClient": true,
+    "updateScheduledTask": true,
+    "requiresDiskAccess": false,
+    "isExclusive": false,
+    "isTypeExclusive": false,
+    "name": "Test",
+    "trigger": "manual",
+    "suppressMessages": false,
+    "clientUserAgent": "curl/8.5.0"
+  },
+  "priority": "normal",
+  "status": "completed",
+  "queued": "2026-11-05T10:00:00Z",
+  "started": "2026-11-05T10:00:00Z",
+  "ended": "2026-11-05T10:00:00Z",
+  "duration": "00:00:00.0051234",
+  "trigger": "manual",
+  "clientUserAgent": "curl/8.5.0",
+  "stateChangeTime": "2026-11-05T10:00:00Z",
+  "sendUpdatesToClient": true,
+  "updateScheduledTask": true
+}
