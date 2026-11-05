@@ -7,6 +7,11 @@
   or slow machine no longer fails a check before the browser is ready.
 
 ### Added
+- Apps that search through Lantern's Newznab/Torznab feeds now get exactly what Prowlarr v2.7.0.5723 answers: every
+  search parameter, the same feed and capabilities, the same error messages, and Prowlarr's test indexer (number 0).
+  Indexers have Prowlarr's query and grab limits per hour or day, its "Prefer magnet links" and "Redirect" options,
+  and are put on hold after failures with Prowlarr's growing wait times. Downloads are named, redirected and
+  recorded in history as in Prowlarr.
 - autobrr's web frontend is part of the image and opens at `/autobrr/` after signing in to Lantern, in the kit's
   Encore look (dark mode) or light theme (light mode), with Lantern's name in the header and no links to autobrr's
   docs, GitHub or Discord. Its pages show errors where Lantern doesn't answer autobrr's API yet.

@@ -225,6 +225,23 @@ Non-obvious calls, one line each, newest last.
   asks for one, because Lantern can't ask those sites' APIs yet (autobrr does; it comes with the indexer API slice).
 - 2026-11-05 — Track A-api builds in its own Cargo target folder, without incremental files: builds of the same crate
   from several worktrees in one shared target folder overwrote each other's files, and the disk is shared.
+- 2026-11-05 — Newznab/Torznab out (track P-idx) follows Prowlarr v2.7.0.5723's `NewznabController`, `NewznabResults`
+  and `IndexerCapabilities` byte for byte, with these choices: the feed's channel title and the caps' server title
+  are the instance name, not "Prowlarr"; download links stay signed (`link` plus `sig`) rather than Prowlarr's
+  encrypted link, because the download hub reads them; JSON errors keep Lantern's `{"detail"}` shape with
+  Prowlarr's words ("Indexer Not Found", "Invalid Prowlarr link", "Failed to normalize provided link"), and a
+  parameter that can't be read answers ASP.NET's problem shape plus `detail`; a failed download says "Download
+  failed" as Prowlarr does, with the reason in history and on the indexer; a `cat` entry that isn't a number is
+  skipped instead of failing the search.
+- 2026-11-05 — The host recorded with each search or grab is the address from `X-Forwarded-For` or `X-Real-IP`, with
+  no reverse DNS lookup. "On hold" dates are shown in UTC as `MM/dd/yyyy HH:mm:ss` (Prowlarr's invariant format).
+  Testing an indexer from its page doesn't change its hold, as before. A site asking Lantern to slow down is
+  recognised by the failure's text ("(429)", "limit reached", "too many requests") and held at least an hour.
+- 2026-11-05 — Prowlarr's per-indexer base settings (query and grab limits, limits unit, minimum seeders, seed
+  ratio and times, prefer magnet links) are kept in the indexer's settings under Prowlarr's field names
+  (`baseSettings.queryLimit`, `torrentBaseSettings.preferMagnetUrl`, ...); Redirect is its own column. The `all`
+  feed and the Jackett-style routes stay as Lantern extras. Newznab/Torznab indexers still announce the categories
+  of their `categories` setting until reading the remote caps is ported.
 - 2026-11-05 — autobrr's frontend fork (`ui/autobrr/`) holds the contents of autobrr's `web/` (its own Vite app,
   `package.json` and pnpm lockfile) plus `LICENSE`, not a `web/` folder inside it; `scripts/upstream-merge.sh` gained
   a case for it (a path ending in `/` brings that folder's contents) and keeps `upstream/autobrr`.

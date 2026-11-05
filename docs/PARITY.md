@@ -125,10 +125,10 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `GET /api/v1/log` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
 | `GET /api/v1/log/file` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
 | `GET /api/v1/log/file/{filename}` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
-| `GET /api/v1/indexer/{id}/newznab` | P-idx | partial | | fresh version |
-| `GET /{id}/api` | P-idx | partial | | fresh version |
-| `GET /api/v1/indexer/{id}/download` | P-idx | partial | | fresh version |
-| `GET /{id}/download` | P-idx | partial | | fresh version |
+| `GET /api/v1/indexer/{id}/newznab` | P-idx | done | `server/tests/indexers_prowlarr.rs` `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr` | ported |
+| `GET /{id}/api` | P-idx | done | `server/tests/indexers_prowlarr.rs` `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr`, `searches_follow_prowlarr_limits_holds_and_paging` | ported |
+| `GET /api/v1/indexer/{id}/download` | P-idx | done | `server/tests/indexers_prowlarr.rs` `downloads_follow_prowlarr_grab_limits_redirects_and_file_names` | ported |
+| `GET /{id}/download` | P-idx | done | `server/tests/indexers_prowlarr.rs` `downloads_follow_prowlarr_grab_limits_redirects_and_file_names`, `magnet_links_go_through_lantern_and_can_come_first` | ported |
 | `GET /api/v1/notification/{id}` | P-app | todo | |  |
 | `PUT /api/v1/notification/{id}` | P-app | todo | |  |
 | `DELETE /api/v1/notification/{id}` | P-app | todo | |  |
@@ -166,13 +166,13 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `GET /api/v1/update` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/system.rs`); updates come from Lantern's release notes |
 | `GET /api/v1/log/file/update` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
 | `GET /api/v1/log/file/update/{filename}` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
-| Newznab/Torznab `t=caps` (all of Prowlarr's parameters and answer fields) | P-idx | partial | | fresh version |
-| Newznab/Torznab `t=search` (all of Prowlarr's parameters and answer fields) | P-idx | partial | | fresh version |
-| Newznab/Torznab `t=tvsearch` (all of Prowlarr's parameters and answer fields) | P-idx | partial | | fresh version |
-| Newznab/Torznab `t=movie` (all of Prowlarr's parameters and answer fields) | P-idx | partial | | fresh version |
-| Newznab/Torznab `t=music` (all of Prowlarr's parameters and answer fields) | P-idx | partial | | fresh version |
-| Newznab/Torznab `t=book` (all of Prowlarr's parameters and answer fields) | P-idx | partial | | fresh version |
-| Newznab/Torznab errors (codes 100–910 as Prowlarr answers them) | P-idx | partial | | fresh version |
+| Newznab/Torznab `t=caps` (all of Prowlarr's parameters and answer fields) | P-idx | partial | `server/tests/indexers_prowlarr.rs` `caps_of_the_test_indexer_match_prowlarr`, `caps_of_a_cardigann_definition_match_prowlarr` | ported for the test indexer and Cardigann; Newznab/Torznab passthrough still reads its `categories` setting, not the remote caps |
+| Newznab/Torznab `t=search` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/tests/indexers_prowlarr.rs` `search_answers_match_prowlarr`, `searches_follow_prowlarr_limits_holds_and_paging` | ported |
+| Newznab/Torznab `t=tvsearch` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/src/indexers/newznab_request.rs` `reads_parameters_like_aspnet`, `should_normalize_imdbid_search_criteria`; `server/tests/indexers_prowlarr.rs` `searches_follow_prowlarr_limits_holds_and_paging` | ported |
+| Newznab/Torznab `t=movie` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/src/indexers/newznab_request.rs` `should_normalize_imdbid_search_criteria`, `query_to_params_takes_ids_out_of_the_words` | ported |
+| Newznab/Torznab `t=music` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/src/indexers/newznab_request.rs` `music_and_book_searches_take_every_prowlarr_parameter` | ported |
+| Newznab/Torznab `t=book` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/src/indexers/newznab_request.rs` `music_and_book_searches_take_every_prowlarr_parameter` | ported |
+| Newznab/Torznab errors (codes 100–910 as Prowlarr answers them) | P-idx | done | `server/tests/indexers_prowlarr.rs` `errors_match_prowlarr`, `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr` | ported (Prowlarr answers 200, 201, 202, 410, 429 and an empty 401) |
 | `apikey` in query or `X-Api-Key` header; `/api/v1/…` behind forms/basic/external auth | P-api | done | `server/tests/prowlarr_api.rs::the_key_or_a_session_is_needed_like_prowlarr` | ported (`prowlarr::V1`); forms means Lantern's own sign-in |
 | SignalR `/signalr/messages` (live updates the web UI listens to) | P-api | todo | | |
 
@@ -251,20 +251,20 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `QueryLimit` | P-idx | todo | |  |
-| `GrabLimit` | P-idx | todo | |  |
-| `LimitsUnit` | P-idx | todo | |  |
-| `AppMinimumSeeders` | P-idx | todo | |  |
-| `SeedRatio` | P-idx | todo | |  |
-| `SeedTime` | P-idx | todo | |  |
-| `PackSeedTime` | P-idx | todo | |  |
-| `PreferMagnetUrl` | P-idx | todo | |  |
-| `Enable` | P-idx | todo | |  |
-| `Priority` | P-idx | todo | |  |
+| `QueryLimit` | P-idx | done | `server/tests/indexers_prowlarr.rs` `searches_follow_prowlarr_limits_holds_and_paging`; `server/src/indexers/limits.rs` | `baseSettings.queryLimit` |
+| `GrabLimit` | P-idx | done | `server/tests/indexers_prowlarr.rs` `downloads_follow_prowlarr_grab_limits_redirects_and_file_names` | `baseSettings.grabLimit` |
+| `LimitsUnit` | P-idx | done | `server/tests/indexers_prowlarr.rs` `searches_follow_prowlarr_limits_holds_and_paging` (hour), `downloads_follow_prowlarr_grab_limits_redirects_and_file_names` (day) | `baseSettings.limitsUnit` |
+| `AppMinimumSeeders` | P-idx | partial | `server/src/indexers/limits.rs` `reads_and_checks_the_limits` | stored and checked; used when apps sync (P-app) |
+| `SeedRatio` | P-idx | partial | `server/src/indexers/limits.rs` `reads_and_checks_the_limits` | stored; used when apps sync (P-app) |
+| `SeedTime` | P-idx | partial | `server/src/indexers/limits.rs` `reads_and_checks_the_limits` | stored; used when apps sync (P-app) |
+| `PackSeedTime` | P-idx | partial | `server/src/indexers/limits.rs` `reads_and_checks_the_limits` | stored; used when apps sync (P-app) |
+| `PreferMagnetUrl` | P-idx | done | `server/tests/indexers_prowlarr.rs` `magnet_links_go_through_lantern_and_can_come_first` | `torrentBaseSettings.preferMagnetUrl` |
+| `Enable` | P-idx | done | `server/tests/indexers_prowlarr.rs` `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr` (410 Indexer is disabled) | `enabled` |
+| `Priority` | P-idx | done | `server/tests/indexers_prowlarr.rs` `a_release_two_indexers_found_is_kept_from_the_higher_priority` | `priority` |
 | `Tags` | P-idx | todo | |  |
 | `AppProfileId` | P-idx | todo | |  |
 | `DownloadClientId` | P-idx | todo | |  |
-| `Redirect` | P-idx | todo | |  |
+| `Redirect` | P-idx | done | `server/tests/indexers_prowlarr.rs` `downloads_follow_prowlarr_grab_limits_redirects_and_file_names` | `redirect` |
 
 #### Applications (per app)
 
@@ -423,8 +423,8 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | --- | --- | --- | --- | --- |
 | Every filter, template function, login method (form, post, cookie, get, oneurl), captcha and `test` block of definition schema v11 | P-idx | partial | | fresh version |
 | Definitions updated from Prowlarr/Indexers every day (`IndexerDefinitionUpdateCommand`) | P-idx | partial | | fresh version |
-| Indexer search limits (`QueryLimit`, `GrabLimit`, per hour/day) and per-site rate limits (`RequestDelay`) | P-idx | todo | |  |
-| Health: disable after failures with Prowlarr's back-off steps, `IndexerStatus` escalation | P-idx | todo | |  |
+| Indexer search limits (`QueryLimit`, `GrabLimit`, per hour/day) and per-site rate limits (`RequestDelay`) | P-idx | partial | `server/tests/indexers_prowlarr.rs` `searches_follow_prowlarr_limits_holds_and_paging`, `downloads_follow_prowlarr_grab_limits_redirects_and_file_names` | query and grab limits ported; `RequestDelay` next |
+| Health: disable after failures with Prowlarr's back-off steps, `IndexerStatus` escalation | P-idx | done | `server/src/indexers/status.rs` (ported ProviderStatusServiceFixture, IndexerStatusServiceFixture); `server/tests/indexers_prowlarr.rs` `searches_follow_prowlarr_limits_holds_and_paging` | ported |
 | Redirect (`Redirect` = apps download straight from the site) | P-idx | todo | |  |
 
 ### Pages and actions (web UI)
