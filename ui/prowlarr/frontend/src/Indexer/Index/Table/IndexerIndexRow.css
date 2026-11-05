@@ -1,0 +1,81 @@
+.cell {
+  composes: cell from '~Components/Table/Cells/VirtualTableRowCell.css';
+
+  display: flex;
+  align-items: center;
+}
+
+.status {
+  composes: cell;
+
+  flex: 0 0 60px;
+}
+
+.id {
+  composes: cell;
+
+  flex: 0 0 60px;
+}
+
+.sortName {
+  composes: cell;
+
+  flex: 4 0 110px;
+}
+
+.priority,
+.protocol,
+.privacy,
+.minimumSeeders,
+.seedRatio,
+.seedTime,
+.packSeedTime,
+.preferMagnetUrl {
+  composes: cell;
+
+  flex: 0 0 90px;
+}
+
+.appProfileId {
+  composes: cell;
+
+  flex: 1 0 125px;
+}
+
+.capabilities {
+  composes: cell;
+
+  flex: 0 0 350px;
+}
+
+.added,
+.vipExpiration {
+  composes: cell;
+
+  flex: 0 0 125px;
+}
+
+.tags {
+  composes: cell;
+
+  flex: 1 0 60px;
+}
+
+.actions {
+  composes: cell;
+
+  flex: 0 1 90px;
+  min-width: 90px;
+}
+
+.checkInput {
+  composes: input from '~Components/Form/CheckInput.css';
+
+  margin-top: 0;
+}
+
+.externalLink {
+  composes: button from '~Components/Link/IconButton.css';
+
+  color: var(--textColor);
+}

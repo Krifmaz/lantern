@@ -7,6 +7,19 @@
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
   Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition
   editor. The plan shows which way each indexer came over. Newznab indexers can sign in with a user name and password.
+- `docs/parity/p-ui/` shows Prowlarr's frontend in Lantern (Indexers, Settings → General, System → Status, desktop
+  and phone) next to Lantern's own look; `docs/PARITY.md` marks the theme and branding rows done.
+- Prowlarr's web frontend is part of the image and opens at `/prowlarr/` after signing in to Lantern (Lantern's own
+  pages stay at `/` for now). Its pages show errors where Lantern doesn't answer Prowlarr's API yet.
+- Prowlarr's web frontend says Lantern: the header shows Lantern's name instead of Prowlarr's logo, and the donate,
+  translate, Discord, Reddit, wiki and GitHub links and the Analytics section are gone. It never sends errors to
+  Servarr's error reporting.
+- Prowlarr's web frontend (`ui/prowlarr/`) has the kit's Encore look: Prowlarr's theme colours come from the kit's
+  colour tokens and its fonts are the kit's, with its own layouts kept. Its themes are Auto, Encore, Dark, OLED and
+  Light, as in Lantern's other apps.
+- `scripts/upstream-merge.sh` brings Prowlarr's web frontend into `ui/prowlarr/` at the commit `UPSTREAM.lock`
+  pins, as merges of an `upstream/prowlarr` snapshot branch, so later Prowlarr versions merge in with Lantern's
+  changes kept (see `UPSTREAM.md`).
 - Lantern now ports Prowlarr, autobrr, cross-seed and FlareSolverr instead of rewriting them: `UPSTREAM.lock` pins
   the versions it follows and `docs/PARITY.md` lists everything each one does, with what Lantern already matches.
 - First-run setup: a new Lantern asks for "Create your account" (username, password twice, optional email) on the

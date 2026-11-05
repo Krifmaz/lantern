@@ -1,0 +1,70 @@
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  font-size: $smallFontSize;
+}
+
+.legendItem {
+  display: flex;
+  margin-bottom: 4px;
+  line-height: 16px;
+}
+
+.legendItemColor {
+  margin-right: 8px;
+  width: 30px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.disabled {
+  composes: legendItemColor;
+
+  background-color: var(--darkGray);
+}
+
+.enabled {
+  composes: legendItemColor;
+
+  background-color: var(--successColor);
+}
+
+.redirected {
+  composes: legendItemColor;
+
+  background-color: var(--infoColor);
+}
+
+.error {
+  composes: legendItemColor;
+
+  background-color: var(--dangerColor);
+
+  &:global(.colorImpaired) {
+    background: repeating-linear-gradient(90deg, color(var(--dangerColor) shade(5%)), color(var(--dangerColor) shade(5%)) 5px, color(var(--dangerColor) shade(15%)) 5px, color(var(--dangerColor) shade(15%)) 10px);
+  }
+}
+
+.statistics {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+@media (max-width: $breakpointLarge) {
+  .statistics {
+    display: block;
+  }
+}
+
+@media (max-width: $breakpointSmall) {
+  .footer {
+    display: block;
+  }
+
+  .statistics {
+    display: flex;
+    margin-top: 20px;
+  }
+}

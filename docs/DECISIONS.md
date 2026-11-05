@@ -160,3 +160,24 @@ Non-obvious calls, one line each, newest last.
   Cloudflare solving.
 - 2026-11-05 — cross-seed v6 has no web UI, so its settings get a Lantern page built from a settings schema (track L);
   its daemon, API and CLI behaviour are ported as they are.
+- 2026-11-05 — Prowlarr's frontend fork (`ui/prowlarr/`) holds Prowlarr's `frontend/` and the root files its build
+  reads (`package.json`, `yarn.lock`, `tsconfig.json`, `.yarnrc`, `.editorconfig`, `LICENSE`). `scripts/upstream-merge.sh`
+  imports the commit `UPSTREAM.lock` pins as merges of the `upstream/prowlarr` snapshot branch (pushed to the
+  remote); the merge base is rebuilt from the commit named in `ui/prowlarr/UPSTREAM`, so updates still merge
+  three-way after a squash merge cut the link to that branch.
+- 2026-11-05 — **Interim:** Prowlarr's frontend is served at `/prowlarr/` (its URL base set to `/prowlarr`, its API
+  calls going to Lantern's `/api/v1`), and Lantern's own web app stays at `/`. It moves to `/` once its API rows in
+  `docs/PARITY.md` are done. Its pages need a Lantern session, like Prowlarr's UI policy; without one they go to
+  Lantern's sign-in at `/`. `initialize.json` hands the page the API key, as Prowlarr's does. Prowlarr's `?h=` cache
+  breaker is left out: the files are answered with `no-cache`. The image drops the source maps.
+- 2026-11-05 — The frontend is built with Node 22 (`node:22.23.4-trixie-slim`), not Prowlarr's Node 20, which is
+  past its end of life; it builds unchanged with yarn 1 and the frozen lockfile.
+- 2026-11-05 — Encore for Prowlarr's frontend: one map (`Styles/Themes/encore.js`) points every Prowlarr theme
+  variable at the kit's tokens, and the theme picks `<html data-theme>`. The themes are `auto`, `encore`, `dark`,
+  `oled` and `light`; Prowlarr's `auto` keeps its meaning (follow the system) as Encore on a dark system and the
+  light theme on a light one. Text on the accent uses the kit's `--on-accent`, as Encore's accent is light. The
+  chart palettes stay Prowlarr's, as charts need more distinct colours than the tokens have.
+- 2026-11-05 — The page screenshots in `docs/parity/p-ui/` stand in for API answers Lantern does not have yet
+  (localization, UI and host settings, app profiles, …) in the browser, with Prowlarr's shapes and defaults
+  (`docs/parity/p-ui/shots.js`), so the look can be proven before the API is ported. They prove the theme, the
+  branding and the mobile layout only; the page rows stay `todo` until their API exists.

@@ -1,0 +1,74 @@
+.inputContainer {
+  margin-right: 20px;
+  min-width: 150px;
+}
+
+.indexerContainer {
+  margin-right: 20px;
+  min-width: 250px;
+}
+
+.buttonContainer {
+  display: flex;
+  justify-content: flex-end;
+  flex-grow: 1;
+}
+
+.buttonContainerContent {
+  flex-grow: 0;
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  flex-grow: 1;
+}
+
+.searchButton,
+.grabReleasesButton {
+  composes: button from '~Components/Link/SpinnerButton.css';
+
+  margin-left: 25px;
+  height: 35px;
+}
+
+.selectedReleasesLabel {
+  margin-bottom: 5px;
+  text-align: right;
+  font-weight: bold;
+}
+
+@media only screen and (max-width: $breakpointSmall) {
+  .inputContainer,
+  .indexerContainer {
+    margin-right: 0;
+  }
+
+  .buttonContainer {
+    justify-content: flex-start;
+    margin-top: 10px;
+  }
+
+  .buttonContainerContent {
+    flex-grow: 1;
+  }
+
+  .buttons {
+    justify-content: space-between;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .grabReleasesButton,
+  .searchButton {
+    margin-left: 0;
+  }
+
+  .grabReleasesButton {
+    display: none;
+  }
+
+  .selectedReleasesLabel {
+    text-align: center;
+  }
+}

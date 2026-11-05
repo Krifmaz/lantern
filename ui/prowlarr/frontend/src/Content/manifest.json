@@ -1,0 +1,8 @@
+{
+  "name": "__INSTANCE_NAME__",
+  "icons": [],
+  "start_url": "__URL_BASE__/",
+  "theme_color": "#161617",
+  "background_color": "#161617",
+  "display": "standalone"
+}

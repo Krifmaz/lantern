@@ -1,0 +1,40 @@
+.protocol {
+  composes: headerCell from '~Components/Table/VirtualTableHeaderCell.css';
+
+  flex: 0 0 90px;
+}
+
+.sortTitle {
+  composes: headerCell from '~Components/Table/VirtualTableHeaderCell.css';
+
+  flex: 4 0 110px;
+}
+
+.indexer,
+.category {
+  composes: headerCell from '~Components/Table/VirtualTableHeaderCell.css';
+
+  flex: 0 0 130px;
+}
+
+.age,
+.size,
+.files,
+.grabs,
+.peers {
+  composes: headerCell from '~Components/Table/VirtualTableHeaderCell.css';
+
+  flex: 0 0 75px;
+}
+
+.indexerFlags {
+  composes: headerCell from '~Components/Table/VirtualTableHeaderCell.css';
+
+  flex: 0 0 50px;
+}
+
+.actions {
+  composes: headerCell from '~Components/Table/VirtualTableHeaderCell.css';
+
+  flex: 0 1 90px;
+}

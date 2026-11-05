@@ -8,3 +8,9 @@ target/
 /android/*/build
 /android/.kotlin
 /android/local.properties
+
+# the upstream caches of scripts/upstream-merge.sh
+/.upstream/
+# the Prowlarr frontend build (ui/prowlarr)
+/ui/prowlarr/node_modules
+/ui/prowlarr/_output

@@ -32,6 +32,18 @@ RUN cd web && trunk build --release --locked \
       -o -name '*.webmanifest' -o -name '*.json' \) -exec brotli -f -k -q 11 {} + -exec gzip -f -k -n -9 {} + \
  && find dist -name '*.br' | grep -q . && find dist -name '*.gz' | grep -q .
 
+# Prowlarr's web frontend (ui/prowlarr, a snapshot fork, see UPSTREAM.md), built as Prowlarr builds it (yarn and
+# webpack) and served by the server at /prowlarr/. Only the built static files go into the image; the source maps
+# are left out.
+FROM --platform=$BUILDPLATFORM node:22.23.4-trixie-slim AS prowlarr-ui
+WORKDIR /src/ui/prowlarr
+COPY ui/prowlarr/package.json ui/prowlarr/yarn.lock ui/prowlarr/.yarnrc ./
+RUN yarn install --frozen-lockfile --network-timeout 600000
+COPY ui/prowlarr ./
+RUN yarn build --env production \
+ && find _output/UI -name '*.map' -delete \
+ && test -f _output/UI/index.html
+
 # The indexer definitions (Prowlarr/Indexers, schema v11) at build time, so Lantern has every site from the first
 # start; it updates them in the data folder by itself afterwards.
 FROM --platform=$BUILDPLATFORM alpine:3.22 AS defs
@@ -82,12 +94,13 @@ LABEL org.opencontainers.image.title="Lantern" \
 COPY --from=build /app /usr/local/bin/lantern
 COPY --from=build --chown=65532:65532 /data /data
 COPY --from=ui /src/web/dist /app/static
+COPY --from=prowlarr-ui /src/ui/prowlarr/_output/UI /app/ui/prowlarr
 COPY --from=defs /defs /app/definitions
 COPY --from=browser /out/ /
 COPY --from=announce /announce /app/announce
 ARG APP_VERSION=
 LABEL org.opencontainers.image.version="${APP_VERSION}"
-ENV APP_DATA_DIR=/data APP_STATIC_DIR=/app/static APP_DEFINITIONS_DIR=/app/definitions APP_ANNOUNCE_DIR=/app/announce APP_PORT=9696 \
+ENV APP_DATA_DIR=/data APP_STATIC_DIR=/app/static APP_PROWLARR_UI_DIR=/app/ui/prowlarr APP_DEFINITIONS_DIR=/app/definitions APP_ANNOUNCE_DIR=/app/announce APP_PORT=9696 \
     APP_SOLVER_PORT=8191 APP_CHROMIUM=/usr/lib/chromium/headless_shell
 USER nonroot
 VOLUME /data

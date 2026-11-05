@@ -1,0 +1,151 @@
+.indexers {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.modalBody {
+  composes: modalBody from '~Components/Modal/ModalBody.css';
+
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.filterInput {
+  composes: input from '~Components/Form/TextInput.css';
+
+  flex: 0 0 auto;
+  margin-bottom: 16px;
+}
+
+.notice {
+  composes: alert from '~Components/Alert.css';
+
+  margin-bottom: 20px;
+}
+
+.alert {
+  composes: alert from '~Components/Alert.css';
+
+  text-align: center;
+}
+
+.scroller {
+  flex: 1 1 auto;
+  min-height: 400px;
+}
+
+.filterRow {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.filterContainer {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  flex-direction: column;
+  margin-right: 12px;
+}
+
+.filterContainer:last-child {
+  margin-right: 0;
+}
+
+.filterLabel {
+  margin-bottom: 3px;
+  font-weight: bold;
+}
+
+.filtersToggle {
+  display: none;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--borderColor);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--textColor);
+  font-size: 14px;
+  cursor: pointer;
+  gap: 8px;
+}
+
+.filtersToggle:hover {
+  background-color: var(--hoverBackgroundColor);
+}
+
+@media only screen and (max-width: $breakpointSmall) {
+  .filterInput {
+    margin-bottom: 8px;
+  }
+
+  .notice {
+    display: none;
+  }
+
+  .filtersToggle {
+    display: flex;
+  }
+
+  .filterRow {
+    display: block;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid var(--borderColor);
+    border-radius: 4px;
+    background-color: var(--cardBackgroundColor);
+  }
+
+  .filterRowCollapsed {
+    display: none !important;
+  }
+
+  .filterContainer {
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+
+  .filterContainer:last-child {
+    margin-bottom: 0;
+  }
+
+  .scroller {
+    margin-right: -15px;
+    margin-bottom: -15px;
+    margin-left: -15px;
+    min-height: 300px;
+  }
+
+  .modalBody {
+    padding: 15px;
+  }
+}
+
+@media only screen and (min-width: $breakpointSmall) {
+  .filterContainer {
+    max-width: 50%;
+  }
+}
+
+.modalFooter {
+  composes: modalFooter from '~Components/Modal/ModalFooter.css';
+
+  justify-content: space-between;
+}
+
+.available {
+  font-weight: bold;
+}
+
+@media only screen and (max-width: $breakpointExtraSmall) {
+  .modalFooter {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .available {
+    display: none;
+  }
+}
