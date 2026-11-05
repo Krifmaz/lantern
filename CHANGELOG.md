@@ -55,6 +55,8 @@
   added to the same download client next to the files already there (category `<app>.cross-seed`, so apps don't
   import it twice). A Cross-seed page shows what happened to every copy found; Settings → Downloads turns it off.
   Cleanup never deletes files a cross-seed copy seeds from.
+- Apps and Download clients pages: every connected app with how it connects, its category, folders and
+  downloads (live, with Try again and Stop), and the download clients with Add, Edit, Test, on/off and Remove.
 - Lantern can be added as a qBittorrent download client by any app (user name: the app's name, password: Lantern's
   API key). The app is registered on sight, its torrents go to the real client through the hub with Lantern's
   categories and folders, and it sees them by their info hash with paths in its own view.
