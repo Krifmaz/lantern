@@ -1,0 +1,60 @@
+# Lantern's server: the API and the web app (web/, built by trunk) served by one binary.
+# A Cargo workspace of its own, like web/ and desktop/.
+[workspace]
+resolver = "2"
+
+[package]
+name = "lantern"
+description = "Lantern's server: the API and the web app, one binary."
+version = "0.0.1"
+edition = "2021"
+license = "GPL-3.0-only"
+repository = "https://github.com/Krifmaz/lantern"
+publish = false
+
+# the library is `server` in every app, so the Rust files need no app name (the binary keeps the package name)
+[lib]
+name = "server"
+path = "src/lib.rs"
+
+# The kit, pinned to one release tag. To update: read the kit's CHANGELOG.md, bump the tag here and in
+# web/Cargo.toml, run the tests.
+[dependencies]
+kit-server-core = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1", features = ["sqlite"] }
+kit-server-health = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+kit-server-changelog = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+kit-server-notices = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+kit-server-bugreports = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+kit-server-diagnostics = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+kit-server-settings = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+axum = { version = "0.8", features = ["multipart"] }
+axum-extra = { version = "0.10", features = ["cookie"] }
+cookie = "0.18"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["fs", "compression-gzip", "set-header"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bcrypt = "0.17"
+rand = "0.9"
+base64 = "0.22"
+sha2 = "0.10"
+hex = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+
+[build-dependencies]
+kit-server-settings = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1", default-features = false, features = ["toml"] }
+kit-server-changelog = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1", default-features = false }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+
+[lints.rust]
+missing_docs = "warn"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

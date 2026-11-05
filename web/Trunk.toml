@@ -1,0 +1,6 @@
+[build]
+target = "index.html"
+dist = "dist"
+# the web app is the website: served at the root of the server
+public_url = "/"
+filehash = true

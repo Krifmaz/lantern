@@ -1,0 +1,33 @@
+name: ci
+
+# Every pull request: the kit's checks (fmt, clippy -D warnings, tests of server/, desktop/ and web/), the Docker image
+# built (not pushed). Required to pass before a merge.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    uses: Krifmaz/kit/.github/workflows/kit-ci.yml@v0.2.1
+    with:
+      rust-dirs: |
+        server
+        desktop
+      wasm-dirs: web
+
+  docker:
+    needs: test
+    uses: Krifmaz/kit/.github/workflows/kit-docker.yml@v0.2.1
+    with:
+      image: lantern
+      push: false
+      platforms: linux/amd64
+

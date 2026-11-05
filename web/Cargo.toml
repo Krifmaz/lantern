@@ -1,0 +1,29 @@
+# Lantern's web app: Leptos (client-side, WebAssembly) with the kit's components and the kit's default theme,
+# built by trunk into dist/ and served at / by the server. A Cargo workspace of its own, like server/.
+[workspace]
+resolver = "2"
+
+[package]
+name = "lantern-web"
+description = "Lantern's web app."
+version = "0.0.1"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+
+# The kit, pinned to the same tag as server/Cargo.toml.
+[dependencies]
+kit-leptos = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+kit-rules = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+leptos = { version = "=0.8.23", features = ["csr"] }
+serde_json = "1"
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["Document", "Element", "HtmlElement", "HtmlFormElement", "HtmlInputElement", "Location", "Window"] }
+
+[lints.rust]
+missing_docs = "warn"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1

@@ -1,0 +1,46 @@
+# Lantern's desktop app: Iced with the kit's components (kit-iced) and rules (kit-rules), talking to the
+# server's API with an app token. A Cargo workspace of its own, like server/ and web/.
+[workspace]
+resolver = "2"
+
+[package]
+name = "lantern-desktop"
+description = "Lantern's desktop app."
+version = "0.0.1"
+edition = "2021"
+license = "GPL-3.0-only"
+# the update notice looks for new versions among this repository's GitHub releases
+repository = "https://github.com/Krifmaz/lantern"
+publish = false
+
+# the library is `desktop` in every app, so the Rust files need no app name (the binary keeps the package name)
+[lib]
+name = "desktop"
+path = "src/lib.rs"
+
+# The kit, pinned to the same tag as server/Cargo.toml and web/Cargo.toml.
+[dependencies]
+kit-iced = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+kit-rules = { git = "https://github.com/Krifmaz/kit", tag = "v0.2.1" }
+iced = { version = "0.14", features = ["tokio", "image", "svg"] }
+# rustls with ring and webpki roots: no OpenSSL and no C toolchain beyond cc on any of the three systems
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "multipart"] }
+tokio = { version = "1", features = ["rt", "fs", "time"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# the file dialog: the XDG portal on Linux (no GTK to install), the system's own on Windows and macOS
+rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }
+dirs = "6"
+open = "5"
+
+[dev-dependencies]
+iced_test = "0.14"
+tokio = { version = "1", features = ["macros", "rt"] }  # the tests and examples/walk.rs
+
+[lints.rust]
+missing_docs = "warn"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

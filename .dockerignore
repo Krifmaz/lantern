@@ -1,0 +1,11 @@
+.git
+.github
+target
+web/dist
+android
+desktop
+scripts
+data
+*.md
+!docs/releases
+!docs/releases/*.md

@@ -1,0 +1,40 @@
+# The settings table: every server setting with its environment variable and default, and for the ones on the
+# Settings pages, the words and the layout of their field (the kit's
+# crates/kit-server-settings README lists every option). build.rs turns this file into settings_gen.rs through kit-server-settings: the `Keys` names,
+# the `TABLE` of definitions the store reads, and `SCHEMA`, which GET /api/settings/schema answers with.
+#
+# [sections.<id>]  a page under Settings, in nav order: title.
+# [groups.<id>]    a card on a page, in page order: section, title, desc.
+# [keys.<name>]    one setting: env (the environment variable that sets it and locks it in the UI), default (its
+#                  TOML type is the setting's type), secret, group (the card that shows it), label, help, type,
+#                  options, when, unit, min, max, step, full, advanced.
+
+[sections.general]
+title = "General"
+
+[groups.general]
+section = "general"
+title = "General"
+desc = "Your server's name and how long people stay signed in."
+
+[keys.app_name]
+env = "APP_NAME"
+default = "Lantern"
+group = "general"
+label = "App name"
+type = "text"
+
+[keys.session_days]
+env = "APP_SESSION_DAYS"
+default = 30
+group = "general"
+label = "Stay signed in for (days)"
+type = "number"
+unit = "days"
+min = 1
+
+[keys.api_key]
+env = "APP_API_KEY"
+default = ""
+secret = true
+help = "The server's API key (`x-api-key`): signs in as the owner. Empty: no API key."

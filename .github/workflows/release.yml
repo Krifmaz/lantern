@@ -1,0 +1,105 @@
+name: release
+
+# Every push to main makes a normal GitHub release vMAJOR.MINOR.PATCH (never a pre-release) through the kit's
+# shared workflows: PATCH by default, MINOR or MAJOR when the merged pull request added docs/releases/<version>.md
+# (also the release notes and What's new). It ships the server and web app as Linux tarballs, the Docker image
+# ghcr.io/krifmaz/lantern:<version> and :latest, and SHA256SUMS.
+# Actions → release → Run workflow with "apps" ticked also builds the desktop app for Linux, Windows and macOS
+# (scripts/desktop-package.sh; optional signing secrets WINDOWS_CERT_PFX_BASE64, WINDOWS_CERT_PASSWORD,
+# MACOS_CERT_P12_BASE64, MACOS_CERT_PASSWORD, MACOS_SIGN_IDENTITY, APPLE_ID, APPLE_TEAM_ID, APPLE_APP_PASSWORD); a release without them keeps the previous release's app files.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Which number to bump for the next version"
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
+      version:
+        description: "Or type the version to release (MAJOR.MINOR.PATCH); overrides bump"
+        type: string
+        default: ""
+      apps:
+        description: "Also build the apps (the desktop app)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  test:
+    uses: Krifmaz/kit/.github/workflows/kit-ci.yml@v0.2.1
+    with:
+      rust-dirs: |
+        server
+        desktop
+      wasm-dirs: web
+
+  prepare:
+    needs: test
+    uses: Krifmaz/kit/.github/workflows/kit-release.yml@v0.2.1
+    with:
+      stage: prepare
+      app-name: Lantern
+      # 0.0.x until indexers, Cloudflare solving and the vault work (docs/GOALS.md); that PR adds docs/releases/0.1.0.md
+      first-version: 0.0.1
+      bump: ${{ inputs.bump || 'auto' }}
+      version: ${{ inputs.version || '' }}
+      web-dir: web
+      server-dir: server
+      server-bin: lantern
+
+  docker:
+    needs: prepare
+    uses: Krifmaz/kit/.github/workflows/kit-docker.yml@v0.2.1
+    with:
+      image: lantern
+      version: ${{ needs.prepare.outputs.version }}
+      build-args: |
+        APP_VERSION=${{ needs.prepare.outputs.version }}
+
+  desktop:
+    needs: prepare
+    if: inputs.apps
+    uses: Krifmaz/kit/.github/workflows/kit-desktop.yml@v0.2.1
+    with:
+      # kit-desktop uploads kit-app-desktop-<OS>, which kit-release collects (any app name works)
+      app-name: Lantern
+      version: ${{ needs.prepare.outputs.version }}
+      project-dir: desktop
+      # V, RELEASE, FEATURES, ARGS and OUT are kit-desktop's; a release builds the app as V (--stamp)
+      package: bash scripts/desktop-package.sh --version "$V" --release "$RELEASE" --features "$FEATURES" $ARGS --out "$OUT"
+      macos-args: --universal
+      linux-files: "Lantern-{V}-linux-x86_64.tar.gz"
+      windows-files: "Lantern-{V}-windows-x86_64.zip"
+      macos-files: "Lantern-{V}-macos-universal.dmg"
+    secrets:
+      windows-cert-pfx-base64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
+      windows-cert-password: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+      macos-cert-p12-base64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+      macos-cert-password: ${{ secrets.MACOS_CERT_PASSWORD }}
+      macos-sign-identity: ${{ secrets.MACOS_SIGN_IDENTITY }}
+      apple-id: ${{ secrets.APPLE_ID }}
+      apple-team-id: ${{ secrets.APPLE_TEAM_ID }}
+      apple-app-password: ${{ secrets.APPLE_APP_PASSWORD }}
+
+  publish:
+    needs: [prepare, docker, desktop]
+    if: always() && needs.prepare.result == 'success' && needs.docker.result == 'success'
+    uses: Krifmaz/kit/.github/workflows/kit-release.yml@v0.2.1
+    with:
+      stage: publish
+      app-name: Lantern
+      version: ${{ needs.prepare.outputs.version }}
+      # success when every app built, skipped when none ran, failure when only some did
+      apps-result: ${{ needs.desktop.result }}
+      app-files: "Lantern-*-linux-x86_64.tar.gz Lantern-*-windows-x86_64.zip Lantern-*-macos-universal.dmg"
+      carry-over: "Lantern-*-linux-x86_64.tar.gz Lantern-*-windows-x86_64.zip Lantern-*-macos-universal.dmg"
