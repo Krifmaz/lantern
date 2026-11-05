@@ -566,6 +566,19 @@ fn find_definition(lib: &Library, custom: &Custom, id: &str, name: &str) -> Opti
 const UNDERNEATH: &[(&str, &str, &str, &str, &str, &str, bool)] =
     &[("Headphones", "Headphones VIP", "newznab", "https://indexer.codeshy.com", "/api", "964d601959918a578a670984bdee9357", true)];
 
+/// Lantern's Usenet preset for `s`: the one at its address, else the one named like its implementation
+/// (`built_in`, when it has one) or like the indexer.
+fn usenet_preset(s: &SourceIndexer, built_in: &str) -> Option<&'static newznab::Preset> {
+    let same = |p: &&newznab::Preset, n: &str| {
+        let n = n.trim();
+        !n.is_empty() && (p.id.eq_ignore_ascii_case(n) || p.name.eq_ignore_ascii_case(n))
+    };
+    (!s.base_url.is_empty())
+        .then(|| newznab::preset_at(&s.base_url))
+        .flatten()
+        .or_else(|| newznab::PRESETS.iter().find(|p| same(p, built_in) || same(p, &s.definition) || same(p, &s.name)))
+}
+
 /// Text of `fields[k]` ("" when missing).
 fn text_of(fields: &BTreeMap<String, Value>, k: &str) -> String {
     match field(fields, k) {
@@ -613,11 +626,7 @@ fn api_indexer(s: &SourceIndexer, kind: &str, url: &str, path: &str, fixed_key: 
         }
     }
     let url = url.trim_end_matches('/');
-    let definition = if kind == "newznab" {
-        newznab::PRESETS.iter().find(|(_, _, u)| u.trim_end_matches('/').eq_ignore_ascii_case(url)).map(|(id, _, _)| id.to_string())
-    } else {
-        None
-    };
+    let definition = if kind == "newznab" { newznab::preset_at(url).map(|p| p.id.to_string()) } else { None };
     Mapped {
         what: if kind == "newznab" { "Usenet indexer".into() } else { "Torznab indexer".into() },
         kind: kind.to_string(),
@@ -707,8 +716,13 @@ pub fn map_indexer(lib: &Library, custom: &Custom, probes: &Probes, s: &SourceIn
             }
         }
         "Newznab" | "Torznab" => {
+            let kind = imp.to_lowercase();
+            let preset = if kind == "newznab" { usenet_preset(s, "") } else { None };
+            if let Some(p) = preset {
+                let url = if s.base_url.is_empty() { p.url } else { s.base_url.as_str() };
+                return api_indexer(s, &kind, url, p.api_path, "", false, format!("Lantern's Usenet preset {}", p.name));
+            }
             if !s.base_url.is_empty() {
-                let kind = imp.to_lowercase();
                 return api_indexer(s, &kind, &s.base_url, "/api", "", false, imp.to_string());
             }
         }
@@ -720,6 +734,19 @@ pub fn map_indexer(lib: &Library, custom: &Custom, probes: &Probes, s: &SourceIn
             if let Some((_, label, kind, url, path, key, basic)) = UNDERNEATH.iter().find(|u| u.0.eq_ignore_ascii_case(built_in)) {
                 let url = if s.base_url.is_empty() { *url } else { s.base_url.as_str() };
                 return api_indexer(s, kind, url, path, key, *basic, format!("{label}: Newznab underneath"));
+            }
+            if let Some(p) = usenet_preset(s, built_in) {
+                let url = if s.base_url.is_empty() { p.url } else { s.base_url.as_str() };
+                let has_login = !text_of(&s.fields, "username").is_empty();
+                return api_indexer(
+                    s,
+                    "newznab",
+                    url,
+                    p.api_path,
+                    "",
+                    has_login,
+                    format!("{built_in}: Lantern's Usenet preset {}", p.name),
+                );
             }
             let path = text_of(&s.fields, "apiPath");
             if !s.base_url.is_empty() && !path.is_empty() {
@@ -1333,6 +1360,27 @@ mod tests {
         let probes: Probes = [(3, "/api".to_string())].into_iter().collect();
         let m = map_indexer(&lib, &none, &probes, &probed);
         assert_eq!((m.kind.as_str(), m.how.as_str()), ("torznab", "Answered as Torznab at https://y.test/api"));
+    }
+
+    #[test]
+    fn usenet_presets_fill_what_prowlarr_left_out() {
+        let lib = Library::new(None, &std::env::temp_dir().join("lantern-migrate-unit-presets"));
+        // a Newznab indexer Prowlarr kept without an address, named like a preset
+        let s = indexer_from(4, "DrunkenSlug", "Newznab", true, 25, vec![], json!({"apiKey": "k"}));
+        let m = map_indexer(&lib, &Custom::new(), &Probes::new(), &s);
+        assert_eq!(
+            (m.kind.as_str(), m.definition.as_str(), m.base_url.as_str(), m.how.as_str()),
+            ("newznab", "drunkenslug", "https://drunkenslug.com", "Lantern's Usenet preset DrunkenSlug")
+        );
+        assert!(m.needs_help.is_none());
+        // a built-in named like a preset takes its address and API path
+        let s = indexer_from(5, "Tabula Rasa", "TabulaRasa", true, 25, vec![], json!({"apiKey": "k"}));
+        let m = map_indexer(&lib, &Custom::new(), &Probes::new(), &s);
+        assert_eq!(
+            (m.base_url.as_str(), m.settings.get("api_path").map(String::as_str)),
+            ("https://www.tabula-rasa.pw", Some("/api/v1/api"))
+        );
+        assert_eq!(m.how, "TabulaRasa: Lantern's Usenet preset Tabula Rasa");
     }
 
     #[test]

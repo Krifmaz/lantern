@@ -115,6 +115,7 @@ pub fn api_fields() -> Vec<Value> {
     vec![
         json!({ "key": "apikey", "label": "API key", "type": "password" }),
         json!({ "key": "api_path", "label": "API path", "type": "text", "help": "Usually /api" }),
+        json!({ "key": "categories", "label": "Categories", "type": "text", "advanced": true, "help": "The standard category numbers it has, with commas (2000,5000); empty for all" }),
         json!({ "key": "extra", "label": "Extra parameters", "type": "text", "advanced": true, "help": "Added to every request (&attrs=…)" }),
     ]
 }
@@ -324,12 +325,72 @@ fn indexer_row(ix: Value, admin: bool, reload: impl Fn() + Copy + Send + Sync + 
     }
 }
 
-/// The Add dialog: pick a site (search the definitions) or a Usenet indexer.
+/// What the Add dialog is narrowed to: words, protocol (`torrent`/`usenet`), privacy and language; "" is any.
+#[derive(Clone, Default, PartialEq)]
+pub struct CatalogFilter {
+    /// Words found in the name, id or description.
+    pub words: String,
+    /// `torrent` or `usenet`.
+    pub protocol: String,
+    /// `private`, `semi-private` or `public`.
+    pub privacy: String,
+    /// A language (`en-US`).
+    pub language: String,
+}
+
+impl CatalogFilter {
+    /// Whether a site of `/api/indexers/catalog` is wanted (the same rules as the server's).
+    pub fn wants(&self, site: &Value) -> bool {
+        let w = self.words.trim().to_lowercase();
+        (w.is_empty()
+            || s(site, "name").to_lowercase().contains(&w)
+            || s(site, "id").to_lowercase().contains(&w)
+            || s(site, "description").to_lowercase().contains(&w))
+            && (self.protocol.is_empty() || s(site, "protocol") == self.protocol)
+            && (self.privacy.is_empty() || s(site, "privacy") == self.privacy)
+            && (self.language.is_empty() || s(site, "language") == self.language)
+    }
+}
+
+/// How many sites a filter shows, in words: "24 of 560 sites (536 torrent, 24 Usenet)".
+pub fn catalog_count_text(shown: usize, counts: &Value) -> String {
+    let n = |k: &str| counts.get("protocol").and_then(|p| p.get(k)).and_then(Value::as_u64).unwrap_or(0);
+    let all = counts.get("all").and_then(Value::as_u64).unwrap_or(0);
+    format!("{shown} of {all} sites ({} torrent, {} Usenet)", n("torrent"), n("usenet"))
+}
+
+/// The words for a privacy (`semi-private` → "Semi-private").
+fn privacy_text(p: &str) -> String {
+    let mut c = p.chars();
+    c.next().map(|f| f.to_uppercase().chain(c).collect::<String>()).unwrap_or_default()
+}
+
+/// What Add hands to the Edit dialog for a picked site: a Usenet preset comes with its address, API path and
+/// categories, so only the API key is left to fill in.
+pub fn add_body(site: &Value) -> Value {
+    let kind = s(site, "kind");
+    if kind == "cardigann" {
+        return json!({ "kind": "cardigann", "definition": s(site, "id"), "name": s(site, "name") });
+    }
+    let cats: Vec<String> = site
+        .get("categories")
+        .and_then(Value::as_array)
+        .map(|a| a.iter().filter_map(Value::as_u64).map(|c| c.to_string()).collect())
+        .unwrap_or_default();
+    let custom = site.get("custom").and_then(Value::as_bool) == Some(true);
+    let path = s(site, "api_path");
+    json!({
+        "kind": kind, "definition": s(site, "id"), "name": if custom { String::new() } else { s(site, "name") },
+        "base_url": s(site, "url"),
+        "settings": { "api_path": if path.is_empty() { "/api".to_string() } else { path }, "categories": cats.join(",") },
+    })
+}
+
+/// The Add dialog: one searchable list of torrent sites and Usenet indexers, narrowed by protocol, privacy and
+/// language, with how many there are.
 fn open_add(reload: impl Fn() + Copy + Send + Sync + 'static) {
-    let (words, set_words) = signal(String::new());
-    let (tab, set_tab) = signal("sites");
-    let defs = LocalResource::new(|| async { api::get("/indexers/definitions").await.map_err(|e| e.message) });
-    let presets = LocalResource::new(|| async { api::get("/indexers/presets").await.map_err(|e| e.message) });
+    let (filter, set_filter) = signal(CatalogFilter::default());
+    let catalog = LocalResource::new(|| async { api::get("/indexers/catalog").await.map_err(|e| e.message) });
     let holder: StoredValue<Option<modal::Modal>, LocalStorage> = StoredValue::new_local(None);
     let pick = move |body: Value| {
         if let Some(m) = holder.get_value() {
@@ -338,75 +399,67 @@ fn open_add(reload: impl Fn() + Copy + Send + Sync + 'static) {
         open_edit(body, reload);
     };
     let body = move || {
-        let list = move || {
-            let w = words.get().to_lowercase();
-            if tab.get() == "sites" {
-                match defs.get() {
-                    None => view! { <div class="empty"><span class="spinner"></span></div> }.into_any(),
-                    Some(Err(e)) => view! { <div class="error-box">{e}</div> }.into_any(),
-                    Some(Ok(v)) => {
-                        let all = v.get("definitions").and_then(Value::as_array).cloned().unwrap_or_default();
-                        let shown: Vec<Value> = all
-                            .into_iter()
-                            .filter(|d| {
-                                w.is_empty()
-                                    || s(d, "name").to_lowercase().contains(&w)
-                                    || s(d, "id").contains(&w)
-                                    || s(d, "description").to_lowercase().contains(&w)
-                            })
-                            .take(80)
-                            .collect();
-                        if shown.is_empty() {
-                            return view! { <p class="muted">"No site matches. Update definitions on the Indexers page gets the newest ones."</p> }.into_any();
-                        }
-                        view! {
-                            <div class="list">{shown.into_iter().map(|d| {
-                                let d2 = d.clone();
-                                view! {
-                                    <button class="list-item" style="width:100%;text-align:left;gap:10px" on:click=move |_| pick(json!({ "kind": "cardigann", "definition": s(&d2, "id"), "name": s(&d2, "name") }))>
-                                        <div class="grow" style="min-width:0"><div style="font-weight:650">{s(&d, "name")}</div><div class="small faint ellipsis">{s(&d, "description")}</div></div>
-                                        <span class="badge">{s(&d, "privacy")}</span><span class="small faint">{s(&d, "language")}</span>
-                                    </button>
-                                }
-                            }).collect_view()}</div>
-                        }
-                        .into_any()
+        let languages = move || {
+            let mut langs: Vec<(String, u64)> = match catalog.get() {
+                Some(Ok(v)) => v
+                    .pointer("/counts/language")
+                    .and_then(Value::as_object)
+                    .map(|m| m.iter().map(|(k, n)| (k.clone(), n.as_u64().unwrap_or(0))).collect())
+                    .unwrap_or_default(),
+                _ => Vec::new(),
+            };
+            langs.sort();
+            langs.into_iter().map(|(l, n)| view! { <option value=l.clone()>{format!("{l} ({n})")}</option> }).collect_view()
+        };
+        let list = move || match catalog.get() {
+            None => view! { <div class="empty"><span class="spinner"></span></div> }.into_any(),
+            Some(Err(e)) => view! { <div class="error-box">{e}</div> }.into_any(),
+            Some(Ok(v)) => {
+                let f = filter.get();
+                let all = v.get("sites").and_then(Value::as_array).cloned().unwrap_or_default();
+                let wanted: Vec<Value> = all.into_iter().filter(|x| f.wants(x)).collect();
+                let count = catalog_count_text(
+                    wanted.iter().filter(|x| x.get("custom").and_then(Value::as_bool) != Some(true)).count(),
+                    &v["counts"],
+                );
+                let more = wanted.len().saturating_sub(100);
+                let rows = wanted.into_iter().take(100).map(|x| {
+                    let x2 = x.clone();
+                    let usenet = s(&x, "protocol") == "usenet";
+                    let sub = if usenet && !s(&x, "url").is_empty() { format!("{}{}", s(&x, "url"), s(&x, "api_path")) } else { s(&x, "description") };
+                    view! {
+                        <button class="list-item" style="width:100%;text-align:left;gap:10px" on:click=move |_| pick(add_body(&x2))>
+                            <div class="grow" style="min-width:0"><div style="font-weight:650">{s(&x, "name")}</div><div class=if usenet { "small faint ellipsis mono" } else { "small faint ellipsis" }>{sub}</div></div>
+                            <span class="badge">{if usenet { "Usenet" } else { "Torrent" }}</span>
+                            {(!s(&x, "privacy").is_empty()).then(|| view! { <span class="badge">{privacy_text(&s(&x, "privacy"))}</span> })}
+                            <span class="small faint">{s(&x, "language")}</span>
+                        </button>
                     }
-                }
-            } else {
-                let items = match presets.get() {
-                    Some(Ok(v)) => v.get("presets").and_then(Value::as_array).cloned().unwrap_or_default(),
-                    _ => Vec::new(),
-                };
-                let custom = [("newznab", "Another Newznab indexer (Usenet)"), ("torznab", "Another Torznab indexer (torrents)")];
+                }).collect_view();
                 view! {
-                    <div class="list">
-                        {items.into_iter().filter(|p| w.is_empty() || s(p, "name").to_lowercase().contains(&w)).map(|p| {
-                            let p2 = p.clone();
-                            view! {
-                                <button class="list-item" style="width:100%;text-align:left" on:click=move |_| pick(json!({ "kind": "newznab", "definition": s(&p2, "id"), "name": s(&p2, "name"), "base_url": s(&p2, "url"), "settings": { "api_path": "/api" } }))>
-                                    <div class="grow"><div style="font-weight:650">{s(&p, "name")}</div><div class="small faint mono">{s(&p, "url")}</div></div><span class="badge">"Usenet"</span>
-                                </button>
-                            }
-                        }).collect_view()}
-                        {custom.into_iter().map(|(k, label)| view! {
-                            <button class="list-item" style="width:100%;text-align:left" on:click=move |_| pick(json!({ "kind": k, "definition": "", "name": "", "base_url": "", "settings": { "api_path": "/api" } }))>
-                                <div class="grow" style="font-weight:650">{label}</div>
-                            </button>
-                        }).collect_view()}
-                    </div>
+                    <p class="small muted" style="margin:0 0 8px">{count}</p>
+                    <div class="list">{rows}</div>
+                    {(more > 0).then(|| view! { <p class="small muted">{format!("{more} more: search or filter to find them.")}</p> })}
+                    <p class="small muted">"Missing a site? Update definitions on the Indexers page gets the newest ones."</p>
                 }
                 .into_any()
             }
         };
+        let seg = |value: &'static str, label: &'static str| {
+            view! { <button class:on=move || filter.with(|f| f.protocol == value) on:click=move |_| set_filter.update(|f| f.protocol = value.into())>{label}</button> }
+        };
         view! {
             <div class="row wrap" style="gap:10px;margin-bottom:12px">
-                <div class="seg">
-                    <button class:on=move || tab.get() == "sites" on:click=move |_| set_tab.set("sites")>"Torrent sites"</button>
-                    <button class:on=move || tab.get() == "usenet" on:click=move |_| set_tab.set("usenet")>"Usenet and Newznab"</button>
-                </div>
                 <label class="search grow" style="min-width:200px"><span inner_html=icon("search")></span>
-                    <input class="input" placeholder="Search sites" autofocus on:input=move |e| set_words.set(event_target_value(&e))/></label>
+                    <input class="input" placeholder="Search sites" autofocus on:input=move |e| set_filter.update(|f| f.words = event_target_value(&e))/></label>
+                <div class="seg">{seg("", "All")}{seg("torrent", "Torrent")}{seg("usenet", "Usenet")}</div>
+                <select class="input" style="width:auto" title="Who can join" on:change=move |e| set_filter.update(|f| f.privacy = event_target_value(&e))>
+                    <option value="">"Any privacy"</option><option value="private">"Private"</option>
+                    <option value="semi-private">"Semi-private"</option><option value="public">"Public"</option>
+                </select>
+                <select class="input" style="width:auto" title="Language" on:change=move |e| set_filter.update(|f| f.language = event_target_value(&e))>
+                    <option value="">"Any language"</option>{languages}
+                </select>
             </div>
             <div style="max-height:60vh;overflow:auto">{list}</div>
         }
@@ -669,6 +722,30 @@ mod tests {
         assert_eq!(status_of(&json!({ "enabled": false })).1, "Off");
         assert_eq!(status_of(&json!({ "enabled": true, "last_error": "", "on_hold_until": null })).0, "ok");
         assert_eq!(status_of(&json!({ "enabled": true, "last_error": "down", "on_hold_until": 5 })).0, "err");
+    }
+
+    #[test]
+    fn one_add_list_for_torrent_and_usenet() {
+        let sites = [
+            json!({ "id": "alpha", "kind": "cardigann", "protocol": "torrent", "name": "Alpha", "description": "x", "privacy": "private", "language": "en-US" }),
+            json!({ "id": "nzbgeek", "kind": "newznab", "protocol": "usenet", "name": "NZBgeek", "description": "Usenet indexer", "privacy": "private", "language": "en-US",
+                    "url": "https://api.nzbgeek.info", "api_path": "/api", "categories": [2000, 5000] }),
+            json!({ "id": "beta", "kind": "cardigann", "protocol": "torrent", "name": "Beta", "description": "y", "privacy": "public", "language": "fr-FR" }),
+        ];
+        let names = |f: CatalogFilter| sites.iter().filter(|x| f.wants(x)).map(|x| s(x, "name")).collect::<Vec<_>>();
+        assert_eq!(names(CatalogFilter::default()).len(), 3);
+        assert_eq!(names(CatalogFilter { protocol: "usenet".into(), ..Default::default() }), ["NZBgeek"]);
+        assert_eq!(names(CatalogFilter { privacy: "public".into(), ..Default::default() }), ["Beta"]);
+        assert_eq!(names(CatalogFilter { language: "en-US".into(), protocol: "torrent".into(), ..Default::default() }), ["Alpha"]);
+        assert_eq!(names(CatalogFilter { words: "GEEK".into(), ..Default::default() }), ["NZBgeek"]);
+        let counts = json!({ "all": 560, "protocol": { "torrent": 536, "usenet": 24 } });
+        assert_eq!(catalog_count_text(24, &counts), "24 of 560 sites (536 torrent, 24 Usenet)");
+        // a Usenet preset arrives filled in: only the API key is left
+        let b = add_body(&sites[1]);
+        assert_eq!(b["base_url"], "https://api.nzbgeek.info");
+        assert_eq!(b["settings"], json!({ "api_path": "/api", "categories": "2000,5000" }));
+        assert_eq!(add_body(&sites[0]), json!({ "kind": "cardigann", "definition": "alpha", "name": "Alpha" }));
+        assert_eq!(privacy_text("semi-private"), "Semi-private");
     }
 
     #[test]

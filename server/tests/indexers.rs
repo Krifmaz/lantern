@@ -165,10 +165,51 @@ async fn a_site_that_cant_be_reached_is_put_on_hold_and_said_so() {
     // a Usenet indexer needs an address
     let (s, body, _) = call(&app, api("POST", "/api/indexers", Some(json!({ "kind": "newznab", "name": "Mine" })))).await;
     assert_eq!(s, StatusCode::BAD_REQUEST, "{body}");
-    let (s, _, _) = call(
+    let (s, body, _) = call(
         &app,
         api("POST", "/api/indexers", Some(json!({ "kind": "newznab", "definition": "nzbgeek", "settings": { "apikey": "k" } }))),
     )
     .await;
     assert_eq!(s, StatusCode::OK);
+    // a preset needs only the API key: its address, API path and categories are filled in
+    let geek: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(geek["base_url"], "https://api.nzbgeek.info");
+    assert_eq!(geek["settings"]["api_path"], "/api");
+    assert_eq!(geek["settings"]["categories"], "1000,2000,3000,4000,5000,6000,7000,8000");
+    let (s, body, _) = call(
+        &app,
+        api("POST", "/api/indexers", Some(json!({ "kind": "newznab", "definition": "tabularasa", "settings": { "apikey": "k" } }))),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "{body}");
+    let tr: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!((tr["base_url"].as_str(), tr["settings"]["api_path"].as_str()), (Some("https://www.tabula-rasa.pw"), Some("/api/v1/api")));
+    // apps see only the preset's categories
+    let (s, caps, _) = call(&app, get_as_app(&format!("/{}/api?t=caps&apikey={KEY}", tr["id"]))).await;
+    assert_eq!(s, StatusCode::OK);
+    assert!(caps.contains(r#"id="5040""#) && !caps.contains(r#"id="8010""#), "{caps}");
+}
+
+#[tokio::test]
+async fn torrent_sites_and_usenet_indexers_are_one_list_to_add_from() {
+    let (app, _, _) = lantern("catalog").await;
+    let (s, body, _) = call(&app, api("GET", "/api/indexers/catalog", None)).await;
+    assert_eq!(s, StatusCode::OK, "{body}");
+    let v: Value = serde_json::from_str(&body).unwrap();
+    let torrent = v["counts"]["protocol"]["torrent"].as_u64().unwrap();
+    let usenet = v["counts"]["protocol"]["usenet"].as_u64().unwrap();
+    assert!(torrent >= 1 && usenet >= 20, "{}", v["counts"]);
+    assert_eq!(v["counts"]["all"].as_u64(), Some(torrent + usenet));
+    let sites = v["sites"].as_array().unwrap();
+    assert!(sites.iter().any(|x| x["protocol"] == "torrent" && x["kind"] == "cardigann"));
+    let slug = sites.iter().find(|x| x["id"] == "drunkenslug").unwrap();
+    assert_eq!((slug["url"].as_str(), slug["api_path"].as_str()), (Some("https://drunkenslug.com"), Some("/api")));
+    // narrowed by protocol, privacy and words
+    let (_, body, _) = call(&app, api("GET", "/api/indexers/catalog?protocol=usenet&privacy=public", None)).await;
+    let v: Value = serde_json::from_str(&body).unwrap();
+    let names: Vec<&str> = v["sites"].as_array().unwrap().iter().map(|x| x["name"].as_str().unwrap()).collect();
+    assert_eq!(names, ["AnimeTosho (Usenet)"]);
+    let (_, body, _) = call(&app, api("GET", "/api/indexers/catalog?q=ninja", None)).await;
+    let v: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(v["sites"][0]["name"], "NinjaCentral");
 }

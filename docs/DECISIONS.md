@@ -119,8 +119,16 @@ Non-obvious calls, one line each, newest last.
   own, because the apps refuse to save a client whose category they don't see; Lantern takes any category anyway.
 - 2026-11-05 — Import tries, for each Prowlarr indexer: a definition (Lantern's, or a custom one from the backup,
   which is saved to `<data>/definitions/custom` first and wins over the bundled one of the same id), then
-  Newznab/Torznab underneath (Prowlarr's presets, and built-ins such as Headphones VIP from a small table of their
-  fixed address, path and key), then asking its address for caps at `/api`, `/api/torznab/api` and `/torznab/api`
-  (all at once, 10 s each). An indexer none of these fit is added turned off with its settings and a `needs_help`
-  reason, under `https://address-unknown.invalid` when Prowlarr had no address, so Create definition can turn it on
-  later under the same number. Basic auth for Newznab is sent only to addresses under the indexer's own base.
+  Newznab/Torznab underneath (Lantern's Usenet presets, matched by address or name, and built-ins such as
+  Headphones VIP from a small table of their fixed address, path and key), then asking its address for caps at
+  `/api`, `/api/torznab/api` and `/torznab/api` (all at once, 10 s each). An indexer none of these fit is added
+  turned off with its settings and a `needs_help` reason, under `https://address-unknown.invalid` when Prowlarr had
+  no address, so Create definition can turn it on later under the same number. Basic auth for Newznab is sent only
+  to addresses under the indexer's own base.
+- 2026-11-05 — Usenet presets follow Prowlarr's list (address, API path, categories), plus the few Lantern had
+  before (nzb.su, SceneNZBs, Usenet Crawler) so indexers added with them keep their name. AnimeTosho is marked
+  public (anyone can use its feed) though Prowlarr lists every preset as private. Tabula Rasa now uses its plain
+  address with `/api/v1/api`; ones saved with the old address keep working and are still recognised on import.
+  A preset's categories are saved as the indexer's `categories` setting (editable), and apps see only those.
+- 2026-11-05 — The Add list is filtered in the browser (the full list is fetched once), with the same rules the
+  server applies to `/api/indexers/catalog?q=&protocol=&privacy=&language=` for other clients.

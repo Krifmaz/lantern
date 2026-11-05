@@ -7,22 +7,87 @@ use chrono::{DateTime, Utc};
 use quick_xml::events::Event;
 use quick_xml::Reader;
 
-/// Well-known Usenet indexers: (id, name, API address).
-pub const PRESETS: &[(&str, &str, &str)] = &[
-    ("nzbgeek", "NZBgeek", "https://api.nzbgeek.info"),
-    ("drunkenslug", "DrunkenSlug", "https://drunkenslug.com"),
-    ("nzbfinder", "NZBFinder", "https://nzbfinder.ws"),
-    ("nzbplanet", "NZBPlanet", "https://api.nzbplanet.net"),
-    ("nzbsu", "nzb.su", "https://api.nzb.su"),
-    ("dognzb", "DOGnzb", "https://api.dognzb.cr"),
-    ("althub", "altHUB", "https://api.althub.co.za"),
-    ("tabularasa", "Tabula Rasa", "https://www.tabula-rasa.pw/api/v1"),
-    ("ninjacentral", "NinjaCentral", "https://ninjacentral.co.za"),
-    ("nzblife", "NZB.life", "https://api.nzb.life"),
-    ("usenetcrawler", "Usenet Crawler", "https://www.usenet-crawler.com"),
-    ("miatrix", "Miatrix", "https://www.miatrix.com"),
-    ("scenenzbs", "SceneNZBs", "https://scenenzbs.com"),
+/// A well-known Usenet indexer: everything needed to add it except the person's API key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Preset {
+    /// Lantern's id for it (kept in the indexer's `definition`).
+    pub id: &'static str,
+    /// Its name.
+    pub name: &'static str,
+    /// The API's address without the API path.
+    pub url: &'static str,
+    /// The API path added to the address (`/api` for almost all).
+    pub api_path: &'static str,
+    /// The standard categories it carries, so apps know what to search it for before it is asked.
+    pub categories: &'static [u32],
+    /// Who can join: `private`, `semi-private` or `public`.
+    pub privacy: &'static str,
+    /// The language of its releases and pages (`en-US`).
+    pub language: &'static str,
+    /// One line about it.
+    pub description: &'static str,
+}
+
+/// Every main category: console, movies, audio, PC, TV, adult, books, other.
+const ALL: &[u32] = &[1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000];
+/// Every main category but other.
+const NO_OTHER: &[u32] = &[1000, 2000, 3000, 4000, 5000, 6000, 7000];
+
+/// A private English Usenet indexer at `url` with `/api`.
+const fn usenet(id: &'static str, name: &'static str, url: &'static str, categories: &'static [u32]) -> Preset {
+    Preset {
+        id,
+        name,
+        url,
+        api_path: "/api",
+        categories,
+        privacy: "private",
+        language: "en-US",
+        description: "Usenet indexer (Newznab API): add your API key from its site.",
+    }
+}
+
+/// Well-known Usenet indexers (the ones Prowlarr offers, and a few more Lantern had before), by name.
+pub const PRESETS: &[Preset] = &[
+    usenet("abnzb", "abNZB", "https://abnzb.com", &[2000, 3000, 4000, 5000, 6000, 7000, 8000]),
+    usenet("althub", "altHUB", "https://api.althub.co.za", &[2000, 3000, 4000, 5000, 7000]),
+    Preset {
+        privacy: "public",
+        description: "Anime from AnimeTosho as NZBs; open to everyone, an API key isn't needed.",
+        ..usenet("animetosho", "AnimeTosho (Usenet)", "https://feed.animetosho.org", &[2020, 5070])
+    },
+    usenet("dognzb", "DOGnzb", "https://api.dognzb.cr", ALL),
+    usenet("drunkenslug", "DrunkenSlug", "https://drunkenslug.com", NO_OTHER),
+    usenet("gingadaddy", "GingaDADDY", "https://www.gingadaddy.com", ALL),
+    usenet("miatrix", "Miatrix", "https://www.miatrix.com", ALL),
+    usenet("newz69", "Newz69", "https://newz69.keagaming.com", ALL),
+    usenet("ninjacentral", "NinjaCentral", "https://ninjacentral.co.za", ALL),
+    usenet("nzbsu", "nzb.su", "https://api.nzb.su", ALL),
+    usenet("nzblife", "NZB.life", "https://api.nzb.life", ALL),
+    usenet("nzbcat", "NZBCat", "https://nzb.cat", NO_OTHER),
+    usenet("nzbfinder", "NZBFinder", "https://nzbfinder.ws", &[2000, 3000, 5000, 6000, 7000]),
+    usenet("nzbgeek", "NZBgeek", "https://api.nzbgeek.info", ALL),
+    usenet("nzbndx", "NZBNDX", "https://www.nzbndx.com", ALL),
+    usenet("nzbnoob", "NzbNoob", "https://www.nzbnoob.com", &[2000, 3000, 4000, 5000, 6000, 7000, 8000]),
+    usenet("nzbplanet", "NZBPlanet", "https://api.nzbplanet.net", ALL),
+    usenet("nzbstars", "NZBStars", "https://nzbstars.com", NO_OTHER),
+    usenet("scenenzbs", "SceneNZBs", "https://scenenzbs.com", ALL),
+    Preset { api_path: "/api/v1/api", ..usenet("tabularasa", "Tabula Rasa", "https://www.tabula-rasa.pw", NO_OTHER) },
+    usenet("usenetcrawler", "Usenet Crawler", "https://www.usenet-crawler.com", ALL),
 ];
+
+/// The preset `id`.
+pub fn preset(id: &str) -> Option<&'static Preset> {
+    PRESETS.iter().find(|p| p.id == id)
+}
+
+/// The preset whose API is at `url` (with or without the API path), for indexers brought over from other apps.
+pub fn preset_at(url: &str) -> Option<&'static Preset> {
+    let url = url.trim_end_matches('/');
+    PRESETS
+        .iter()
+        .find(|p| p.url.eq_ignore_ascii_case(url) || format!("{}{}", p.url, p.api_path.trim_end_matches("/api")).eq_ignore_ascii_case(url))
+}
 
 /// A Newznab or Torznab indexer.
 pub struct Newznab {

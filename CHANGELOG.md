@@ -7,6 +7,10 @@
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
   Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition
   editor. The plan shows which way each indexer came over. Newznab indexers can sign in with a user name and password.
+- Indexers → Add is one searchable list of every torrent site and Usenet indexer, filtered by torrent or Usenet,
+  privacy (private, semi-private, public) and language, and it says how many sites there are. Usenet indexers like
+  Prowlarr's (NZBgeek, DrunkenSlug, NZBPlanet, NinjaCentral, DOGnzb, NZBFinder, altHUB, Tabula Rasa, abNZB and more)
+  come with their address, API path and categories filled in, so only the API key is needed.
 - Indexer logins, API keys and session cookies are sealed with the vault's key at rest; ones saved earlier are
   sealed at the next start. With the vault locked, an indexer says why instead of signing in with nothing.
 - Cloudflare solving: a headless Chromium (in the image) gets past Cloudflare and DDoS-Guard checks by itself when an
