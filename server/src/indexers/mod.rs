@@ -7,12 +7,14 @@
 //! | [`definition`], [`template`], [`filters`], [`json_path`] | reading the Cardigann definitions |
 //! | [`cardigann`], [`newznab`], [`http`] | talking to the sites |
 //! | [`library`] | the definitions on disk and their updates |
+//! | [`catalog`] | the torrent sites and Usenet indexers to add from, in one list |
 //! | [`torznab`], [`api`] | what apps get |
 //!
 //! Each indexer is a row of `indexers`; its settings' secrets are never sent back by the API.
 
 pub mod api;
 pub mod cardigann;
+pub mod catalog;
 pub mod categories;
 pub mod definition;
 pub mod filters;
@@ -291,12 +293,12 @@ impl Indexers {
                 name = def.name.clone();
             }
         } else {
-            if let Some((_, n, url)) = newznab::PRESETS.iter().find(|(id, _, _)| *id == definition) {
+            if let Some(p) = newznab::preset(&definition) {
                 if name.is_empty() {
-                    name = n.to_string();
+                    name = p.name.to_string();
                 }
                 if base_url.is_empty() {
-                    base_url = url.to_string();
+                    base_url = p.url.to_string();
                 }
             }
             if base_url.is_empty() {
@@ -306,7 +308,12 @@ impl Indexers {
         if name.is_empty() {
             return Err(err(400, "Enter a name for the indexer"));
         }
-        let settings = clean_settings(body.get("settings"), &BTreeMap::new());
+        let mut settings = clean_settings(body.get("settings"), &BTreeMap::new());
+        if kind == "newznab" {
+            if let Some(p) = newznab::preset(&definition) {
+                fill_from_preset(&mut settings, p);
+            }
+        }
         let settings = self.seal(SETTINGS_AAD, &serde_json::to_string(&settings).unwrap_or_default())?;
         let id = self.db.execute(
             "INSERT INTO indexers (kind, definition, name, base_url, settings, enabled, priority, tags, added) VALUES (?,?,?,?,?,?,?,?,?)",
@@ -581,7 +588,7 @@ impl Indexers {
             ("music-search".into(), vec!["q".into(), "artist".into(), "album".into()]),
             ("book-search".into(), vec!["q".into(), "author".into(), "title".into()]),
         ];
-        c.categories = categories::STANDARD.iter().map(|(id, n)| (*id, n.to_string())).collect();
+        c.categories = categories_of(ix.settings.get("categories").map(String::as_str).unwrap_or(""));
         c
     }
 
@@ -682,6 +689,32 @@ impl Indexers {
 }
 
 /// Settings from a request: text values; a masked or empty secret keeps `old`'s.
+/// Fills what a Usenet preset knows into `settings` where the person left it empty: the API path and categories.
+pub fn fill_from_preset(settings: &mut BTreeMap<String, String>, p: &newznab::Preset) {
+    if settings.get("api_path").is_none_or(|v| v.trim().is_empty()) {
+        settings.insert("api_path".into(), p.api_path.into());
+    }
+    if settings.get("categories").is_none_or(|v| v.trim().is_empty()) {
+        settings.insert("categories".into(), p.categories.iter().map(u32::to_string).collect::<Vec<_>>().join(","));
+    }
+}
+
+/// The categories an API indexer says it has (`2000,5000`), each with its sub-categories; every standard
+/// category when the list is empty or has none Lantern knows.
+pub fn categories_of(list: &str) -> Vec<(u32, String)> {
+    let picked: Vec<u32> = list.split(',').filter_map(|c| c.trim().parse().ok()).collect();
+    let out: Vec<(u32, String)> = categories::STANDARD
+        .iter()
+        .filter(|(id, _)| picked.iter().any(|p| categories::matches(*id, *p)))
+        .map(|(id, n)| (*id, n.to_string()))
+        .collect();
+    if out.is_empty() {
+        categories::STANDARD.iter().map(|(id, n)| (*id, n.to_string())).collect()
+    } else {
+        out
+    }
+}
+
 fn clean_settings(v: Option<&Value>, old: &BTreeMap<String, String>) -> BTreeMap<String, String> {
     let mut out = old.clone();
     if let Some(Value::Object(m)) = v {

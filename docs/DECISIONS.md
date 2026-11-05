@@ -117,3 +117,10 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — The emulated SABnzbd and NZBGet offer the categories Sonarr, Radarr, Lidarr and Readarr use out of the
   box (in small letters and with a capital, as Radarr's NZBGet `Movies` and Readarr's `Readarr`), besides each app's
   own, because the apps refuse to save a client whose category they don't see; Lantern takes any category anyway.
+- 2026-11-05 — Usenet presets follow Prowlarr's list (address, API path, categories), plus the few Lantern had
+  before (nzb.su, SceneNZBs, Usenet Crawler) so indexers added with them keep their name. AnimeTosho is marked
+  public (anyone can use its feed) though Prowlarr lists every preset as private. Tabula Rasa now uses its plain
+  address with `/api/v1/api`; ones saved with the old address keep working and are still recognised on import.
+  A preset's categories are saved as the indexer's `categories` setting (editable), and apps see only those.
+- 2026-11-05 — The Add list is filtered in the browser (the full list is fetched once), with the same rules the
+  server applies to `/api/indexers/catalog?q=&protocol=&privacy=&language=` for other clients.
