@@ -378,7 +378,7 @@ Non-obvious calls, one line each, newest last.
   action type `DOWNLOAD_HUB` always sends through the hub.
 - 2026-11-05 — Lantern's own filter actions (from before the port) stay in the filter and still run next to the
   autobrr actions, but the autobrr API doesn't show them; nothing is migrated. Lantern's release sources stand in
-  for autobrr's indexers, so `prune-deprecated` always removes 0.
+  for autobrr's indexers, so `prune-deprecated` always removes 0. (Superseded below: archived indexers are pruned.)
 - 2026-11-05 — autobrr actions, download clients and filter notifications are stored in their own tables
   (`autobrr_actions`, `autobrr_downloaders`, `autobrr_filter_notifications`, and a small `autobrr_notifications`
   until the notifications slice), each row's body in autobrr's JSON. External filters live in the filter's body.
@@ -405,3 +405,33 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — SignalR (`/signalr/messages`) offers WebSockets only (no server-sent events or long polling); the
   web app connects that way. One broadcast channel per data folder carries indexer and command updates;
   the access token is the API key, or the signed-in session.
+- 2026-11-05 — autobrr's indexers are rows of `release_sources` (kind `irc`, or `feed` for Torznab, Newznab and RSS
+  indexers; `definition` = identifier, `settings` = the indexer's settings) plus a row of `autobrr_indexer_meta` for
+  what sources lack (external identifier, implementation, base URL, proxy, archive state), so the ids filters already
+  hold (`filter.indexers`) stay valid. Lantern's own `rss`/`indexer` sources show as RSS indexers. autobrr's IRC
+  networks get their own tables (`autobrr_irc_networks`, `autobrr_irc_channels`).
+- 2026-11-05 — Lantern's own IRC sources (from before the port) get an autobrr network made from their settings:
+  the definition's server, port and TLS; `server`/`port` settings become the bouncer address; `nick`,
+  `auth.account`/`auth.password` (NickServ), `pass` and `invite_command` carry over; the channels are the
+  definition's (or the `channels` setting). The network is found again by server and nick. Those network settings
+  stay on the source and are left out of the indexer's settings.
+- 2026-11-05 — The IRC connection is Lantern's own line reader, written to behave like irc-go as autobrr uses it:
+  registration ends at the end of the MOTD (376/422), CAP LS 302 and SASL PLAIN only when SASL is set, a taken nick
+  gets `_`, a PING after 4 quiet minutes, and the trailing `:` only when a parameter needs it. irc-go's flood delay
+  after each invite command isn't copied. TLS uses rustls, which can't speak TLS 1.0 or the old ciphers autobrr's
+  `tls_skip_verify` allows; skip-verify still accepts any certificate.
+- 2026-11-05 — autobrr's proxies aren't ported yet: a network or indexer with `use_proxy` and a proxy id refuses to
+  connect with autobrr's "configured proxy could not be loaded", as autobrr does when the proxy is missing; `proxy`
+  is always `null`.
+- 2026-11-05 — The per-site indexer API clients (RED, OPS, GGn, BTN, PTP, MAM …) aren't ported yet:
+  `POST /indexer/{id}/api/test` answers autobrr's "could not init api client" for a site with an API, and filters
+  needing the uploader or record label from the API are refused with a plain reason. Changing an indexer's base URL
+  doesn't rewrite the URLs of releases already seen (Lantern's release log keeps the page link only).
+- 2026-11-05 — Only the `irc` stream of autobrr's server-sent events is served (at `/irc/events` and `/events`); the
+  `logs` and notification inbox streams come with the logs and notifications slices, and until then answer
+  r3labs/sse's "Stream not found!".
+- 2026-11-05 — Go's regexp reads a `{` that doesn't start a repetition as itself (milkie's announce pattern starts
+  with one); the Go pattern rewrite escapes such braces for Rust's regex crate.
+- 2026-11-05 — The A-api IRC slice ships IRC and indexers; autobrr's feeds (Torznab, Newznab, RSS jobs and
+  `/feeds*`) are the next slice. RSS polling now only looks at Lantern's own `rss` and `indexer` sources, so feed
+  indexers made through autobrr's API wait for that slice.

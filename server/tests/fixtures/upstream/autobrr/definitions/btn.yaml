@@ -1,0 +1,104 @@
+---
+version: 2
+#id: btn
+name: BroadcasTheNet
+identifier: btn
+description: BroadcasTheNet (BTN) is a private torrent tracker focused on TV shows
+language: en-us
+urls:
+  - https://broadcasthe.net/
+privacy: private
+protocol: torrent
+supports:
+  - irc
+  - rss
+# source: gazelle
+settings:
+  - name: authkey
+    type: secret
+    required: true
+    label: Auth key
+    help: Right click DL on a torrent and get the authkey.
+
+  - name: torrent_pass
+    type: secret
+    required: true
+    label: Torrent pass
+    help: Right click DL on a torrent and get the torrent_pass.
+
+irc:
+  network: BroadcasTheNet
+  server: irc.broadcasthe.net
+  port: 6697
+  tls: true
+  settings:
+    - name: nick
+      type: text
+      required: true
+      label: Nick
+      help: Bot nick. Eg. user|autodl
+
+    - name: auth.account
+      type: text
+      required: true
+      label: NickServ Account
+      help: NickServ account. Make sure to group your user and bot.
+
+    - name: auth.password
+      type: secret
+      required: true
+      label: NickServ Password
+      help: NickServ password
+
+  channels:
+    - name: "#BTN-Announce"
+      announcers:
+        - Barney
+      parse:
+        type: multi
+        lines:
+          - pattern: ^NOW BROADCASTING! \[ (?P<releaseName>.*) \]
+            tests:
+              - line: NOW BROADCASTING! [ The Show S06E07 720p WEB-DL DD 5.1 H.264 - LP ]
+                expect:
+                  releaseName: The Show S06E07 720p WEB-DL DD 5.1 H.264 - LP
+
+          - pattern: '^\[ Title: .* \] \[ Series: (?P<title>.*) \]'
+            tests:
+              - line: '[ Title: S06E07 ] [ Series: The Show ]'
+                expect:
+                  title: The Show
+
+          - pattern: '^(?:\[ (?P<year>\d+) \] )?\[ (?P<category>.*) \] \[ (?P<releaseTags>.*?)(?: \| TVDB: (?P<tvdb>\d*))?(?: \| (?P<torrentSize>[\d.,]+ ?[KMGTP]i?B))? \] \[ Uploader: (?P<uploader>.*?) \](?: \[ Pretime: (?P<preTime>.*) \])?'
+            tests:
+              - line: '[ 2010 ] [ Episode ] [ MKV | x264 | WEB | P2P | TVDB: 42932 | 2.45 GB ] [ Uploader: Uploader1 ]'
+                expect:
+                  year: "2010"
+                  category: Episode
+                  releaseTags: MKV | x264 | WEB | P2P
+                  tvdb: "42932"
+                  torrentSize: 2.45 GB
+                  uploader: Uploader1
+                  preTime: ""
+
+              - line: '[ 2010 ] [ Episode ] [ MKV | x264 | WEB | P2P ] [ Uploader: Uploader1 ]'
+                expect:
+                  year: "2010"
+                  category: Episode
+                  releaseTags: MKV | x264 | WEB | P2P
+                  tvdb: ""
+                  torrentSize: ""
+                  uploader: Uploader1
+                  preTime: ""
+
+          - pattern: \[ (?P<baseUrl>https?:\/\/.*\/).+id=(?P<groupId>\d+) \/ https?:\/\/.*\/.+id=(?P<torrentId>\d+) \]
+            tests:
+              - line: '[ https://broadcasthe.net/torrents.php?id=7338 / https://broadcasthe.net/torrents.php?action=download&id=9116 ]'
+                expect:
+                  baseUrl: https://broadcasthe.net/
+                  groupId: "7338"
+                  torrentId: "9116"
+
+        match:
+          infourl: "/torrents.php?id={{ .groupId }}&torrentid={{ .torrentId }}"
+          downloadurl: "/torrents.php?action=download&id={{ .torrentId }}&authkey={{ .authkey }}&torrent_pass={{ .torrent_pass }}"

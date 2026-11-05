@@ -1,0 +1,89 @@
+---
+version: 2
+#id: trancetraffic
+name: TranceTraffic
+identifier: trancetraffic
+description: TranceTraffic is a Private site for MUSIC
+language: en-us
+urls:
+  - https://trancetraffic.com/
+privacy: private
+protocol: torrent
+supports:
+  - irc
+  - rss
+# source: unknown
+settings:
+  - name: passkey
+    type: secret
+    required: true
+    label: Passkey
+    help: "Go to https://www.trancetraffic.com/links.php, click on RSS Feed and copy your passkey from the url."
+
+irc:
+  network: P2P-Network
+  server: irc.p2p-network.net
+  port: 6697
+  tls: true
+  settings:
+    - name: nick
+      type: text
+      required: true
+      label: Nick
+      help: Bot nick. Eg. user|autodl
+
+    - name: auth.account
+      type: text
+      required: true
+      label: NickServ Account
+      help: NickServ account. Make sure to group your user and bot.
+
+    - name: auth.password
+      type: secret
+      required: true
+      label: NickServ Password
+      help: NickServ password
+
+  channels:
+    - name: "#trancetraffic"
+      announcers:
+        - TranceTraffic
+      parse:
+        type: multi
+        lines:
+          - pattern: '^New Torrent Uploaded:'
+            tests:
+              - line: 'New Torrent Uploaded:'
+                expect:
+                  raw: "New Torrent Uploaded:"
+
+          - pattern: '^Name\.*:\s*(?P<releaseName>.*)'
+            tests:
+              - line: 'Name....: That Artist - Good Album-SAT-01-30-2021-GROUP'
+                expect:
+                  releaseName: That Artist - Good Album-SAT-01-30-2021-GROUP
+
+          - pattern: '^Uploader\.*:\s*(?P<uploader>.*)'
+            tests:
+              - line: 'Uploader: anon'
+                expect:
+                  uploader: anon
+
+          - pattern: '^Category\.*:\s*(?P<category>.*)'
+            tests:
+              - line: 'Category: Livesets - House'
+                expect:
+                  category: Livesets - House
+
+          - pattern: '^URL\.*:\s*(?P<baseUrl>https?\:\/\/[^\/]+\/).*[&\?]id=(?P<torrentId>\d+)'
+            tests:
+              - line: 'URL.....: https://www.trancetraffic.com/details.php?id=000000&hit=1'
+                expect:
+                  baseUrl: https://www.trancetraffic.com/
+                  torrentId: "000000"
+
+        match:
+          infourl: "/details.php?id={{ .torrentId }}"
+          downloadurl: "/download.php/{{ .torrentId }}/{{ .releaseName }}.torrent?passkey={{ .passkey }}"
+          encode:
+            - releaseName
