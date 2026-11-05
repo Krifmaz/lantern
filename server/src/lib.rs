@@ -12,6 +12,9 @@
 //! | `/api/indexers/*`, `/api/search`, `/{id}/api` (Torznab/Newznab), `/{id}/download`, `/api/v1/*` (Prowlarr API) | [`indexers`] |
 //! | `/api/solver`, `/api/solver/test`; the FlareSolverr API on its own port ([`solver_port`]) | [`solver`] |
 //! | `/api/hub/*` (download clients, apps, search and grab, live events) | [`hub`] |
+//! | `/api/vault`, `/api/vault/*` (the account vault) | [`vault`] |
+//! | `/api/import/*` (Prowlarr and FlareSolverr, dry run first) | [`migrate`] |
+//! | `/api/releases/*` (IRC announces, RSS, filters) | [`releases`] |
 //!
 //! Everything the app adds of its own goes into [`app`] next to them.
 
@@ -19,7 +22,10 @@ pub mod auth;
 pub mod checks;
 pub mod hub;
 pub mod indexers;
+pub mod migrate;
+pub mod releases;
 pub mod solver;
+pub mod vault;
 
 use axum::http::{header, HeaderValue};
 use axum::Router;
@@ -97,6 +103,10 @@ pub struct AppState {
     pub solver: solver::Solver,
     /// The download hub: download clients, apps and their grabs.
     pub hub: hub::Hub,
+    /// The account vault: site logins and keys, encrypted at rest.
+    pub vault: vault::Vault,
+    /// Releases as they appear: IRC announces, RSS, filters.
+    pub releases: releases::Releases,
 }
 
 impl AppState {
@@ -128,11 +138,14 @@ impl AppState {
         auth::migrate(&db)?;
         indexers::migrate(&db)?;
         hub::migrate(&db)?;
+        migrate::migrate(&db)?;
+        releases::migrate(&db)?;
         solver::migrate(&db)?;
         let solver = solver::Solver::new(solver::find_program(env("APP_CHROMIUM").as_deref()), data, Some(db.clone()));
         let bundled = PathBuf::from(env("APP_DEFINITIONS_DIR").unwrap_or_else(|| "/app/definitions".into()));
         let library = indexers::library::Library::new(Some(bundled), data);
         let signer = indexers::LinkSigner::open(data)?;
+        let vault = vault::Vault::open(db.clone(), data, env("APP_VAULT_PASSPHRASE"))?;
         let kit = |e: kit_server_core::Error| anyhow::anyhow!("The kit's tables can't be made: {}", e.detail);
         let prefs = SqlitePrefs::new(db.clone()).map_err(kit)?;
         let reports = kit_server_bugreports::SqliteReports::new(db.clone()).map_err(kit)?;
@@ -143,10 +156,12 @@ impl AppState {
             .await
             .map_err(|e| anyhow::anyhow!("The settings can't be read: {}", e.detail))?;
         let changelog = Arc::new(Changelog::new(&settings.str("app_name"), VERSION, changelog_gen::NOTES));
-        let db_for_indexers = db.clone();
-        let settings_for_indexers = settings.clone();
-        let indexers = indexers::Indexers::new(db_for_indexers, library).with_settings(settings_for_indexers).with_solver(solver.clone());
+        let indexers = indexers::Indexers::new(db.clone(), library).with_settings(settings.clone()).with_solver(solver.clone());
         let hub = hub::Hub::new(db.clone(), indexers.clone(), signer.clone(), settings.clone());
+        let announce_dir = PathBuf::from(env("APP_ANNOUNCE_DIR").unwrap_or_else(|| "/app/announce".into()));
+        let announce = releases::announce::Library::new(vec![announce_dir, data.join("announce")]);
+        let releases = releases::Releases::new(db.clone(), announce, indexers.clone(), signer.clone(), settings.clone());
+        releases.set_hub(Arc::new(hub.clone()));
         Ok(AppState {
             db,
             reports,
@@ -160,6 +175,8 @@ impl AppState {
             indexers,
             signer,
             hub,
+            vault,
+            releases,
             solver,
         })
     }
@@ -277,6 +294,9 @@ pub fn app(st: AppState) -> Router {
         .merge(indexers::api::router())
         .merge(solver::api::router())
         .merge(hub::api::router())
+        .merge(vault::api::router())
+        .merge(migrate::api::router())
+        .merge(releases::api::router())
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))

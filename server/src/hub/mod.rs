@@ -8,6 +8,7 @@
 //! | [`clients`] | the download-client layer (qBittorrent, SABnzbd) |
 //! | [`apps`] | registered apps, their category and folders |
 //! | [`grabs`] | grabs: sending, progress, retries |
+//! | [`cleanup`] | seeding rules and cleanup after the app imported |
 //! | [`events`] | the live event stream and the webhooks |
 //! | [`paths`] | translating paths between Lantern, the clients and the apps |
 //! | [`api`] | the routes |
@@ -16,6 +17,7 @@
 
 pub mod api;
 pub mod apps;
+pub mod cleanup;
 pub mod clients;
 pub mod events;
 pub mod grabs;
@@ -85,7 +87,23 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
         CREATE INDEX IF NOT EXISTS hub_grabs_by_state ON hub_grabs(state);
         CREATE INDEX IF NOT EXISTS hub_grabs_by_app ON hub_grabs(app_id, added);",
     )
-    .map_err(|e| anyhow::anyhow!("The download hub's tables can't be made: {}", e.detail))
+    .map_err(|e| anyhow::anyhow!("The download hub's tables can't be made: {}", e.detail))?;
+    // columns added after the first release of the hub
+    let have: Vec<String> = db
+        .query("PRAGMA table_info(hub_grabs)", p![])
+        .map_err(|e| anyhow::anyhow!("The download hub's tables can't be read: {}", e.detail))?
+        .iter()
+        .map(|r| kit_server_core::RowExt::s(r, "name"))
+        .collect();
+    for (col, def) in
+        [("ratio", "REAL NOT NULL DEFAULT 0"), ("seed_secs", "INTEGER NOT NULL DEFAULT 0"), ("imported", "REAL NOT NULL DEFAULT 0")]
+    {
+        if !have.iter().any(|c| c == col) {
+            db.execute_batch(&format!("ALTER TABLE hub_grabs ADD COLUMN {col} {def}"))
+                .map_err(|e| anyhow::anyhow!("The download hub's tables can't be changed: {}", e.detail))?;
+        }
+    }
+    Ok(())
 }
 
 /// The running clients: id → (settings fingerprint, client).

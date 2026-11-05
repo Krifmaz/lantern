@@ -18,6 +18,9 @@
 - Lantern listens on port 9696 (Prowlarr's), and makes an API key at first start.
 - The Android app (`android/`, kit-compose v0.2.1, the kit's default theme): connect, sign in, What's new, updates,
   bug reports, crash logs, Server settings and Diagnostics; built and unit-tested on every pull request.
+- Account vault (Vault page): tracker and Usenet logins, passwords, cookies, passkeys, API keys, 2FA seeds and invite
+  notes, encrypted at rest (argon2id + XChaCha20-Poly1305). Secrets are never listed or logged; the owner sees them
+  only after typing their password again, with the 2FA code. Encrypted backups, and restore with a check first.
 - Android: Indexers (how every site is doing, what went wrong, the last week's numbers, Test) and Search (every
   indexer at once, by kind; open a result's page or copy its link), and the server's notices on the home page.
 - Download hub: qBittorrent and SABnzbd behind one download-client layer; apps register with their name, media type
@@ -26,6 +29,19 @@
   files' exact paths in their own view.
 - Download hub: Transmission, Deluge, rTorrent and NZBGet join qBittorrent and SABnzbd behind the same client
   layer (qBittorrent and SABnzbd stay the defaults).
+- Android: the Vault page. Every saved account with its plain values and which secrets are saved; the owner sees
+  the secrets and the 2FA code after typing their password again, for two minutes, with screenshots blocked. Every
+  value can be copied, secrets marked sensitive on the clipboard.
+- Import from Prowlarr (a backup, its database or its API) and FlareSolverr (its settings pasted in), on a new
+  Import page: a dry run first that says line by line what would be added, skipped or left to you, then Import.
+  Indexers keep their logins (also saved in the vault) and Prowlarr's numbers, Lantern can take Prowlarr's API key and proxy, and the apps
+  Prowlarr synced to are kept for app sync.
+- Releases as they appear: trackers' IRC announce channels (autobrr's announce definitions, bundled), RSS feeds and
+  Lantern's own indexers are watched; filters (names, resolution, source, codec, HDR, group, year, season, size,
+  freeleech, category, tags, uploader, grab limits) send a new release to Sonarr, Radarr, Lidarr, Readarr or Whisparr,
+  or to a download client through the download hub, within seconds. A Releases page shows what came and why each was sent or skipped, and checks any release name.
+- Download hub: seeding rules (seed to a ratio or for some hours) and cleanup once an app says it imported a
+  download: keep it, remove it from the client, or remove it with its files (off by default).
 
 ## 0.0.1
 

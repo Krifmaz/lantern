@@ -7,13 +7,19 @@
 //! | `#/` | Home: the app's own start page (a bug report button to begin with) |
 //! | `#/indexers` | the indexers: add, edit, test and remove sites, update the definitions |
 //! | `#/search` | search every indexer at once |
+//! | `#/vault` | the account vault (admins): tracker and Usenet logins, Show with the password, Back up and Restore |
+//! | `#/import` | move from Prowlarr and FlareSolverr: look first, then import |
+//! | `#/releases?t=recent\|filters\|sources` | releases as they appear: what came and what happened, the filters, the IRC and RSS sources |
 //! | `#/bug-reports` | the account's bug reports and the New report sheet |
 //! | `#/settings?s=<page>` | the server settings form from the server's schema, Diagnostics and What's new |
 //!
 //! The app's own pages go next to [`Home`], one component each, with a link in [`Shell`].
 
+mod import;
 mod indexers;
 mod pages;
+mod releases;
+mod vault;
 
 use kit_leptos::api::{self, HttpBackend};
 use kit_leptos::{details, dropzone, notice, offline, rt, toasts, update, whats_new};
@@ -171,11 +177,15 @@ fn Shell(me: Value) -> impl IntoView {
         })
     };
     let admin = me.get("is_admin").and_then(Value::as_bool).unwrap_or(false);
+    let owner = me.get("role").and_then(Value::as_str) == Some("owner");
     let page = move || {
         let r = route.get();
         match r.path.as_str() {
             "/indexers" => view! { <indexers::Indexers admin=admin/> }.into_any(),
             "/search" => view! { <indexers::Search/> }.into_any(),
+            "/vault" if admin => view! { <vault::Vault owner=owner/> }.into_any(),
+            "/import" => view! { <import::Import admin=admin/> }.into_any(),
+            "/releases" => view! { <releases::Releases admin=admin tab=r.param("t")/> }.into_any(),
             "/bug-reports" => view! { <pages::BugReports/> }.into_any(),
             "/settings" => view! { <pages::Settings page=r.param("s")/> }.into_any(),
             _ => view! { <pages::Home/> }.into_any(),
@@ -189,6 +199,9 @@ fn Shell(me: Value) -> impl IntoView {
                     <NavLink href="/" label="Home" route=route/>
                     <NavLink href="/indexers" label="Indexers" route=route/>
                     <NavLink href="/search" label="Search" route=route/>
+                    {admin.then(|| view! { <NavLink href="/vault" label="Vault" route=route/> })}
+                    {admin.then(|| view! { <NavLink href="/import" label="Import" route=route/> })}
+                    <NavLink href="/releases" label="Releases" route=route/>
                 </nav>
                 <nav class="nav nav-under">
                     <NavLink href="/bug-reports" label="Bug reports" route=route/>
