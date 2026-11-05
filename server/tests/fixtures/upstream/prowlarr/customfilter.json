@@ -1,0 +1,12 @@
+{
+  "id": 1,
+  "type": "indexers",
+  "label": "Torrents",
+  "filters": [
+    {
+      "key": "protocol",
+      "value": "torrent",
+      "type": "equal"
+    }
+  ]
+}

@@ -20,6 +20,10 @@
 - `scripts/upstream-merge.sh` brings Prowlarr's web frontend into `ui/prowlarr/` at the commit `UPSTREAM.lock`
   pins, as merges of an `upstream/prowlarr` snapshot branch, so later Prowlarr versions merge in with Lantern's
   changes kept (see `UPSTREAM.md`).
+- Prowlarr's own API for its web app, ported from Prowlarr v2.7.0.5723: system status, general, UI and development
+  settings (with Prowlarr's defaults and checks), tags, custom filters, Prowlarr's translations, health, scheduled
+  tasks, the command queue (test, health check, new API key, clearing the log), the log, backups and updates,
+  under `/api/v1/…` with the API key or a signed-in session.
 - Lantern now ports Prowlarr, autobrr, cross-seed and FlareSolverr instead of rewriting them: `UPSTREAM.lock` pins
   the versions it follows and `docs/PARITY.md` lists everything each one does, with what Lantern already matches.
 - First-run setup: a new Lantern asks for "Create your account" (username, password twice, optional email) on the

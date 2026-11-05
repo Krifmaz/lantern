@@ -1,0 +1,4 @@
+{
+  "message": "Unable to cancel task",
+  "description": "NzbDrone.Core.Exceptions.NzbDroneClientException: Unable to cancel task"
+}

@@ -1,0 +1,21 @@
+[
+  {
+    "version": "2.7.0.5723",
+    "branch": "master",
+    "releaseDate": "2026-10-26T17:31:22Z",
+    "fileName": "Prowlarr.master.2.7.0.5723.linux-core-x64.tar.gz",
+    "url": "https://prowlarr.servarr.com/v1/update/master/updatefile?version=2.7.0.5723&os=linux&runtime=netcore&arch=x64",
+    "installed": true,
+    "installable": false,
+    "latest": true,
+    "changes": {
+      "new": [
+        "Indexer definitions update"
+      ],
+      "fixed": [
+        "Search results with no size"
+      ]
+    },
+    "hash": "5c0d1b2a3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+  }
+]

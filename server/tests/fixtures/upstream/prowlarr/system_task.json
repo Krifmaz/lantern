@@ -1,0 +1,12 @@
+[
+  {
+    "id": 2,
+    "name": "Clear Expired Cache",
+    "taskName": "ClearExpiredCache",
+    "interval": 5,
+    "lastExecution": "2026-11-05T09:58:00Z",
+    "lastStartTime": "2026-11-05T09:58:00Z",
+    "nextExecution": "2026-11-05T10:03:00Z",
+    "lastDuration": "00:00:00.0123456"
+  }
+]
