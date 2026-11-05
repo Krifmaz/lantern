@@ -181,3 +181,20 @@ Non-obvious calls, one line each, newest last.
   (localization, UI and host settings, app profiles, …) in the browser, with Prowlarr's shapes and defaults
   (`docs/parity/p-ui/shots.js`), so the look can be proven before the API is ported. They prove the theme, the
   branding and the mobile layout only; the page rows stay `todo` until their API exists.
+- 2026-11-05 — Newznab/Torznab out (track P-idx) follows Prowlarr v2.7.0.5723's `NewznabController`, `NewznabResults`
+  and `IndexerCapabilities` byte for byte, with these choices: the feed's channel title and the caps' server title
+  are the instance name, not "Prowlarr"; download links stay signed (`link` plus `sig`) rather than Prowlarr's
+  encrypted link, because the download hub reads them; JSON errors keep Lantern's `{"detail"}` shape with
+  Prowlarr's words ("Indexer Not Found", "Invalid Prowlarr link", "Failed to normalize provided link"), and a
+  parameter that can't be read answers ASP.NET's problem shape plus `detail`; a failed download says "Download
+  failed" as Prowlarr does, with the reason in history and on the indexer; a `cat` entry that isn't a number is
+  skipped instead of failing the search.
+- 2026-11-05 — The host recorded with each search or grab is the address from `X-Forwarded-For` or `X-Real-IP`, with
+  no reverse DNS lookup. "On hold" dates are shown in UTC as `MM/dd/yyyy HH:mm:ss` (Prowlarr's invariant format).
+  Testing an indexer from its page doesn't change its hold, as before. A site asking Lantern to slow down is
+  recognised by the failure's text ("(429)", "limit reached", "too many requests") and held at least an hour.
+- 2026-11-05 — Prowlarr's per-indexer base settings (query and grab limits, limits unit, minimum seeders, seed
+  ratio and times, prefer magnet links) are kept in the indexer's settings under Prowlarr's field names
+  (`baseSettings.queryLimit`, `torrentBaseSettings.preferMagnetUrl`, ...); Redirect is its own column. The `all`
+  feed and the Jackett-style routes stay as Lantern extras. Newznab/Torznab indexers still announce the categories
+  of their `categories` setting until reading the remote caps is ported.

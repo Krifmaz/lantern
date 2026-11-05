@@ -18,15 +18,19 @@
 //!   GET    /api/search?q=&type=&cat=&ids=    search: {results, failed}
 //!
 //! Apps (the API key as ?apikey= or X-Api-Key):
-//!   GET    /{id}/api?t=caps|search|tvsearch|movie|music|book…   Torznab/Newznab, one indexer ("all": every one)
+//!   GET    /{id}/api?t=caps|search|tvsearch|movie|music|book…   Newznab/Torznab as Prowlarr answers it, one indexer
+//!          (also /api/v1/indexer/{id}/newznab; 0: Prowlarr's test indexer; "all": every one, a Lantern extra)
 //!   GET    /api/v2.0/indexers/{id}/results/torznab/api?…        the same, at Jackett's address
-//!   GET    /{id}/download?link=&sig=&file=                      a release's file, through Lantern
+//!   GET    /{id}/download?apikey=&link=&sig=&file=              a release's file through Lantern, or a redirect to it
+//!          (also /api/v1/indexer/{id}/download)
 //!   GET    /api/v1/…                                            the Prowlarr API (system/status, indexer, search, indexerstats, tag, health)
 //! ```
 
+use super::capabilities::Capabilities;
 use super::cardigann::Grabbed;
+use super::newznab_request::{self, NewznabRequest};
 use super::release::{Protocol, Query, Release, SearchKind};
-use super::{categories, newznab, torznab, Indexer};
+use super::{categories, nabxml, newznab, newznab_results, GrabError, Indexer};
 use crate::AppState;
 use axum::extract::{Path, Query as Q, State};
 use axum::http::{header, HeaderMap, StatusCode};
@@ -51,11 +55,11 @@ pub fn router() -> Router<AppState> {
         .route("/api/indexers/{id}", get(one).put(change).delete(remove))
         .route("/api/indexers/{id}/test", post(test))
         .route("/api/search", get(search))
-        .route("/{id}/api", get(torznab_api))
+        .route("/{id}/api", get(newznab_api))
         .route("/{id}/download", get(download))
-        .route("/api/v2.0/indexers/{id}/results/torznab", get(torznab_api))
-        .route("/api/v2.0/indexers/{id}/results/torznab/api", get(torznab_api))
-        .route("/api/v1/indexer/{id}/newznab", get(torznab_api))
+        .route("/api/v2.0/indexers/{id}/results/torznab", get(newznab_api))
+        .route("/api/v2.0/indexers/{id}/results/torznab/api", get(newznab_api))
+        .route("/api/v1/indexer/{id}/newznab", get(newznab_api))
         .route("/api/v1/indexer/{id}/download", get(download))
         .route("/api/v1/system/status", get(v1_status))
         .route("/api/v1/health", get(v1_empty))
@@ -206,6 +210,7 @@ pub fn query_of(q: &HashMap<String, String>) -> std::result::Result<Query, (u16,
         limit: g("limit").parse().unwrap_or(0),
         offset: g("offset").parse().unwrap_or(0),
         rss: false,
+        ..Query::default()
     };
     // Prowlarr's `{ImdbId:tt123}` style tokens in the query
     if query.keywords.contains('{') {
@@ -258,110 +263,298 @@ pub fn public_base(st: &AppState, headers: &HeaderMap) -> String {
     format!("{proto}://{host}{}", prefix.trim_end_matches('/'))
 }
 
+/// A file name or title as .NET's `WebUtility.UrlEncode` writes it in a link: letters, digits and `-_.!*()` as
+/// they are, a space as `+`, anything else as `%XX`.
+pub fn web_url_encode(s: &str) -> String {
+    let mut o = String::with_capacity(s.len());
+    for b in s.bytes() {
+        match b {
+            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'!' | b'*' | b'(' | b')' => o.push(b as char),
+            b' ' => o.push('+'),
+            b => o.push_str(&format!("%{b:02X}")),
+        }
+    }
+    o
+}
+
+/// The address Lantern hands out for a release's file, magnet or not (`DownloadMappingService.ConvertToProxyLink`):
+/// `{base}/{id}/download?apikey=…&link=…&sig=…&file=…`. The link is signed rather than encrypted (`sig`).
+fn proxy_link(st: &AppState, base: &str, apikey: &str, indexer: i64, link: &str, title: &str) -> String {
+    let (link, sig) = st.signer.sign(indexer, link);
+    format!("{base}/{indexer}/download?apikey={apikey}&link={link}&sig={sig}&file={}", web_url_encode(title))
+}
+
 /// The address Lantern hands out for a release's file.
 fn download_link(st: &AppState, base: &str, apikey: &str, r: &Release) -> String {
-    if r.protocol == Protocol::Torrent && r.link.starts_with("magnet:") {
-        return r.link.clone();
-    }
-    let (link, sig) = st.signer.sign(r.indexer_id, &r.link);
-    let file: String = url::form_urlencoded::byte_serialize(r.title.as_bytes()).collect();
-    format!(
-        "{base}/{}/download?apikey={}&link={link}&sig={sig}&file={file}",
-        r.indexer_id,
-        url::form_urlencoded::byte_serialize(apikey.as_bytes()).collect::<String>()
-    )
+    proxy_link(st, base, apikey, r.indexer_id, if r.link.is_empty() { &r.magnet } else { &r.link }, &r.title)
 }
 
+/// An answer of Newznab XML with `status` (`CreateResponse`).
 fn xml(status: StatusCode, body: String) -> Response {
-    (status, [(header::CONTENT_TYPE, "application/rss+xml; charset=utf-8")], body).into_response()
+    (status, [(header::CONTENT_TYPE, "application/rss+xml")], body).into_response()
 }
 
-/// Which indexers a path id names: `all` (every one) or a number. The error is the Torznab error answer
-/// itself, which is only made once per request, so its size doesn't matter.
-#[allow(clippy::result_large_err)]
-fn ids_of(st: &AppState, id: &str) -> std::result::Result<(Vec<i64>, Option<Indexer>), Response> {
-    if id == "all" || id == "-1" {
-        return Ok((Vec::new(), None));
-    }
-    let n: i64 = id.parse().map_err(|_| xml(StatusCode::NOT_FOUND, torznab::error_xml(201, "There is no indexer with that id")))?;
-    let ix = st.indexers.get(n).map_err(|_| xml(StatusCode::NOT_FOUND, torznab::error_xml(201, "There is no indexer with that id")))?;
-    Ok((vec![n], Some(ix)))
+/// A Newznab error answer: `<error code=… description=… />` with `status`.
+fn xml_error(status: StatusCode, code: u16, description: &str) -> Response {
+    xml(status, nabxml::error_xml(code, description))
 }
 
-async fn torznab_api(State(st): State<AppState>, headers: HeaderMap, Path(id): Path<String>, Q(q): Q<HashMap<String, String>>) -> Response {
-    if !key_ok(&st, &headers, &q) {
-        return xml(StatusCode::UNAUTHORIZED, torznab::error_xml(100, "The API key is missing or wrong"));
-    }
-    let (ids, ix) = match ids_of(&st, &id) {
-        Ok(x) => x,
-        Err(r) => return r,
-    };
-    let t = q.get("t").map(String::as_str).unwrap_or("search");
-    if t == "caps" {
-        let caps = match &ix {
-            Some(ix) => st.indexers.caps(ix),
-            None => match st.indexers.caps_all() {
-                Ok(c) => c,
-                Err(e) => return xml(StatusCode::INTERNAL_SERVER_ERROR, torznab::error_xml(900, &e.detail)),
-            },
-        };
-        return xml(StatusCode::OK, torznab::caps_xml(&caps));
-    }
-    let query = match query_of(&q) {
-        Ok(q) => q,
-        Err((code, msg)) => return xml(StatusCode::BAD_REQUEST, torznab::error_xml(code, &msg)),
-    };
-    if let Some(ix) = &ix {
-        if !ix.enabled {
-            return xml(StatusCode::OK, torznab::error_xml(900, &format!("{} is turned off in Lantern", ix.name)));
+/// Adds `Retry-After` when there is time left to wait (`AddRetryAfterHeader`).
+fn with_retry_after(mut r: Response, seconds: i64) -> Response {
+    if seconds > 0 {
+        if let Ok(v) = header::HeaderValue::from_str(&seconds.to_string()) {
+            r.headers_mut().insert(header::RETRY_AFTER, v);
         }
     }
-    let source = headers.get(header::USER_AGENT).and_then(|v| v.to_str().ok()).unwrap_or("").split('/').next().unwrap_or("").to_string();
-    let (releases, failed) = match st.indexers.search(&ids, &query, &source).await {
-        Ok(x) => x,
-        Err(e) => return xml(StatusCode::INTERNAL_SERVER_ERROR, torznab::error_xml(900, &e.detail)),
-    };
-    if releases.is_empty() && ix.is_some() {
-        if let Some((_, why)) = failed.first() {
-            return xml(StatusCode::OK, torznab::error_xml(900, why));
-        }
+    r
+}
+
+/// The 429 answer for an indexer on hold until `till` (seconds since 1970), with how long to wait.
+fn on_hold(till: f64) -> Response {
+    let when = chrono::DateTime::from_timestamp(till as i64, 0).map(|d| d.format("%m/%d/%Y %H:%M:%S").to_string()).unwrap_or_default();
+    let r = xml_error(StatusCode::TOO_MANY_REQUESTS, 429, &format!("Indexer is disabled till {when} due to recent failures."));
+    with_retry_after(r, (till - crate::auth::now()).round() as i64)
+}
+
+/// The query's pairs, in order, repeated names kept.
+fn pairs_of(raw: Option<String>) -> Vec<(String, String)> {
+    url::form_urlencoded::parse(raw.unwrap_or_default().as_bytes()).map(|(k, v)| (k.into_owned(), v.into_owned())).collect()
+}
+
+/// Whether the request carries the API key as Prowlarr reads it: `?apikey=` (any case) first, else `X-Api-Key`,
+/// else `Authorization: Bearer …` (`ApiKeyAuthenticationHandler.ParseApiKey`).
+fn prowlarr_key_ok(st: &AppState, headers: &HeaderMap, pairs: &[(String, String)]) -> bool {
+    let want = st.settings.str("api_key");
+    if want.is_empty() {
+        return false;
     }
+    let h = |k: &str| headers.get(k).and_then(|v| v.to_str().ok()).map(str::to_string);
+    let given = pairs
+        .iter()
+        .find(|(k, _)| k.eq_ignore_ascii_case("apikey"))
+        .map(|(_, v)| v.clone())
+        .or_else(|| h("x-api-key"))
+        .or_else(|| h("authorization").map(|a| a.replace("Bearer ", "")))
+        .unwrap_or_default();
+    !given.trim().is_empty() && crate::auth::ct_eq(&given, &want)
+}
+
+/// The app that asked (`Sonarr` …) from the request's headers (`GetSource`).
+fn source_from(headers: &HeaderMap) -> String {
+    newznab_request::source_of(headers.get(header::USER_AGENT).and_then(|v| v.to_str().ok()), headers.contains_key("x-prowlarr-client"))
+}
+
+/// The machine that asked: the first `X-Forwarded-For` hop, else `X-Real-IP` (`GetHostName`; Lantern doesn't look the
+/// address up in DNS).
+fn host_from(headers: &HeaderMap) -> String {
+    let h = |k: &str| headers.get(k).and_then(|v| v.to_str().ok()).map(str::to_string);
+    h("x-forwarded-for").and_then(|v| v.split(',').next().map(|s| s.trim().to_string())).or_else(|| h("x-real-ip")).unwrap_or_default()
+}
+
+/// A model-binding error as ASP.NET answers it: 400 with the problem in `errors` (and in `detail`).
+fn bind_error(e: &newznab_request::BindError) -> Response {
+    let body = json!({
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "One or more validation errors occurred.",
+        "status": 400,
+        "detail": e.message(),
+        "errors": { e.name.clone(): [e.message()] },
+    });
+    (StatusCode::BAD_REQUEST, Json(body)).into_response()
+}
+
+/// `GET /{id}/api` and `/api/v1/indexer/{id}/newznab` (`NewznabController.GetNewznabResponse`): one indexer's
+/// capabilities and searches as Newznab/Torznab. Indexer 0 is Prowlarr's test indexer; `all` (a Lantern extra)
+/// searches every indexer at once.
+async fn newznab_api(State(st): State<AppState>, headers: HeaderMap, Path(id): Path<String>, raw: axum::extract::RawQuery) -> Response {
+    let pairs = pairs_of(raw.0);
+    if !prowlarr_key_ok(&st, &headers, &pairs) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    let mut request = match NewznabRequest::from_pairs(&pairs) {
+        Ok(r) => r,
+        Err(e) => return bind_error(&e),
+    };
     let base = public_base(&st, &headers);
+    request.source = Some(source_from(&headers));
+    request.server = Some(base.clone());
+    request.host = Some(host_from(&headers));
+    let Some(t) = request.t.clone() else {
+        return xml_error(StatusCode::BAD_REQUEST, 200, "Missing parameter (t)");
+    };
+    request.imdbid = request.imdbid.as_deref().map(|i| i.trim_start_matches('t').to_string());
+    if let Some(i) = request.imdbid.as_deref().filter(|i| !i.trim().is_empty()) {
+        if !i.parse::<i32>().is_ok_and(|n| n != 0) {
+            return xml_error(StatusCode::BAD_REQUEST, 201, "Incorrect parameter (imdbid)");
+        }
+    }
+    let title = st.app_name();
+    let searches = ["search", "tvsearch", "music", "book", "movie"];
+    let source = request.source.clone().unwrap_or_default();
+    let host = request.host.clone().unwrap_or_default();
     let apikey = st.settings.str("api_key");
-    let title = ix.as_ref().map(|i| i.name.clone()).unwrap_or_else(|| "Lantern".into());
-    let self_url = format!("{base}/{id}/api");
-    let body = torznab::results_xml(&title, &self_url, &releases, &|r| download_link(&st, &base, &apikey, r));
-    xml(StatusCode::OK, body)
+    // every indexer at once (a Lantern extra, like Jackett's `all`)
+    if id == "all" {
+        return match t.as_str() {
+            "caps" => match st.indexers.capabilities_all() {
+                Ok(c) => xml(StatusCode::OK, c.to_xml(&title)),
+                Err(e) => xml_error(StatusCode::INTERNAL_SERVER_ERROR, 900, &e.detail),
+            },
+            t if searches.contains(&t) => match st.indexers.dispatch(&[], &request.to_query(), &source, &host, false).await {
+                Ok(found) => {
+                    let list = proxied(&st, &base, &apikey, found.releases);
+                    xml(StatusCode::OK, newznab_results::to_xml(&title, &list, None, false, chrono::Utc::now()))
+                }
+                Err(e) => xml_error(StatusCode::INTERNAL_SERVER_ERROR, 900, &e.detail),
+            },
+            _ => xml_error(StatusCode::BAD_REQUEST, 202, &format!("No such function ({t})")),
+        };
+    }
+    let Ok(id) = id.parse::<i64>() else { return StatusCode::NOT_FOUND.into_response() };
+    if id == 0 {
+        return match t.as_str() {
+            "caps" => xml(StatusCode::OK, Capabilities::test_indexer().to_xml(&title)),
+            t if searches.contains(&t) => xml(StatusCode::OK, newznab_results::test_results(&title, chrono::Utc::now())),
+            _ => (StatusCode::NOT_FOUND, Json(json!({ "detail": "Indexer Not Found" }))).into_response(),
+        };
+    }
+    let Ok(ix) = st.indexers.get(id) else {
+        return (StatusCode::NOT_FOUND, Json(json!({ "detail": "Indexer Not Found" }))).into_response();
+    };
+    if !ix.enabled {
+        return xml_error(StatusCode::GONE, 410, "Indexer is disabled");
+    }
+    if let Some(till) = st.indexers.blocked_until(&ix) {
+        return on_hold(till);
+    }
+    if st.indexers.at_query_limit(&ix) {
+        let b = ix.base_settings();
+        let r = xml_error(
+            StatusCode::TOO_MANY_REQUESTS,
+            429,
+            &format!(
+                "User configurable Indexer Query Limit of {} in last {} hour(s) reached.",
+                b.query_limit.unwrap_or(0),
+                b.interval_hours()
+            ),
+        );
+        return with_retry_after(r, st.indexers.retry_after_query_limit(&ix));
+    }
+    match t.as_str() {
+        "caps" => xml(StatusCode::OK, st.indexers.capabilities(&ix).to_xml(&title)),
+        t if searches.contains(&t) => {
+            let found = match st.indexers.dispatch(&[ix.id], &request.to_query(), &source, &host, false).await {
+                Ok(f) => f,
+                Err(e) => return xml_error(StatusCode::INTERNAL_SERVER_ERROR, 900, &e.detail),
+            };
+            if let Some(till) = st.indexers.blocked_until(&ix) {
+                return on_hold(till);
+            }
+            let list = proxied(&st, &base, &apikey, found.releases);
+            let prefer_magnet = ix.protocol() == Protocol::Torrent && ix.torrent_settings().prefer_magnet_url;
+            xml(StatusCode::OK, newznab_results::to_xml(&title, &list, Some(ix.protocol()), prefer_magnet, chrono::Utc::now()))
+        }
+        _ => xml_error(StatusCode::BAD_REQUEST, 202, &format!("No such function ({t})")),
+    }
 }
 
-async fn download(State(st): State<AppState>, headers: HeaderMap, Path(id): Path<i64>, Q(q): Q<HashMap<String, String>>) -> Response {
-    if !key_ok(&st, &headers, &q) {
-        return (StatusCode::UNAUTHORIZED, Json(json!({ "detail": "The API key is missing or wrong" }))).into_response();
-    }
-    let link = q.get("link").map(String::as_str).unwrap_or("");
-    let sig = q.get("sig").map(String::as_str).unwrap_or("");
-    let Some(real) = st.signer.open_link(id, link, sig) else {
-        return (StatusCode::BAD_REQUEST, Json(json!({ "detail": "This download link is not one Lantern made" }))).into_response();
-    };
-    let title = q.get("file").cloned().unwrap_or_default();
-    let source = headers.get(header::USER_AGENT).and_then(|v| v.to_str().ok()).unwrap_or("").split('/').next().unwrap_or("").to_string();
-    match st.indexers.grab(id, &real, &title, &source).await {
-        Ok(Grabbed::Magnet(m)) => (StatusCode::FOUND, [(header::LOCATION, m)]).into_response(),
-        Ok(Grabbed::File(bytes)) => {
-            let nzb = super::cardigann::looks_like_nzb(&bytes);
-            let ext = if nzb { "nzb" } else { "torrent" };
-            let mime = if nzb { "application/x-nzb" } else { "application/x-bittorrent" };
-            let safe: String = title.chars().filter(|c| c.is_alphanumeric() || " ._-()[]".contains(*c)).collect();
-            let name = if safe.trim().is_empty() { format!("release.{ext}") } else { format!("{}.{ext}", safe.trim()) };
-            (
-                StatusCode::OK,
-                [(header::CONTENT_TYPE, mime.to_string()), (header::CONTENT_DISPOSITION, format!("attachment; filename=\"{name}\""))],
-                bytes,
-            )
-                .into_response()
+/// `releases` with their file and magnet links going through Lantern.
+fn proxied(st: &AppState, base: &str, apikey: &str, releases: Vec<Release>) -> Vec<Release> {
+    releases
+        .into_iter()
+        .map(|mut r| {
+            if !r.link.is_empty() {
+                r.link = proxy_link(st, base, apikey, r.indexer_id, &r.link, &r.title);
+            }
+            if !r.magnet.is_empty() && r.protocol == Protocol::Torrent {
+                r.magnet = proxy_link(st, base, apikey, r.indexer_id, &r.magnet, &r.title);
+            }
+            r
+        })
+        .collect()
+}
+
+/// The `Content-Disposition` ASP.NET writes for a file called `name`: the name as it is when it can be, quoted
+/// when it has spaces or separators, `_` for what isn't ASCII, and the exact name again as `filename*`.
+fn content_disposition(name: &str) -> String {
+    let plain: String = name.chars().map(|c| if c.is_ascii() && !c.is_ascii_control() { c } else { '_' }).collect();
+    let token = !plain.is_empty() && plain.chars().all(|c| !"()<>@,;:\\\"/[]?={} \t".contains(c));
+    let shown = if token { plain } else { format!("\"{}\"", plain.replace('\\', "\\\\").replace('"', "\\\"")) };
+    let mut star = String::new();
+    for b in name.bytes() {
+        if b.is_ascii_alphanumeric() || b"!#$&+-.^_`|~".contains(&b) {
+            star.push(b as char);
+        } else {
+            star.push_str(&format!("%{b:02X}"));
         }
-        Err(e) => e.into_response(),
     }
+    format!("attachment; filename={shown}; filename*=UTF-8''{star}")
+}
+
+/// `GET /{id}/download` and `/api/v1/indexer/{id}/download` (`NewznabController.GetDownload`): a release's file
+/// through Lantern, or the app sent to the site (always for Usenet, and for indexers set to redirect).
+async fn download(State(st): State<AppState>, headers: HeaderMap, Path(id): Path<String>, raw: axum::extract::RawQuery) -> Response {
+    let pairs = pairs_of(raw.0);
+    if !prowlarr_key_ok(&st, &headers, &pairs) {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    let Ok(id) = id.parse::<i64>() else { return StatusCode::NOT_FOUND.into_response() };
+    let Ok(ix) = st.indexers.get(id) else {
+        return (StatusCode::NOT_FOUND, Json(json!({ "detail": "Indexer Not Found" }))).into_response();
+    };
+    if !ix.enabled {
+        return xml_error(StatusCode::GONE, 410, "Indexer is disabled");
+    }
+    if let Some(till) = st.indexers.blocked_until(&ix) {
+        return on_hold(till);
+    }
+    if st.indexers.at_grab_limit(&ix) {
+        let b = ix.base_settings();
+        let r = xml_error(
+            StatusCode::TOO_MANY_REQUESTS,
+            429,
+            &format!(
+                "User configurable Indexer Grab Limit of {} in last {} hour(s) reached.",
+                b.grab_limit.unwrap_or(0),
+                b.interval_hours()
+            ),
+        );
+        return with_retry_after(r, st.indexers.retry_after_grab_limit(&ix));
+    }
+    let get = |k: &str| pairs.iter().find(|(n, _)| n.eq_ignore_ascii_case(k)).map(|(_, v)| v.clone()).unwrap_or_default();
+    let (link, file) = (get("link"), get("file"));
+    if link.trim().is_empty() || file.trim().is_empty() {
+        return err(400, "Invalid Prowlarr link").into_response();
+    }
+    // Prowlarr decodes the file name a second time (`WebUtility.UrlDecode`)
+    let file: String = url::form_urlencoded::parse(format!("f={}", file.replace('&', "%26")).as_bytes())
+        .next()
+        .map(|(_, v)| v.into_owned())
+        .unwrap_or(file);
+    let Some(real) = st.signer.open_link(id, &link, &get("sig")) else {
+        return err(400, "Failed to normalize provided link").into_response();
+    };
+    let source = source_from(&headers);
+    let host = host_from(&headers);
+    if ix.protocol() == Protocol::Usenet || (ix.supports_redirect() && ix.redirect) {
+        st.indexers.record_redirect(&ix, &real, &file, &source, &host);
+        return (StatusCode::MOVED_PERMANENTLY, [(header::LOCATION, real)]).into_response();
+    }
+    let bytes = match st.indexers.download(&ix, &real, &file, &source, &host).await {
+        Ok(Grabbed::Magnet(m)) => return (StatusCode::MOVED_PERMANENTLY, [(header::LOCATION, m)]).into_response(),
+        Ok(Grabbed::File(b)) => b,
+        Err(GrabError::Unavailable(_)) => return xml_error(StatusCode::GONE, 410, "Download failed"),
+        Err(GrabError::TooManyRequests(_)) => return xml_error(StatusCode::TOO_MANY_REQUESTS, 429, "Download failed"),
+        Err(GrabError::Failed(_)) => return xml_error(StatusCode::INTERNAL_SERVER_ERROR, 500, "Download failed"),
+    };
+    if bytes.starts_with(b"magnet:") {
+        return (StatusCode::MOVED_PERMANENTLY, [(header::LOCATION, String::from_utf8_lossy(&bytes).into_owned())]).into_response();
+    }
+    let torrent = ix.protocol() == Protocol::Torrent;
+    let mime = if torrent { "application/x-bittorrent" } else { "application/x-nzb" };
+    let name = format!("{file}.{}", if torrent { "torrent" } else { "nzb" });
+    (StatusCode::OK, [(header::CONTENT_TYPE, mime.to_string()), (header::CONTENT_DISPOSITION, content_disposition(&name))], bytes)
+        .into_response()
 }
 
 /// A release as the web app and the Prowlarr API show it.
@@ -463,28 +656,24 @@ async fn v1_empty(State(st): State<AppState>, headers: HeaderMap, Q(q): Q<HashMa
 
 /// An indexer as the Prowlarr API describes it.
 fn v1_resource(st: &AppState, ix: &Indexer) -> Value {
-    let caps = st.indexers.caps(ix);
+    let caps = st.indexers.capabilities(ix);
     let p = st.indexers.public(ix);
-    let mut tops: Vec<Value> = Vec::new();
-    let mut seen = std::collections::BTreeSet::new();
-    for (id, _) in caps.categories.iter().filter(|(id, _)| *id < 100000) {
-        let parent = categories::parent(*id);
-        if seen.insert(parent) {
-            let subs: Vec<Value> = caps
-                .categories
-                .iter()
-                .filter(|(c, _)| *c != parent && *c < 100000 && categories::parent(*c) == parent)
-                .map(|(c, n)| json!({ "id": c, "name": n, "subCategories": [] }))
-                .collect();
-            tops.push(json!({ "id": parent, "name": categories::name_of(parent).unwrap_or("Other"), "subCategories": subs }));
-        }
-    }
-    let params = |m: &str| caps.modes.iter().find(|(k, _)| k == m).map(|(_, v)| v.clone()).unwrap_or_default();
+    let tops: Vec<Value> = caps
+        .categories
+        .tree(true)
+        .into_iter()
+        .filter(|c| c.id < 100000)
+        .map(|c| {
+            let subs: Vec<Value> = c.subs.iter().map(|s| json!({ "id": s.id, "name": s.name, "subCategories": [] })).collect();
+            json!({ "id": c.id, "name": c.name, "subCategories": subs })
+        })
+        .collect();
+    let params = |v: &Vec<&'static str>| v.iter().map(|x| x.to_string()).collect::<Vec<_>>();
     json!({
         "id": ix.id,
         "name": ix.name,
         "enable": ix.enabled,
-        "redirect": false,
+        "redirect": ix.redirect,
         "priority": ix.priority,
         "protocol": ix.protocol(),
         "privacy": p["privacy"],
@@ -498,15 +687,15 @@ fn v1_resource(st: &AppState, ix: &Indexer) -> Value {
         "tags": [],
         "added": chrono::DateTime::from_timestamp(ix.added as i64, 0).map(|d| d.to_rfc3339()),
         "capabilities": {
-            "limitsMax": 100,
-            "limitsDefault": 100,
+            "limitsMax": caps.limits_max,
+            "limitsDefault": caps.limits_default,
             "categories": tops,
-            "supportsRawSearch": false,
-            "searchParams": params("search"),
-            "tvSearchParams": params("tv-search"),
-            "movieSearchParams": params("movie-search"),
-            "musicSearchParams": params("music-search"),
-            "bookSearchParams": params("book-search"),
+            "supportsRawSearch": caps.supports_raw_search,
+            "searchParams": params(&caps.search_params),
+            "tvSearchParams": params(&caps.tv_params),
+            "movieSearchParams": params(&caps.movie_params),
+            "musicSearchParams": params(&caps.music_params),
+            "bookSearchParams": params(&caps.book_params),
         },
     })
 }

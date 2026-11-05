@@ -8,11 +8,14 @@
 //! | [`cardigann`], [`newznab`], [`http`] | talking to the sites |
 //! | [`library`] | the definitions on disk and their updates |
 //! | [`catalog`] | the torrent sites and Usenet indexers to add from, in one list |
-//! | [`torznab`], [`api`] | what apps get |
+//! | [`capabilities`], [`newznab_request`], [`newznab_results`], [`nabxml`], [`api`] | what apps get (ported from Prowlarr) |
+//! | [`status`], [`limits`] | holds after failures, query and grab limits (ported from Prowlarr) |
 //!
-//! Each indexer is a row of `indexers`; its settings' secrets are never sent back by the API.
+//! Each indexer is a row of `indexers`; its settings' secrets are never sent back by the API. The search itself
+//! ([`Indexers::dispatch`]) follows Prowlarr's `ReleaseSearchService` and `HttpIndexerBase`.
 
 pub mod api;
+pub mod capabilities;
 pub mod cardigann;
 pub mod catalog;
 pub mod categories;
@@ -21,16 +24,21 @@ pub mod filters;
 pub mod http;
 pub mod json_path;
 pub mod library;
+pub mod limits;
+pub mod nabxml;
 pub mod newznab;
+pub mod newznab_request;
+pub mod newznab_results;
 pub mod release;
+pub mod status;
 pub mod template;
-pub mod torznab;
 
+use capabilities::{Capabilities, Category};
 use cardigann::{Cardigann, Grabbed};
 use kit_server_core::{err, p, Db, Result, Row, RowExt, SqliteDb};
 use library::Library;
 use newznab::Newznab;
-use release::{Protocol, Query, Release};
+use release::{Protocol, Query, Release, SearchKind};
 use serde_json::{json, Map, Value};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Mutex};
@@ -75,7 +83,28 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
         );
         CREATE INDEX IF NOT EXISTS indexer_history_by_indexer ON indexer_history(indexer_id, at);",
     )
-    .map_err(|e| anyhow::anyhow!("The indexer tables can't be made: {}", e.detail))
+    .map_err(|e| anyhow::anyhow!("The indexer tables can't be made: {}", e.detail))?;
+    // columns added with Prowlarr's holds, redirects and history details
+    let added = [
+        ("indexers", "initial_failure", "REAL NOT NULL DEFAULT 0"),
+        ("indexers", "most_recent_failure", "REAL NOT NULL DEFAULT 0"),
+        ("indexers", "redirect", "INTEGER NOT NULL DEFAULT 0"),
+        ("indexer_history", "host", "TEXT NOT NULL DEFAULT ''"),
+        ("indexer_history", "data", "TEXT NOT NULL DEFAULT '{}'"),
+    ];
+    for (table, col, def) in added {
+        let have: Vec<String> = db
+            .query(&format!("PRAGMA table_info({table})"), p![])
+            .map_err(|e| anyhow::anyhow!("The indexer tables can't be read: {}", e.detail))?
+            .iter()
+            .map(|r| r.s("name"))
+            .collect();
+        if !have.iter().any(|c| c == col) {
+            db.execute_batch(&format!("ALTER TABLE {table} ADD COLUMN {col} {def}"))
+                .map_err(|e| anyhow::anyhow!("The indexer tables can't be changed: {}", e.detail))?;
+        }
+    }
+    Ok(())
 }
 
 /// A configured indexer, as stored.
@@ -99,12 +128,19 @@ pub struct Indexer {
     pub priority: i64,
     /// Tags (comma separated).
     pub tags: String,
+    /// Apps are sent to the site for the file instead of getting it through Lantern (Prowlarr's `Redirect`; only
+    /// Newznab and Torznab indexers can; Usenet indexers always do).
+    pub redirect: bool,
     /// The session cookies kept from the last sign-in.
     pub cookies: String,
-    /// Failures in a row.
+    /// How far its holds have grown after failures (Prowlarr's escalation level; 0: healthy).
     pub failures: i64,
-    /// Not searched until this time (after failures).
+    /// Not searched until this time (after failures; 0: not on hold).
     pub disabled_until: f64,
+    /// When the failures in a row began (0: none).
+    pub initial_failure: f64,
+    /// The last failure (0: none).
+    pub most_recent_failure: f64,
     /// The last failure, in words.
     pub last_error: String,
     /// When it was added.
@@ -147,9 +183,12 @@ impl Indexer {
             enabled: r.b("enabled"),
             priority: r.i("priority"),
             tags: r.s("tags"),
+            redirect: r.b("redirect"),
             cookies,
             failures: r.i("failures"),
             disabled_until: r.f("disabled_until"),
+            initial_failure: r.f("initial_failure"),
+            most_recent_failure: r.f("most_recent_failure"),
             last_error: r.s("last_error"),
             added: r.f("added"),
             locked,
@@ -164,6 +203,75 @@ impl Indexer {
             Protocol::Torrent
         }
     }
+
+    /// Whether apps can be sent to the site for the file (`SupportsRedirect`: Newznab and Torznab).
+    pub fn supports_redirect(&self) -> bool {
+        self.kind != "cardigann"
+    }
+
+    /// Whether it can give a later page of results (`SupportsPagination`: Newznab and Torznab; Cardigann sites
+    /// answer nothing past the first page).
+    pub fn supports_pagination(&self) -> bool {
+        self.kind != "cardigann"
+    }
+
+    /// Its health, as Prowlarr keeps it.
+    pub fn status(&self) -> status::Status {
+        let t = |v: f64| (v > 0.0).then_some(v);
+        status::Status {
+            initial_failure: t(self.initial_failure),
+            most_recent_failure: t(self.most_recent_failure),
+            escalation_level: self.failures,
+            disabled_till: t(self.disabled_until),
+        }
+    }
+
+    /// Its query and grab limits.
+    pub fn base_settings(&self) -> limits::BaseSettings {
+        limits::BaseSettings::of(&self.settings)
+    }
+
+    /// Its torrent settings (seeding goals, magnet links first).
+    pub fn torrent_settings(&self) -> limits::TorrentBaseSettings {
+        limits::TorrentBaseSettings::of(&self.settings)
+    }
+}
+
+/// What a search found: the releases, and the indexers that failed with why (a Lantern extra for its own pages;
+/// apps get only the releases, as from Prowlarr).
+#[derive(Debug, Default)]
+pub struct Searched {
+    /// The releases.
+    pub releases: Vec<Release>,
+    /// (indexer name, why) of each indexer that failed.
+    pub failed: Vec<(String, String)>,
+}
+
+/// Why fetching a release's file failed, as Prowlarr tells apps apart.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GrabError {
+    /// The site no longer has it (it answered 404): `ReleaseUnavailableException`.
+    Unavailable(String),
+    /// The site says to slow down (429): held at least an hour.
+    TooManyRequests(String),
+    /// Anything else: `ReleaseDownloadException`.
+    Failed(String),
+}
+
+impl GrabError {
+    /// The problem in words.
+    pub fn message(&self) -> &str {
+        match self {
+            GrabError::Unavailable(m) | GrabError::TooManyRequests(m) | GrabError::Failed(m) => m,
+        }
+    }
+}
+
+/// Whether a failure is the site asking Lantern to slow down (`TooManyRequestsException`,
+/// `RequestLimitReachedException`), which holds the indexer at least an hour.
+pub fn is_rate_limited(why: &str) -> bool {
+    let w = why.to_lowercase();
+    w.contains("(429)") || w.contains("limit reached") || w.contains("too many requests")
 }
 
 /// A running site client, kept so its cookies and request delay last between searches.
@@ -192,12 +300,15 @@ pub struct Indexers {
     pub solver: Option<crate::solver::Solver>,
     /// The vault that seals the settings and cookies at rest, when there is one (always, outside unit tests).
     pub vault: Option<crate::vault::Vault>,
+    /// Held while an indexer's health is read and written, so two answers at once don't lose one.
+    status_lock: Arc<Mutex<()>>,
 }
 
 impl Indexers {
     /// The indexers on `db` with `library`.
     pub fn new(db: SqliteDb, library: Library) -> Indexers {
-        Indexers { db, library, clients: Default::default(), settings: None, solver: None, vault: None }
+        status::mark_start(crate::auth::now());
+        Indexers { db, library, clients: Default::default(), settings: None, solver: None, vault: None, status_lock: Default::default() }
     }
 
     /// The same, reading the site proxy from `settings`.
@@ -314,9 +425,10 @@ impl Indexers {
                 fill_from_preset(&mut settings, p);
             }
         }
+        check_limits(&settings)?;
         let settings = self.seal(SETTINGS_AAD, &serde_json::to_string(&settings).unwrap_or_default())?;
         let id = self.db.execute(
-            "INSERT INTO indexers (kind, definition, name, base_url, settings, enabled, priority, tags, added) VALUES (?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO indexers (kind, definition, name, base_url, settings, enabled, priority, tags, redirect, added) VALUES (?,?,?,?,?,?,?,?,?,?)",
             p![
                 kind,
                 definition,
@@ -326,6 +438,7 @@ impl Indexers {
                 body.get("enabled").and_then(Value::as_bool).unwrap_or(true),
                 body.get("priority").and_then(Value::as_i64).unwrap_or(25).clamp(1, 50),
                 body.get("tags").and_then(Value::as_str).unwrap_or(""),
+                body.get("redirect").and_then(Value::as_bool).unwrap_or(false),
                 crate::auth::now()
             ],
         )?;
@@ -348,8 +461,9 @@ impl Indexers {
         if name.is_empty() {
             return Err(err(400, "Enter a name for the indexer"));
         }
+        check_limits(&settings)?;
         self.db.execute(
-            "UPDATE indexers SET name=?, base_url=?, settings=?, enabled=?, priority=?, tags=?, failures=CASE WHEN ? THEN 0 ELSE failures END, disabled_until=CASE WHEN ? THEN 0 ELSE disabled_until END WHERE id=?",
+            "UPDATE indexers SET name=?, base_url=?, settings=?, enabled=?, priority=?, tags=?, redirect=?, failures=CASE WHEN ? THEN 0 ELSE failures END, disabled_until=CASE WHEN ? THEN 0 ELSE disabled_until END WHERE id=?",
             p![
                 name,
                 text("base_url", &cur.base_url),
@@ -357,6 +471,7 @@ impl Indexers {
                 body.get("enabled").and_then(Value::as_bool).unwrap_or(cur.enabled),
                 body.get("priority").and_then(Value::as_i64).unwrap_or(cur.priority).clamp(1, 50),
                 text("tags", &cur.tags),
+                body.get("redirect").and_then(Value::as_bool).unwrap_or(cur.redirect),
                 body.get("settings").is_some(),
                 body.get("settings").is_some() || body.get("enabled") == Some(&json!(true)),
                 id
@@ -447,7 +562,7 @@ impl Indexers {
                 Err(e) => Err(e),
             },
         };
-        self.record(&ix, "test", "", &r.as_ref().map(|n| *n).map_err(Clone::clone), started, "");
+        self.record(&ix, "test", "", &r.as_ref().map(|n| *n).map_err(Clone::clone), started, "", "", json!({}));
         r.map_err(|e| err(422, e))
     }
 
@@ -462,35 +577,160 @@ impl Indexers {
         }
     }
 
-    /// Notes a query, grab or test in the history, and the indexer's health: failures in a row put it on hold for
-    /// longer each time (5 minutes doubling, at most a day); a success clears that.
-    fn record(&self, ix: &Indexer, kind: &str, query: &str, r: &std::result::Result<usize, String>, started: Instant, source: &str) {
+    /// Notes a query, grab or test in the history (`kind`: `query`, `rss`, `grab`, `test`), with who asked
+    /// (`source`, `host`) and Prowlarr's history details (`data`). A test also keeps its problem as the last error.
+    #[allow(clippy::too_many_arguments)]
+    fn record(
+        &self,
+        ix: &Indexer,
+        kind: &str,
+        query: &str,
+        r: &std::result::Result<usize, String>,
+        started: Instant,
+        source: &str,
+        host: &str,
+        data: Value,
+    ) {
         let ms = started.elapsed().as_millis() as i64;
         let (ok, n, e) = match r {
             Ok(n) => (true, *n as i64, String::new()),
             Err(e) => (false, 0, e.clone()),
         };
         let _ = self.db.execute(
-            "INSERT INTO indexer_history (indexer_id, at, kind, query, ok, ms, results, source, error) VALUES (?,?,?,?,?,?,?,?,?)",
-            p![ix.id, crate::auth::now(), kind, query, ok, ms, n, source, e.clone()],
+            "INSERT INTO indexer_history (indexer_id, at, kind, query, ok, ms, results, source, error, host, data) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            p![ix.id, crate::auth::now(), kind, query, ok, ms, n, source, e.clone(), host, data.to_string()],
         );
-        if ok {
-            if ix.failures > 0 || !ix.last_error.is_empty() {
-                let _ = self.db.execute("UPDATE indexers SET failures=0, disabled_until=0, last_error='' WHERE id=?", p![ix.id]);
-            }
-        } else if kind != "test" {
-            let failures = ix.failures + 1;
-            let hold = if failures >= 2 { (300.0 * 2f64.powi((failures - 2).min(9) as i32)).min(86400.0) } else { 0.0 };
-            let until = if hold > 0.0 { crate::auth::now() + hold } else { 0.0 };
-            let _ =
-                self.db.execute("UPDATE indexers SET failures=?, disabled_until=?, last_error=? WHERE id=?", p![failures, until, e, ix.id]);
-        } else {
+        if kind == "test" {
             let _ = self.db.execute("UPDATE indexers SET last_error=? WHERE id=?", p![e, ix.id]);
         }
     }
 
-    /// Searches one indexer (`Err` in words when it failed).
-    pub async fn search_one(&self, ix: &Indexer, q: &Query, source: &str) -> std::result::Result<Vec<Release>, String> {
+    /// Indexer `id`'s health now.
+    fn read_status(&self, id: i64) -> Option<status::Status> {
+        self.db.one("SELECT * FROM indexers WHERE id=?", p![id]).ok().flatten().map(|r| self.read(&r).status())
+    }
+
+    /// Saves indexer `id`'s health (and its last problem in words, when given).
+    fn save_status(&self, id: i64, s: &status::Status, last_error: Option<&str>) {
+        let _ = self.db.execute(
+            "UPDATE indexers SET failures=?, disabled_until=?, initial_failure=?, most_recent_failure=?, last_error=COALESCE(?, last_error) WHERE id=?",
+            p![
+                s.escalation_level,
+                s.disabled_till.unwrap_or(0.0),
+                s.initial_failure.unwrap_or(0.0),
+                s.most_recent_failure.unwrap_or(0.0),
+                last_error.map(str::to_string),
+                id
+            ],
+        );
+    }
+
+    /// A success for indexer `id`: its hold steps back once (`RecordSuccess`), and its last problem is cleared.
+    pub fn record_success(&self, id: i64) {
+        if id <= 0 {
+            return;
+        }
+        let _g = self.status_lock.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(mut s) = self.read_status(id) {
+            if s.record_success() {
+                self.save_status(id, &s, Some(""));
+            } else {
+                let _ = self.db.execute("UPDATE indexers SET last_error='' WHERE id=? AND last_error NOT LIKE 'Needs your help%'", p![id]);
+            }
+        }
+    }
+
+    /// A failure of indexer `id` (`why` in words): on hold for longer each time, at least an hour when the site
+    /// asked Lantern to slow down (`RecordFailure`).
+    pub fn record_failure(&self, id: i64, why: &str) {
+        if id <= 0 {
+            return;
+        }
+        let minimum = if is_rate_limited(why) { 3600.0 } else { 0.0 };
+        let _g = self.status_lock.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(mut s) = self.read_status(id) {
+            s.record_failure(crate::auth::now(), status::start_time(), minimum, true);
+            self.save_status(id, &s, Some(why));
+        }
+    }
+
+    /// When indexer `ix` is on hold until, if it is now (`GetBlockedProviders`).
+    pub fn blocked_until(&self, ix: &Indexer) -> Option<f64> {
+        let s = self.read_status(ix.id).unwrap_or_else(|| ix.status());
+        s.is_disabled(crate::auth::now()).then(|| s.disabled_till.unwrap_or(0.0))
+    }
+
+    /// When indexer `id`'s history entries of `kinds` in the last `hours` hours were made.
+    fn history_since(&self, id: i64, kinds: &[&str], hours: i64) -> Vec<f64> {
+        let since = crate::auth::now() - hours as f64 * 3600.0;
+        let list = kinds.iter().map(|k| format!("'{k}'")).collect::<Vec<_>>().join(",");
+        self.db
+            .query(&format!("SELECT at FROM indexer_history WHERE indexer_id=? AND at>=? AND kind IN ({list})"), p![id, since])
+            .map(|rows| rows.iter().map(|r| r.f("at")).collect())
+            .unwrap_or_default()
+    }
+
+    /// Whether indexer `ix` has made as many searches as its query limit allows (`AtQueryLimit`).
+    pub fn at_query_limit(&self, ix: &Indexer) -> bool {
+        let b = ix.base_settings();
+        ix.id > 0
+            && b.query_limit.is_some()
+            && limits::at_limit(b.query_limit, self.history_since(ix.id, &["query", "rss"], b.interval_hours()).len() as i64)
+    }
+
+    /// Whether indexer `ix` has made as many grabs as its grab limit allows (`AtDownloadLimit`).
+    pub fn at_grab_limit(&self, ix: &Indexer) -> bool {
+        let b = ix.base_settings();
+        ix.id > 0
+            && b.grab_limit.is_some()
+            && limits::at_limit(b.grab_limit, self.history_since(ix.id, &["grab"], b.interval_hours()).len() as i64)
+    }
+
+    /// Seconds until indexer `ix` may search again (`CalculateRetryAfterQueryLimit`).
+    pub fn retry_after_query_limit(&self, ix: &Indexer) -> i64 {
+        let b = ix.base_settings();
+        let Some(l) = b.query_limit else { return 0 };
+        limits::retry_after(&self.history_since(ix.id, &["query", "rss"], b.interval_hours()), l, b.interval_hours(), crate::auth::now())
+    }
+
+    /// Seconds until indexer `ix` may grab again (`CalculateRetryAfterDownloadLimit`).
+    pub fn retry_after_grab_limit(&self, ix: &Indexer) -> i64 {
+        let b = ix.base_settings();
+        let Some(l) = b.grab_limit else { return 0 };
+        limits::retry_after(&self.history_since(ix.id, &["grab"], b.interval_hours()), l, b.interval_hours(), crate::auth::now())
+    }
+
+    /// Indexer `ix`'s privacy: its definition's, its preset's, else private.
+    pub fn privacy(&self, ix: &Indexer) -> String {
+        if ix.kind == "cardigann" {
+            if let Some(d) = self.library.get(&ix.definition) {
+                return d.kind.clone();
+            }
+        } else if let Some(p) = newznab::preset(&ix.definition) {
+            return p.privacy.to_string();
+        }
+        "private".into()
+    }
+
+    /// Searches one indexer the way Prowlarr's `HttpIndexerBase.Fetch` does: nothing for a later page when it
+    /// can't page, nothing for a parameter its capabilities don't take; else it asks, notes the query in the
+    /// history and its health, keeps the releases apps can use (with a title; outside an interactive search also a
+    /// size and categories) and fills in what every release carries (`CleanupReleases`).
+    async fn fetch(
+        &self,
+        ix: &Indexer,
+        caps: &Capabilities,
+        q: &Query,
+        source: &str,
+        host: &str,
+        interactive: bool,
+    ) -> std::result::Result<Vec<Release>, String> {
+        if !ix.supports_pagination() && q.offset > 0 {
+            return Ok(Vec::new());
+        }
+        if !supports_params(caps, q) {
+            return Ok(Vec::new());
+        }
         let started = Instant::now();
         let client = self.client(ix).map_err(|e| e.detail)?;
         let r = match &*client {
@@ -504,43 +744,180 @@ impl Indexers {
             }
             Client::Api(api) => api.search(q).await,
         };
-        let r = r.map(|mut list| {
-            for rel in &mut list {
-                rel.indexer_id = ix.id;
-                rel.indexer = ix.name.clone();
-                rel.protocol = ix.protocol();
-            }
-            if !q.categories.is_empty() {
-                list.retain(|rel| {
-                    rel.categories.is_empty() || rel.categories.iter().any(|c| q.categories.iter().any(|w| categories::matches(*c, *w)))
-                });
-            }
-            list
-        });
         let words = if q.rss { "(newest)".to_string() } else { q.search_terms() };
-        self.record(ix, if q.rss { "rss" } else { "query" }, &words, &r.as_ref().map(Vec::len).map_err(Clone::clone), started, source);
-        r
+        let data = json!({
+            "Limit": (q.limit > 0).then_some(q.limit), "Offset": (q.offset > 0).then_some(q.offset), "QueryType": q.kind.torznab(),
+            "Categories": q.categories.iter().map(u32::to_string).collect::<Vec<_>>().join(","), "Source": source, "Host": host,
+        });
+        self.record(
+            ix,
+            if q.rss { "rss" } else { "query" },
+            &words,
+            &r.as_ref().map(Vec::len).map_err(Clone::clone),
+            started,
+            source,
+            host,
+            data,
+        );
+        match &r {
+            Ok(_) => self.record_success(ix.id),
+            Err(e) => self.record_failure(ix.id, e),
+        }
+        let list = r?
+            .into_iter()
+            .filter(|rel| !rel.title.trim().is_empty() && (interactive || (rel.size.is_some() && !rel.categories.is_empty())))
+            .collect();
+        Ok(self.cleanup(ix, list))
     }
 
-    /// Searches every enabled indexer in `ids` (all when empty) at once; the releases, newest first, and the
-    /// indexers that failed with why.
-    pub async fn search(&self, ids: &[i64], q: &Query, source: &str) -> Result<(Vec<Release>, Vec<(String, String)>)> {
-        let now = crate::auth::now();
-        let list: Vec<Indexer> = self
-            .list()?
-            .into_iter()
-            .filter(|ix| ix.enabled && (ids.is_empty() || ids.contains(&ix.id)) && ix.disabled_until <= now)
-            .collect();
-        let jobs = list.iter().map(|ix| async move { (ix.name.clone(), self.search_one(ix, q, source).await) });
-        let done = futures_util::future::join_all(jobs).await;
+    /// What every release of `ix` carries: a guid, the indexer's id, name, protocol, privacy and priority, and the
+    /// flags its factors mean; one per guid (`CleanupReleases`).
+    fn cleanup(&self, ix: &Indexer, list: Vec<Release>) -> Vec<Release> {
+        let privacy = self.privacy(ix);
+        let mut seen = std::collections::HashSet::new();
         let mut out = Vec::new();
+        for mut r in list {
+            if r.guid.trim().is_empty() {
+                r.guid = if !r.link.trim().is_empty() {
+                    r.link.clone()
+                } else if ix.protocol() == Protocol::Torrent && !r.magnet.trim().is_empty() {
+                    r.magnet.clone()
+                } else {
+                    r.details.clone()
+                };
+            }
+            r.indexer_id = ix.id;
+            r.indexer = ix.name.clone();
+            r.protocol = ix.protocol();
+            r.indexer_privacy = privacy.clone();
+            r.indexer_priority = ix.priority;
+            let mut flags = std::mem::take(&mut r.flags);
+            let mut flag = |f: &str| {
+                if !flags.iter().any(|x| x == f) {
+                    flags.push(f.to_string());
+                }
+            };
+            if ix.kind == "cardigann" && r.description.starts_with("Internal") {
+                flag("internal");
+            }
+            if r.protocol == Protocol::Torrent {
+                match r.download_factor {
+                    Some(0.0) => flag("freeleech"),
+                    Some(0.5) => flag("halfleech"),
+                    _ => {}
+                }
+                match r.upload_factor {
+                    Some(0.0) => flag("neutralleech"),
+                    Some(2.0) => flag("doubleupload"),
+                    _ => {}
+                }
+                if r.scene == Some(true) {
+                    flag("scene");
+                }
+            }
+            r.flags = flags;
+            if seen.insert(r.guid.clone()) {
+                out.push(r);
+            }
+        }
+        out
+    }
+
+    /// Searches one indexer for [`Indexers::dispatch`]: nothing at its query limit; else its releases in the
+    /// categories asked for (widened to their sub-categories; ones without categories stay) and in the age and size
+    /// asked for (`DispatchIndexer`).
+    async fn dispatch_one(
+        &self,
+        ix: &Indexer,
+        q: &Query,
+        source: &str,
+        host: &str,
+        interactive: bool,
+    ) -> std::result::Result<Vec<Release>, String> {
+        if self.at_query_limit(ix) {
+            return Ok(Vec::new());
+        }
+        let caps = self.capabilities(ix);
+        let mut list = self.fetch(ix, &caps, q, source, host, interactive).await?;
+        if !q.categories.is_empty() {
+            let wanted = caps.categories.expand(&q.categories.iter().map(|c| *c as i64).collect::<Vec<_>>(), false);
+            list.retain(|r| r.categories.is_empty() || r.categories.iter().any(|c| wanted.contains(&(*c as i64))));
+        }
+        let now = chrono::Utc::now();
+        let date = |r: &Release| r.date.unwrap_or(chrono::DateTime::<chrono::Utc>::MIN_UTC);
+        if q.min_age > 0 {
+            let cutoff = now - chrono::Duration::days(q.min_age);
+            list.retain(|r| date(r) <= cutoff);
+        }
+        if q.max_age > 0 {
+            let cutoff = now - chrono::Duration::days(q.max_age);
+            list.retain(|r| date(r) >= cutoff);
+        }
+        if q.min_size > 0 {
+            list.retain(|r| r.size.is_some_and(|s| s as i64 >= q.min_size));
+        }
+        if q.max_size > 0 {
+            list.retain(|r| r.size.is_some_and(|s| s as i64 <= q.max_size));
+        }
+        Ok(list)
+    }
+
+    /// Searches the enabled indexers that aren't on hold (`ids` narrows them: an indexer's id, `-1` every Usenet
+    /// one, `-2` every torrent one; empty: all), only those that have one of the categories asked for, all at
+    /// once; a release two indexers found is kept from the one with the lower priority number. An interactive
+    /// search (people, not apps) keeps releases without a size or categories (`ReleaseSearchService.Dispatch`).
+    pub async fn dispatch(&self, ids: &[i64], q: &Query, source: &str, host: &str, interactive: bool) -> Result<Searched> {
+        let now = crate::auth::now();
+        let mut list: Vec<Indexer> = self.list()?.into_iter().filter(|ix| ix.enabled && !ix.status().is_disabled(now)).collect();
+        if !ids.is_empty() {
+            list.retain(|ix| {
+                ids.contains(&ix.id)
+                    || (ids.contains(&-1) && ix.protocol() == Protocol::Usenet)
+                    || (ids.contains(&-2) && ix.protocol() == Protocol::Torrent)
+            });
+            if interactive && list.is_empty() {
+                return Err(err(400, "Search failed due to all selected indexers being unavailable"));
+            }
+        }
+        if !q.categories.is_empty() {
+            let cats: Vec<i64> = q.categories.iter().map(|c| *c as i64).collect();
+            list.retain(|ix| !self.capabilities(ix).categories.supported(&cats).is_empty());
+            if list.is_empty() {
+                return Ok(Searched::default());
+            }
+        }
+        let jobs = list.iter().map(|ix| async move { (ix.name.clone(), self.dispatch_one(ix, q, source, host, interactive).await) });
+        let done = futures_util::future::join_all(jobs).await;
+        let mut found = Vec::new();
         let mut failed = Vec::new();
         for (name, r) in done {
             match r {
-                Ok(list) => out.extend(list),
+                Ok(list) => found.extend(list),
                 Err(e) => failed.push((name, e)),
             }
         }
+        Ok(Searched { releases: dedupe(found), failed })
+    }
+
+    /// Searches one indexer, as an RSS source does: its releases or the problem in words.
+    pub async fn search_one(&self, ix: &Indexer, q: &Query, source: &str) -> std::result::Result<Vec<Release>, String> {
+        let caps = self.capabilities(ix);
+        let list = self.fetch(ix, &caps, q, source, "", true).await?;
+        if q.categories.is_empty() {
+            return Ok(list);
+        }
+        let wanted = caps.categories.expand(&q.categories.iter().map(|c| *c as i64).collect::<Vec<_>>(), false);
+        Ok(list.into_iter().filter(|r| r.categories.is_empty() || r.categories.iter().any(|c| wanted.contains(&(*c as i64)))).collect())
+    }
+
+    /// Lantern's own search (its pages and the download hub): every enabled indexer in `ids` (all when empty), as
+    /// [`Indexers::dispatch`] does for a person, then newest first with `offset` and `limit` applied to all of them
+    /// together; the releases and the indexers that failed with why.
+    pub async fn search(&self, ids: &[i64], q: &Query, source: &str) -> Result<(Vec<Release>, Vec<(String, String)>)> {
+        let mut one = q.clone();
+        one.offset = 0;
+        let Searched { releases, failed } = self.dispatch(ids, &one, source, "", true).await?;
+        let mut out = releases;
         out.sort_by_key(|r| std::cmp::Reverse(r.date));
         if q.offset > 0 {
             out = out.into_iter().skip(q.offset).collect();
@@ -551,71 +928,99 @@ impl Indexers {
         Ok((out, failed))
     }
 
-    /// The file (or magnet) of a release, from indexer `id`.
-    pub async fn grab(&self, id: i64, link: &str, title: &str, source: &str) -> Result<Grabbed> {
-        let ix = self.get(id)?;
+    /// Fetches a release's file (or magnet) from indexer `ix` for `source` on `host`
+    /// (`DownloadService.DownloadReport`): notes the grab in the history either way; a success steps the hold back,
+    /// a failure other than the release being gone holds the indexer.
+    pub async fn download(
+        &self,
+        ix: &Indexer,
+        link: &str,
+        title: &str,
+        source: &str,
+        host: &str,
+    ) -> std::result::Result<Grabbed, GrabError> {
         let started = Instant::now();
-        let client = self.client(&ix)?;
-        let r = match &*client {
-            Client::Site(site) => {
-                let r = site.grab(link).await;
-                self.keep_cookies(&ix, site);
-                r
-            }
-            Client::Api(api) => api.grab(link).await.map(Grabbed::File),
-        };
-        self.record(&ix, "grab", title, &r.as_ref().map(|_| 1).map_err(Clone::clone), started, source);
-        r.map_err(|e| err(502, e))
-    }
-
-    /// The Torznab capabilities of indexer `ix`.
-    pub fn caps(&self, ix: &Indexer) -> torznab::Caps {
-        let mut c = torznab::Caps { title: ix.name.clone(), ..Default::default() };
-        if ix.kind == "cardigann" {
-            if let Some(def) = self.library.get(&ix.definition) {
-                c.modes = def.caps.modes.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
-                for m in def.category_map() {
-                    if let Some(id) = categories::id_of(&m.cat) {
-                        c.categories.push((id, categories::name_of(id).unwrap_or(&m.cat).to_string()));
-                    }
-                    if let Ok(n) = m.id.parse::<u32>() {
-                        c.categories.push((100000 + n, m.desc.clone()));
-                    }
+        // a magnet link is handed back as it is (`HttpIndexerBase.Download` returns its text)
+        let r = match self.client(ix) {
+            _ if link.starts_with("magnet:") => Ok(Grabbed::Magnet(link.to_string())),
+            Err(e) => Err(e.detail),
+            Ok(client) => match &*client {
+                Client::Site(site) => {
+                    let r = site.grab(link).await;
+                    self.keep_cookies(ix, site);
+                    r
                 }
-                return c;
+                Client::Api(api) => api.grab(link).await.map(Grabbed::File),
+            },
+        };
+        let data = json!({ "Source": source, "Host": host, "GrabMethod": "Proxy", "GrabTitle": title, "Url": http::strip_secrets(link) });
+        self.record(ix, "grab", title, &r.as_ref().map(|_| 1).map_err(Clone::clone), started, source, host, data);
+        match r {
+            Ok(g) => {
+                self.record_success(ix.id);
+                Ok(g)
+            }
+            Err(e) if e.contains("(404)") => Err(GrabError::Unavailable(e)),
+            Err(e) => {
+                self.record_failure(ix.id, &e);
+                if is_rate_limited(&e) {
+                    Err(GrabError::TooManyRequests(e))
+                } else {
+                    Err(GrabError::Failed(e))
+                }
             }
         }
-        c.modes = vec![
-            ("search".into(), vec!["q".into()]),
-            ("tv-search".into(), vec!["q".into(), "season".into(), "ep".into(), "imdbid".into(), "tvdbid".into()]),
-            ("movie-search".into(), vec!["q".into(), "imdbid".into(), "tmdbid".into()]),
-            ("music-search".into(), vec!["q".into(), "artist".into(), "album".into()]),
-            ("book-search".into(), vec!["q".into(), "author".into(), "title".into()]),
-        ];
-        c.categories = categories_of(ix.settings.get("categories").map(String::as_str).unwrap_or(""));
+    }
+
+    /// Notes that an app was sent to the site for a release's file (`DownloadService.RecordRedirect`).
+    pub fn record_redirect(&self, ix: &Indexer, link: &str, title: &str, source: &str, host: &str) {
+        let data =
+            json!({ "Source": source, "Host": host, "GrabMethod": "Redirect", "GrabTitle": title, "Url": http::strip_secrets(link) });
+        self.record(ix, "grab", title, &Ok(1), Instant::now(), source, host, data);
+    }
+
+    /// The file (or magnet) of a release, from indexer `id` (the download hub and Lantern's pages).
+    pub async fn grab(&self, id: i64, link: &str, title: &str, source: &str) -> Result<Grabbed> {
+        let ix = self.get(id)?;
+        self.download(&ix, link, title, source, "").await.map_err(|e| err(502, e.message().to_string()))
+    }
+
+    /// What indexer `ix` can search for and its categories (`GetCapabilities`): a site's from its definition; a
+    /// Newznab or Torznab API's every kind of search, with the categories of its `categories` setting.
+    pub fn capabilities(&self, ix: &Indexer) -> Capabilities {
+        if ix.kind == "cardigann" {
+            return match self.library.get(&ix.definition).map(|d| Capabilities::from_definition(&d)) {
+                Some(Ok(c)) => c,
+                Some(Err(e)) => {
+                    tracing::warn!("{}: its definition's capabilities can't be read: {e}", ix.name);
+                    Capabilities::default()
+                }
+                None => Capabilities::default(),
+            };
+        }
+        let mut c = Capabilities {
+            tv_params: vec!["q", "season", "ep", "imdbid", "tvdbid"],
+            movie_params: vec!["q", "imdbid", "tmdbid"],
+            music_params: vec!["q", "artist", "album"],
+            book_params: vec!["q", "author", "title"],
+            ..Capabilities::default()
+        };
+        for (id, name) in categories_of(ix.settings.get("categories").map(String::as_str).unwrap_or("")) {
+            c.categories.add_mapping(&id.to_string(), &Category::new(id, &name), None);
+        }
         c
     }
 
-    /// The capabilities of all indexers together (the aggregate endpoint).
-    pub fn caps_all(&self) -> Result<torznab::Caps> {
-        let mut c = torznab::Caps { title: "Lantern (all indexers)".into(), ..Default::default() };
-        let mut modes: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    /// The capabilities of every enabled indexer together (all indexers at once, a Lantern extra).
+    pub fn capabilities_all(&self) -> Result<Capabilities> {
+        let mut c = Capabilities::default();
         for ix in self.list()?.into_iter().filter(|i| i.enabled) {
-            let one = self.caps(&ix);
-            for (m, ps) in one.modes {
-                let e = modes.entry(m).or_default();
-                for p in ps {
-                    if !e.contains(&p) {
-                        e.push(p);
-                    }
-                }
-            }
-            c.categories.extend(one.categories.into_iter().filter(|(id, _)| *id < 100000));
+            c.concat(&self.capabilities(&ix));
         }
-        modes.entry("search".into()).or_insert_with(|| vec!["q".into()]);
-        c.modes = modes.into_iter().collect();
-        if c.categories.is_empty() {
-            c.categories = categories::STANDARD.iter().map(|(id, n)| (*id, n.to_string())).collect();
+        if c.categories.list(false).is_empty() {
+            for (id, name) in categories::STANDARD {
+                c.categories.add_mapping(&id.to_string(), &Category::new(*id, name), None);
+            }
         }
         Ok(c)
     }
@@ -686,13 +1091,79 @@ impl Indexers {
             .collect())
     }
 
-    /// Indexers that are failing (on hold, or failed last time): (name, why).
+    /// Indexers that are on hold after failures: (name, why).
     pub fn failing(&self) -> Result<Vec<(String, String)>> {
-        Ok(self.list()?.into_iter().filter(|i| i.enabled && i.failures > 0).map(|i| (i.name, i.last_error)).collect())
+        let now = crate::auth::now();
+        Ok(self.list()?.into_iter().filter(|i| i.enabled && i.status().is_disabled(now)).map(|i| (i.name, i.last_error)).collect())
     }
 }
 
-/// Settings from a request: text values; a masked or empty secret keeps `old`'s.
+/// Whether a search uses only parameters `caps` takes for its kind of search (`HttpIndexerBase.Fetch`).
+pub fn supports_params(caps: &Capabilities, q: &Query) -> bool {
+    let has = |v: &str| !v.trim().is_empty();
+    let uses = |p: &str| match p {
+        "imdbid" => has(&q.imdbid),
+        "tmdbid" => has(&q.tmdbid),
+        "tvdbid" => has(&q.tvdbid),
+        "rid" => has(&q.rid),
+        "tvmazeid" => has(&q.tvmazeid),
+        "traktid" => has(&q.traktid),
+        "doubanid" => has(&q.doubanid),
+        "genre" => has(&q.genre),
+        "year" => has(&q.year),
+        "album" => has(&q.album),
+        "artist" => has(&q.artist),
+        "label" => has(&q.label),
+        "track" => has(&q.track),
+        "title" => has(&q.title),
+        "author" => has(&q.author),
+        "publisher" => has(&q.publisher),
+        _ => false,
+    };
+    let (params, checked): (&Vec<&'static str>, &[&str]) = match q.kind {
+        SearchKind::TvSearch => {
+            (&caps.tv_params, &["imdbid", "tvdbid", "rid", "tvmazeid", "traktid", "tmdbid", "doubanid", "genre", "year"])
+        }
+        SearchKind::MovieSearch => (&caps.movie_params, &["imdbid", "tmdbid", "traktid", "doubanid", "genre", "year"]),
+        SearchKind::MusicSearch => (&caps.music_params, &["album", "artist", "label", "track", "genre", "year"]),
+        SearchKind::BookSearch => (&caps.book_params, &["title", "author", "publisher", "genre", "year"]),
+        SearchKind::Search => return true,
+    };
+    checked.iter().all(|p| !uses(p) || params.contains(p))
+}
+
+/// One release per guid, from the indexer with the lowest priority number, in the order first found
+/// (`DeDupeReleases`).
+pub fn dedupe(list: Vec<Release>) -> Vec<Release> {
+    let mut order: Vec<String> = Vec::new();
+    let mut best: HashMap<String, Release> = HashMap::new();
+    for r in list {
+        match best.get(&r.guid) {
+            None => {
+                order.push(r.guid.clone());
+                best.insert(r.guid.clone(), r);
+            }
+            Some(b) if r.indexer_priority < b.indexer_priority => {
+                best.insert(r.guid.clone(), r);
+            }
+            Some(_) => {}
+        }
+    }
+    order.into_iter().filter_map(|g| best.remove(&g)).collect()
+}
+
+/// The query and grab limits in `settings` must be more than zero (`IndexerCommonSettingsValidator`).
+fn check_limits(settings: &BTreeMap<String, String>) -> Result<()> {
+    let (errors, _) = limits::validate(settings);
+    match errors.first() {
+        Some((k, m)) => {
+            let label = if *k == limits::QUERY_LIMIT { "Query Limit" } else { "Grab Limit" };
+            Err(err(400, format!("{label}: {m}")))
+        }
+        None => Ok(()),
+    }
+}
+
 /// Fills what a Usenet preset knows into `settings` where the person left it empty: the API path and categories.
 pub fn fill_from_preset(settings: &mut BTreeMap<String, String>, p: &newznab::Preset) {
     if settings.get("api_path").is_none_or(|v| v.trim().is_empty()) {
@@ -719,6 +1190,7 @@ pub fn categories_of(list: &str) -> Vec<(u32, String)> {
     }
 }
 
+/// Settings from a request: text values; a masked or empty secret keeps `old`'s.
 fn clean_settings(v: Option<&Value>, old: &BTreeMap<String, String>) -> BTreeMap<String, String> {
     let mut out = old.clone();
     if let Some(Value::Object(m)) = v {

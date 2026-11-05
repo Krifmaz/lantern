@@ -93,7 +93,7 @@ async fn a_private_tracker_is_added_signed_in_to_searched_and_grabbed() {
     // a key is needed
     let (s, body, _) = call(&app, get_as_app(&format!("/{id}/api?t=search&q=x&apikey=wrong"))).await;
     assert_eq!(s, StatusCode::UNAUTHORIZED);
-    assert!(body.contains(r#"code="100""#), "{body}");
+    assert!(body.is_empty(), "Prowlarr answers a wrong key with an empty 401: {body}");
 
     // a TV search for HD TV: one release, with its fields read
     let (s, rss, _) = call(&app, get_as_app(&format!("/{id}/api?t=tvsearch&q=Show%20Name&season=1&ep=2&cat=5040&apikey={KEY}"))).await;
@@ -104,7 +104,7 @@ async fn a_private_tracker_is_added_signed_in_to_searched_and_grabbed() {
         r#"name="seeders" value="12""#,
         r#"name="peers" value="15""#,
         r#"name="downloadvolumefactor" value="0""#,
-        r#"name="size" value="1610612736""#,
+        "<size>1610612736</size>",
         "<pubDate>Wed, 04 Nov 2026 10:30:00 +0000</pubDate>",
         "http://lantern.test:9696/",
         "<category>5040</category>",
@@ -113,7 +113,7 @@ async fn a_private_tracker_is_added_signed_in_to_searched_and_grabbed() {
     }
 
     // the release's link goes through Lantern and gives the torrent
-    let link = rss.split("<link>").nth(2).and_then(|l| l.split("</link>").next()).unwrap().replace("&amp;", "&");
+    let link = rss.split("<link>").nth(1).and_then(|l| l.split("</link>").next()).unwrap().replace("&amp;", "&");
     let path = link.trim_start_matches("http://lantern.test:9696");
     let (s, file, h) = call(&app, get_as_app(path)).await;
     assert_eq!(s, StatusCode::OK, "{file}");
@@ -127,7 +127,7 @@ async fn a_private_tracker_is_added_signed_in_to_searched_and_grabbed() {
     // all indexers at once, and nothing found is an empty feed
     let (s, rss, _) = call(&app, get_as_app(&format!("/all/api?t=movie&imdbid=tt0111161&apikey={KEY}"))).await;
     assert_eq!(s, StatusCode::OK);
-    assert!(rss.contains("Movie.2025.2160p.UHD-GRP") && rss.contains(r#"name="imdbid" value="tt0111161""#), "{rss}");
+    assert!(rss.contains("Movie.2025.2160p.UHD-GRP") && rss.contains(r#"name="imdb" value="0111161""#), "{rss}");
     let (_, rss, _) = call(&app, get_as_app(&format!("/{id}/api?t=search&q=nothing%20here&apikey={KEY}"))).await;
     assert!(rss.contains("<channel>") && !rss.contains("<item>"), "{rss}");
 
@@ -154,13 +154,14 @@ async fn a_site_that_cant_be_reached_is_put_on_hold_and_said_so() {
     let (app, st, _) = lantern("down").await;
     let (_, body, _) = call(&app, api("POST", "/api/indexers", Some(json!({ "definition": "lantern-test", "base_url": "http://127.0.0.1:9/", "settings": { "username": "me", "password": "pw" } })))).await;
     let id = serde_json::from_str::<Value>(&body).unwrap()["id"].as_i64().unwrap();
-    for _ in 0..2 {
-        let (_, rss, _) = call(&app, get_as_app(&format!("/{id}/api?t=search&q=x&apikey={KEY}"))).await;
-        assert!(rss.contains("be reached"), "{rss}");
-    }
+    // as in Prowlarr, the failed search puts the site on hold and the answer says until when
+    let (s, rss, _) = call(&app, get_as_app(&format!("/{id}/api?t=search&q=x&apikey={KEY}"))).await;
+    assert_eq!(s, StatusCode::TOO_MANY_REQUESTS, "{rss}");
+    assert!(rss.contains("Indexer is disabled till") && rss.contains("due to recent failures."), "{rss}");
     let ix = st.indexers.get(id).unwrap();
-    assert_eq!(ix.failures, 2);
-    assert!(ix.disabled_until > 0.0, "two failures in a row put it on hold");
+    assert_eq!(ix.failures, 1);
+    assert!(ix.disabled_until > 0.0, "a failure puts it on hold");
+    assert!(ix.last_error.contains("be reached"), "{}", ix.last_error);
     assert_eq!(st.indexers.failing().unwrap().len(), 1);
     // a Usenet indexer needs an address
     let (s, body, _) = call(&app, api("POST", "/api/indexers", Some(json!({ "kind": "newznab", "name": "Mine" })))).await;

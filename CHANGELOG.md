@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### Added
+- Apps that search through Lantern's Newznab/Torznab feeds now get exactly what Prowlarr v2.7.0.5723 answers: every
+  search parameter, the same feed and capabilities, the same error messages, and Prowlarr's test indexer (number 0).
+  Indexers have Prowlarr's query and grab limits per hour or day, its "Prefer magnet links" and "Redirect" options,
+  and are put on hold after failures with Prowlarr's growing wait times. Downloads are named, redirected and
+  recorded in history as in Prowlarr.
 - Import never skips an indexer: custom definitions in a Prowlarr backup become your custom definitions, Prowlarr's
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
   Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition
