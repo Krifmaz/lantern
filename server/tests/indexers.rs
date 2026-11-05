@@ -185,8 +185,20 @@ async fn a_site_that_cant_be_reached_is_put_on_hold_and_said_so() {
     assert_eq!(s, StatusCode::OK, "{body}");
     let tr: Value = serde_json::from_str(&body).unwrap();
     assert_eq!((tr["base_url"].as_str(), tr["settings"]["api_path"].as_str()), (Some("https://www.tabula-rasa.pw"), Some("/api/v1/api")));
-    // apps see only the preset's categories
-    let (s, caps, _) = call(&app, get_as_app(&format!("/{}/api?t=caps&apikey={KEY}", tr["id"]))).await;
+    // until the API itself has answered `t=caps` (here it can't be reached), apps see only the preset's categories
+    let (s, body, _) = call(
+        &app,
+        api(
+            "POST",
+            "/api/indexers",
+            Some(json!({ "kind": "newznab", "definition": "tabularasa", "base_url": "http://127.0.0.1:9", "settings": { "apikey": "k" } })),
+        ),
+    )
+    .await;
+    assert_eq!(s, StatusCode::OK, "{body}");
+    let local: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(local["base_url"], "http://127.0.0.1:9", "the test must not ask the real site");
+    let (s, caps, _) = call(&app, get_as_app(&format!("/{}/api?t=caps&apikey={KEY}", local["id"]))).await;
     assert_eq!(s, StatusCode::OK);
     assert!(caps.contains(r#"id="5040""#) && !caps.contains(r#"id="8010""#), "{caps}");
 }

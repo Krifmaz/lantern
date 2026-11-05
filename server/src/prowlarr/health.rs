@@ -33,7 +33,7 @@ pub struct Finding {
 impl Finding {
     /// A finding of `source`, its wiki link made from `fragment` (`#invalid-api-key`), or from the message when
     /// there is none, as Prowlarr makes it.
-    fn new(source: &'static str, kind: &'static str, message: String, fragment: Option<&str>) -> Finding {
+    pub fn new(source: &'static str, kind: &'static str, message: String, fragment: Option<&str>) -> Finding {
         let fragment = match fragment {
             Some(f) => f.to_string(),
             None => {
@@ -95,6 +95,9 @@ pub fn results(st: &AppState) -> kit_server_core::Result<Vec<Finding>> {
             out.push(Finding::new("IndexerStatusCheck", "warning", msg, fragment));
         }
     }
+
+    // ApplicationStatusCheck, ApplicationLongTermStatusCheck
+    out.extend(super::apps::health(st, &lang)?);
     Ok(out)
 }
 

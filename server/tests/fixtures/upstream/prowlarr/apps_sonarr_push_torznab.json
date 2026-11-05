@@ -1,0 +1,87 @@
+{
+  "id": 0,
+  "enableRss": true,
+  "enableAutomaticSearch": true,
+  "enableInteractiveSearch": true,
+  "priority": 10,
+  "name": "Torrent Site (Prowlarr)",
+  "implementation": "Torznab",
+  "configContract": "TorznabSettings",
+  "tags": [],
+  "fields": [
+    {
+      "name": "baseUrl",
+      "value": "http://lantern:9696/2/",
+      "type": "textbox",
+      "advanced": false
+    },
+    {
+      "name": "apiPath",
+      "value": "/api",
+      "type": "textbox",
+      "advanced": true
+    },
+    {
+      "name": "apiKey",
+      "value": "test-key",
+      "type": "textbox",
+      "advanced": false
+    },
+    {
+      "name": "categories",
+      "value": [
+        5000,
+        5030
+      ],
+      "type": "select",
+      "advanced": false
+    },
+    {
+      "name": "animeCategories",
+      "value": [],
+      "type": "select",
+      "advanced": false
+    },
+    {
+      "name": "animeStandardFormatSearch",
+      "value": true,
+      "type": "checkbox",
+      "advanced": false
+    },
+    {
+      "name": "additionalParameters",
+      "type": "textbox",
+      "advanced": true
+    },
+    {
+      "name": "minimumSeeders",
+      "value": 1,
+      "type": "number",
+      "advanced": true
+    },
+    {
+      "name": "seedCriteria.seedRatio",
+      "value": 1.5,
+      "type": "textbox",
+      "advanced": false
+    },
+    {
+      "name": "seedCriteria.seedTime",
+      "value": 60,
+      "type": "number",
+      "advanced": true
+    },
+    {
+      "name": "seedCriteria.seasonPackSeedTime",
+      "value": 60,
+      "type": "number",
+      "advanced": true
+    },
+    {
+      "name": "rejectBlocklistedTorrentHashesWhileGrabbing",
+      "value": false,
+      "type": "checkbox",
+      "advanced": true
+    }
+  ]
+}

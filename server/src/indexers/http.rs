@@ -1,15 +1,18 @@
-//! The HTTP client of one indexer: its own cookies, the site's request delay, the site's text encoding, and
+//! The HTTP client of one indexer: its own cookies, the wait between requests to a site (Prowlarr's rate limit,
+//! [`rate_limit`](super::rate_limit)), the site's text encoding, its proxies ([`proxies`](super::proxies)) and
 //! plain-words errors (no answer, a Cloudflare check, an error page).
 //!
-//! A site that answers with a Cloudflare (or DDoS-Guard) check goes to the [solver](crate::solver) once: the
+//! An indexer with a FlareSolverr proxy goes to it when a site answers with a Cloudflare or DDoS-Guard check, as
+//! Prowlarr's `IndexerHttpClient` does. Without one, the check goes to Lantern's [solver](crate::solver) once: the
 //! client then sends the cookies the browser got, with the browser's user agent, until they run out. When the
 //! site still checks plain requests, a page is read through the browser instead.
 
+use super::proxies::{self, FlareTarget};
+use super::rate_limit;
 use crate::solver::{host_of, SolveRequest, Solver};
 use reqwest::cookie::{CookieStore, Jar};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
+use std::time::Duration;
 
 /// The browser Lantern says it is: sites block unknown clients.
 pub const USER_AGENT: &str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
@@ -86,8 +89,8 @@ pub struct Page {
 pub struct Http {
     client: reqwest::Client,
     jar: Arc<Jar>,
-    delay: Duration,
-    last: Arc<Mutex<Option<Instant>>>,
+    /// The indexer's own least seconds between requests (the definition's `requestDelay`, or its `request_delay`).
+    delay_secs: f64,
     encoding: &'static encoding_rs::Encoding,
     name: String,
     timeout: Duration,
@@ -95,11 +98,15 @@ pub struct Http {
     solver: Option<Solver>,
     /// The proxy the client goes through ("" for none); the solver's browser uses the same one.
     proxy: String,
+    /// The FlareSolverr asked when a site shows a Cloudflare check, when the indexer has one.
+    flaresolverr: Option<FlareTarget>,
+    /// The general proxy (`site_proxy`), which FlareSolverr is told to use.
+    site_proxy: String,
 }
 
 impl Http {
-    /// A client for the site `name` with `delay` between requests and pages in `encoding` (`UTF-8` when empty or
-    /// unknown).
+    /// A client for the site `name` waiting at least `delay_secs` between requests (and Prowlarr's 2 seconds, see
+    /// [`rate_limit::interval`]), with pages in `encoding` (`UTF-8` when empty or unknown), through `proxy`.
     pub fn new(name: &str, delay_secs: f64, encoding: &str, proxy: Option<&str>) -> Http {
         let jar = Arc::new(Jar::default());
         let mut b = reqwest::Client::builder()
@@ -117,14 +124,23 @@ impl Http {
         Http {
             client: b.build().unwrap_or_default(),
             jar,
-            delay: Duration::from_secs_f64(delay_secs.clamp(0.0, 600.0)),
-            last: Arc::new(Mutex::new(None)),
+            delay_secs,
             encoding: encoding_rs::Encoding::for_label(encoding.as_bytes()).unwrap_or(encoding_rs::UTF_8),
             name: name.to_string(),
             timeout: Duration::from_secs(60),
             solver: None,
             proxy,
+            flaresolverr: None,
+            site_proxy: String::new(),
         }
+    }
+
+    /// Asking `target` (a FlareSolverr proxy) when a site shows a Cloudflare check, telling it to use
+    /// `site_proxy`; Lantern's own solver is then not used for this client's checks.
+    pub fn with_flaresolverr(mut self, target: Option<FlareTarget>, site_proxy: &str) -> Http {
+        self.flaresolverr = target;
+        self.site_proxy = site_proxy.trim().to_string();
+        self
     }
 
     /// With `solver` for Cloudflare checks.
@@ -147,9 +163,16 @@ impl Http {
         self.jar.cookies(&u).and_then(|h| h.to_str().ok().map(str::to_string)).unwrap_or_default()
     }
 
-    /// Makes a request, waiting the site's delay since the last one. A Cloudflare check is solved once (see the
-    /// module's words).
+    /// Makes a request, waiting the site's rate limit. A Cloudflare check goes to the indexer's FlareSolverr proxy
+    /// when it has one, else it is solved once by Lantern's solver (see the module's words).
     pub async fn fetch(&self, f: Fetch) -> Result<Page, String> {
+        if self.flaresolverr.is_some() {
+            return match self.send(&f, None).await {
+                Ok(p) => Ok(p),
+                Err(Sent::Failed(e)) => Err(e),
+                Err(Sent::Challenge) => Err(format!("{} {CLOUDFLARE} that FlareSolverr couldn't get past", self.name)),
+            };
+        }
         let host = host_of(&f.url);
         let kept = self.solver.as_ref().and_then(|s| s.clearance(&host, &self.proxy));
         if let Some(c) = &kept {
@@ -227,18 +250,42 @@ impl Http {
         body
     }
 
-    /// One request, sending `agent` as the user agent when given.
+    /// One request, sending `agent` as the user agent when given. With a FlareSolverr proxy, the user agent its
+    /// browser had for the site is sent when there is no other, and a Cloudflare check is handed to it
+    /// (`FlareSolverr.PreRequest` and `PostResponse`).
     async fn send(&self, f: &Fetch, agent: Option<&str>) -> Result<Page, Sent> {
-        {
-            let mut last = self.last.lock().await;
-            if let Some(t) = *last {
-                let since = t.elapsed();
-                if since < self.delay {
-                    tokio::time::sleep(self.delay - since).await;
-                }
+        let host = host_of(&f.url);
+        let kept_agent = self.flaresolverr.as_ref().and_then(|_| proxies::user_agent_for(&host));
+        let agent = agent.filter(|a| !a.is_empty()).map(str::to_string).or(kept_agent);
+        let mut raw = self.raw(f, agent.as_deref()).await?;
+        if let Some(target) = &self.flaresolverr {
+            if proxies::is_cloudflare_protected(raw.status, &raw.server, &raw.vary, &raw.content_encoding, &raw.text) {
+                raw = self.through_flaresolverr(target, f, &host).await?;
             }
-            *last = Some(Instant::now());
         }
+        self.classify(f, raw)
+    }
+
+    /// Asks the FlareSolverr `target` to get past the check on `f`'s site, keeps its user agent for the site, and
+    /// asks the site again with the cookies it got (`FlareSolverr.PostResponse`).
+    async fn through_flaresolverr(&self, target: &FlareTarget, f: &Fetch, host: &str) -> Result<Raw, Sent> {
+        let fs_failed =
+            |e: String| Sent::Failed(format!("{} {CLOUDFLARE}, and FlareSolverr at {} couldn't get past it: {e}", self.name, target.host));
+        let body = f.post.then(|| self.form_body(f));
+        let post = body.as_deref().map(|b| ("application/x-www-form-urlencoded", b));
+        let command = proxies::flaresolverr_request(&f.url, post, target.timeout, &self.site_proxy).map_err(fs_failed)?;
+        let answer = proxies::ask_flaresolverr(target, &command, self.solver.as_ref(), &self.site_proxy).await.map_err(fs_failed)?;
+        let (cookies, agent) = proxies::read_solution(&answer).map_err(fs_failed)?;
+        proxies::user_agents().lock().unwrap_or_else(|e| e.into_inner()).insert(host.to_string(), agent.clone());
+        let header = cookies.iter().map(|(k, v)| format!("{k}={v}")).collect::<Vec<_>>().join("; ");
+        self.add_cookies(&f.url, &header);
+        self.raw(f, Some(&agent)).await
+    }
+
+    /// One request as it is, after the site's rate limit: what came back, before any check of it.
+    async fn raw(&self, f: &Fetch, agent: Option<&str>) -> Result<Raw, Sent> {
+        let host = host_of(&f.url);
+        rate_limit::shared().wait_and_pulse(&host, rate_limit::interval(&host, self.delay_secs)).await;
         let mut req = if f.post { self.client.post(&f.url) } else { self.client.get(&f.url) };
         if f.post {
             req = req.header("Content-Type", "application/x-www-form-urlencoded").body(self.form_body(f));
@@ -250,15 +297,22 @@ impl Http {
             req = req.header("User-Agent", a);
         }
         let resp = req.timeout(self.timeout).send().await.map_err(|e| Sent::Failed(self.reach_error(&f.url, &e)))?;
+        let header = |k: &str| resp.headers().get(k).and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
+        let (server, vary, content_encoding, content_type) =
+            (header("server"), header("vary"), header("content-encoding"), header("content-type"));
+        let mitigated = resp.headers().contains_key("cf-mitigated");
         let status = resp.status().as_u16();
         let url = resp.url().to_string();
-        let server = resp.headers().get("server").and_then(|v| v.to_str().ok()).unwrap_or("").to_lowercase();
-        let mitigated = resp.headers().contains_key("cf-mitigated");
-        let content_type = resp.headers().get("content-type").and_then(|v| v.to_str().ok()).unwrap_or("").to_string();
         let bytes = resp.bytes().await.map_err(|e| Sent::Failed(format!("{} stopped answering mid-way: {e}", self.name)))?.to_vec();
         let enc = charset(&content_type).unwrap_or(self.encoding);
         let (text, _, _) = enc.decode(&bytes);
-        let text = text.into_owned();
+        Ok(Raw { url, status, server, vary, content_encoding, content_type, mitigated, text: text.into_owned(), bytes })
+    }
+
+    /// What an answer means: the page, a check to solve, or an error in words.
+    fn classify(&self, f: &Fetch, raw: Raw) -> Result<Page, Sent> {
+        let Raw { url, status, server, content_type, mitigated, text, bytes, .. } = raw;
+        let server = server.to_lowercase();
         if mitigated
             || (server.contains("cloudflare") && matches!(status, 403 | 429 | 503) && is_challenge(&text))
             || (matches!(status, 403 | 503) && is_challenge(&text))
@@ -303,6 +357,28 @@ impl Http {
         };
         format!("{} {what} – {}", self.name, strip_secrets(url))
     }
+}
+
+/// One answer as it came, before any check of it.
+struct Raw {
+    /// The address it came from in the end.
+    url: String,
+    /// The HTTP status.
+    status: u16,
+    /// Its `Server` header.
+    server: String,
+    /// Its `Vary` header.
+    vary: String,
+    /// Its `Content-Encoding` header.
+    content_encoding: String,
+    /// Its `Content-Type` header.
+    content_type: String,
+    /// It has Cloudflare's `cf-mitigated` header.
+    mitigated: bool,
+    /// The body as text.
+    text: String,
+    /// The body as it came.
+    bytes: Vec<u8>,
 }
 
 /// How one request went wrong: a check to solve, or anything else in words.

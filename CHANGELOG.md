@@ -7,6 +7,11 @@
   or slow machine no longer fails a check before the browser is ready.
 
 ### Added
+- Indexer proxies work as in Prowlarr v2.7.0.5723: HTTP, SOCKS4, SOCKS5 and FlareSolverr proxies under
+  `/api/v1/indexerproxy` (add, change, remove, schema, test, test all), used by the indexers that share a tag with
+  them. A FlareSolverr proxy is asked only when a site shows a Cloudflare check; pointed at Lantern, Lantern's own
+  solver answers. Indexers keep their tags, app profile and download client in Prowlarr's shape, wait between
+  requests to one site as Prowlarr does, and generic Newznab/Torznab indexers read the site's own capabilities.
 - Apps that search through Lantern's Newznab/Torznab feeds now get exactly what Prowlarr v2.7.0.5723 answers: every
   search parameter, the same feed and capabilities, the same error messages, and Prowlarr's test indexer (number 0).
   Indexers have Prowlarr's query and grab limits per hour or day, its "Prefer magnet links" and "Redirect" options,
@@ -24,6 +29,12 @@
   said or announces read by hand. Indexers keep their passkeys and keys hidden, and indexers whose tracker closed
   are archived, listed and can be removed once no filter uses them. A ban, wrong sign-in or a connection that keeps
   dropping stops the network with the reason shown. Lantern's own IRC sources get their network automatically.
+- Prowlarr's applications: Sonarr, Radarr, Lidarr, Readarr, Whisparr, Mylar and LazyLibrarian can be added under
+  `/api/v1/applications` (with Prowlarr's schema, test, test all and bulk edit), and Lantern keeps their indexer lists
+  in step as Prowlarr does: Add and Remove Only or Full Sync, sync categories, tags, app profiles
+  (`/api/v1/appprofile`), seeding settings, every 6 hours and when an indexer is added, changed or removed. The
+  `ApplicationIndexerSync` command runs a sync now, and the health page says when apps keep failing. Apps imported
+  from Prowlarr are taken over.
 - autobrr's actions and its filter, action and download client API (served at `/autobrr/api`): every autobrr action
   type (qBittorrent, Deluge 1 and 2, rTorrent, Transmission, Porla, Aria2, the *arr apps, SABnzbd, NZBGet, watch
   folder, webhook, exec and test), every action field, external exec and webhook filters, and filter notification
