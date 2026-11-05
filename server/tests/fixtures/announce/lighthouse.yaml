@@ -1,0 +1,37 @@
+# A made-up tracker's announce definition in autobrr's format, for the tests.
+identifier: lighthouse
+name: Lighthouse
+description: A test tracker
+urls: [https://lighthouse.example/]
+privacy: private
+protocol: torrent
+supports: [irc, rss]
+settings:
+  - { name: passkey, type: secret, required: true, label: Passkey }
+irc:
+  network: Lighthouse
+  server: irc.lighthouse.example
+  port: 6697
+  tls: true
+  channels: ["#announce"]
+  announcers: [Keeper]
+  settings:
+    - { name: nick, type: text, required: true, label: Nick }
+    - { name: auth.account, type: text, label: NickServ account }
+    - { name: auth.password, type: secret, label: NickServ password }
+    - { name: invite_command, type: secret, label: Invite command }
+  parse:
+    type: single
+    lines:
+      - test:
+          - "New Torrent: Show.Name.S01E02.1080p.WEB-DL.H.264-GROUP [TV :: HD] 1.5 GB by uploader FREELEECH - https://lighthouse.example/torrent/123"
+        pattern: 'New Torrent: (.+) \[(.+)\] ([\d.]+ \w+) by (\S+) ?(FREELEECH)? - (https?://[^/]+/)torrent/(\d+)'
+        vars: [torrentName, category, torrentSize, uploader, freeleech, baseUrl, torrentId]
+    match:
+      torrenturl: "{{ .baseUrl }}download/{{ .torrentId }}/{{ .passkey }}/{{ .torrentName }}.torrent"
+      infourl: "{{ .baseUrl }}torrent/{{ .torrentId }}"
+      encode: [torrentName]
+    mappings:
+      category:
+        "TV :: HD":
+          category: TV/HD

@@ -28,6 +28,10 @@
   Import page: a dry run first that says line by line what would be added, skipped or left to you, then Import.
   Indexers keep their logins (also saved in the vault) and Prowlarr's numbers, Lantern can take Prowlarr's API key and proxy, and the apps
   Prowlarr synced to are kept for app sync.
+- Releases as they appear: trackers' IRC announce channels (autobrr's announce definitions, bundled), RSS feeds and
+  Lantern's own indexers are watched; filters (names, resolution, source, codec, HDR, group, year, season, size,
+  freeleech, category, tags, uploader, grab limits) send a new release to Sonarr, Radarr, Lidarr, Readarr or Whisparr,
+  or to a download client through the download hub, within seconds. A Releases page shows what came and why each was sent or skipped, and checks any release name.
 
 ## 0.0.1
 

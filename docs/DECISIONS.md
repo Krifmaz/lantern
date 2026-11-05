@@ -60,3 +60,13 @@ Non-obvious calls, one line each, newest last.
   `imported_apps` for app sync (Lantern pushing indexers to apps).
 - 2026-11-05 — FlareSolverr has no settings file, so its import reads pasted compose/.env/docker run text and only
   gives steps; nothing is saved, since Lantern solves by itself.
+- 2026-11-05 — IRC/RSS releases were built in parallel with the download hub: pushes to a download client go through
+  a small `DownloadHub` trait (`releases::push`) that the hub implements. A client push is a grab of one of the hub's
+  apps (the filter names it; else an app "Releases" registered at the first push), so it gets that app's category,
+  folder, retries and callbacks. Pushing to the *arrs (`release/push`) needs no hub.
+- 2026-11-05 — Announce lines are read with autobrr's own definition files (bundled at `/app/announce` from autobrr's
+  develop branch at image build; `<data>/announce` overrides), so every tracker autobrr knows works without Lantern
+  keeping its own list. Their templates run through the Cardigann template engine.
+- 2026-11-05 — Race-friendly defaults: a filter sends at once (no delay), the torrent file is only fetched when a size
+  limit needs a size the announce didn't give, the first filter that takes a release wins (highest priority first),
+  and a release name a filter already sent is skipped. A new RSS source's first look only notes what is there.
