@@ -1,0 +1,20 @@
+{
+  "_source": "cross-seed v6.13.9 src/server.ts: the answers its daemon gives (status and plain text body, no content type). `key` says whether the request carries the API key.",
+  "cases": [
+    { "method": "GET", "path": "/api/ping", "key": false, "body": "", "status": 200, "answer": "OK" },
+    { "method": "GET", "path": "/api/status", "key": false, "body": "", "status": 401, "answer": "Specify the API key in an X-Api-Key header or an apikey query param." },
+    { "method": "GET", "path": "/api/status?apikey=test-key", "key": false, "body": "", "status": 200, "answer": "OK" },
+    { "method": "GET", "path": "/api/status", "key": true, "body": "", "status": 200, "answer": "OK" },
+    { "method": "GET", "path": "/api/webhook", "key": true, "body": "", "status": 405, "answer": "Method GET not allowed for /api/webhook" },
+    { "method": "POST", "path": "/api/ping", "key": false, "body": "", "status": 405, "answer": "Method POST not allowed for /api/ping" },
+    { "method": "GET", "path": "/api/announce", "key": false, "body": "", "status": 405, "answer": "Method GET not allowed for /api/announce" },
+    { "method": "POST", "path": "/api/search", "key": true, "body": "", "status": 404, "answer": "Unknown endpoint: /api/search" },
+    { "method": "POST", "path": "/api/webhook", "key": false, "body": "", "status": 401, "answer": "Specify the API key in an X-Api-Key header or an apikey query param." },
+    { "method": "POST", "path": "/api/webhook", "key": true, "body": "", "status": 400, "answer": "A valid infoHash or an accessible path must be provided (infoHash is recommended: see https://www.cross-seed.org/docs/reference/api#post-apiwebhook): [Object: null prototype] {}" },
+    { "method": "POST", "path": "/api/webhook", "key": true, "body": "{\"infoHash\":\"abc\"}", "status": 400, "answer": "A valid infoHash or an accessible path must be provided (infoHash is recommended: see https://www.cross-seed.org/docs/reference/api#post-apiwebhook): { infoHash: 'abc' }" },
+    { "method": "POST", "path": "/api/webhook", "key": true, "body": "\"text\"", "status": 400, "answer": "Unable to parse request body: \"\"text\"\"" },
+    { "method": "POST", "path": "/api/job", "key": true, "body": "{\"name\":\"nope\"}", "status": 400, "answer": "Job name must be one of cleanup inject rss search updateIndexerCaps - received: { name: 'nope' }" },
+    { "method": "POST", "path": "/api/job", "key": true, "body": "name=nope", "status": 400, "answer": "Job name must be one of cleanup inject rss search updateIndexerCaps - received: [Object: null prototype] { name: 'nope' }" },
+    { "method": "POST", "path": "/api/announce", "key": true, "body": "{}", "status": 400, "answer": "Missing required params (https://www.cross-seed.org/docs/v6-migration#autobrr-update): {guid, link, name, tracker} in {}\n[\n  {\n    code: 'invalid_type',\n    expected: 'string',\n    received: 'undefined',\n    path: [ 'name' ],\n    message: 'Required'\n  },\n  {\n    code: 'invalid_type',\n    expected: 'string',\n    received: 'undefined',\n    path: [ 'guid' ],\n    message: 'Required'\n  },\n  {\n    code: 'invalid_type',\n    expected: 'string',\n    received: 'undefined',\n    path: [ 'link' ],\n    message: 'Required'\n  },\n  {\n    code: 'invalid_type',\n    expected: 'string',\n    received: 'undefined',\n    path: [ 'tracker' ],\n    message: 'Required'\n  }\n]" }
+  ]
+}

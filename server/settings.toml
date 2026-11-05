@@ -286,23 +286,108 @@ env = "APP_CROSS_SEED_DELAY"
 default = 30
 group = "cross_seed"
 label = "Wait between searches"
-help = "Seconds between two torrents' searches, so the sites aren't asked too often."
+help = "Seconds between two torrents' searches, so the sites aren't asked too often (cross-seed's delay: 30 to 3600)."
 type = "number"
 unit = "s"
-min = 0
+min = 30
 max = 3600
 
-[keys.cross_seed_again_days]
-env = "APP_CROSS_SEED_AGAIN_DAYS"
-default = 7
+[keys.cross_seed_match_mode]
+env = "APP_CROSS_SEED_MATCH_MODE"
+default = "flexible"
+group = "cross_seed"
+label = "Match mode"
+help = "How alike another site's copy must be. Strict: same file names and sizes. Flexible: same sizes, names may differ. Partial: like flexible, but small files such as .nfo or .srt may be missing. Copies that aren't strict matches are kept until their files can be linked."
+type = "select"
+options = [["strict", "Strict"], ["flexible", "Flexible"], ["partial", "Partial"]]
+
+[keys.cross_seed_include_single_episodes]
+env = "APP_CROSS_SEED_INCLUDE_SINGLE_EPISODES"
+default = false
+group = "cross_seed"
+label = "Search single episodes"
+help = "Also search torrents of one episode. Announces always match episodes."
+type = "bool"
+
+[keys.cross_seed_include_non_videos]
+env = "APP_CROSS_SEED_INCLUDE_NON_VIDEOS"
+default = false
+group = "cross_seed"
+label = "Search releases that are mostly not video"
+help = "Music, books, games and the like. Off: a release is left out when its non-video files are more than the size tolerance of it."
+type = "bool"
+
+[keys.cross_seed_season_from_episodes]
+env = "APP_CROSS_SEED_SEASON_FROM_EPISODES"
+default = 1.0
+group = "cross_seed"
+label = "Season packs from episodes"
+help = "The share of a season's episodes you must have to match its season pack (1: all of them). 0 turns it off. Below 1 needs the Partial match mode."
+type = "number"
+min = 0
+max = 1
+step = 0.05
+advanced = true
+
+[keys.cross_seed_fuzzy_size_threshold]
+env = "APP_CROSS_SEED_FUZZY_SIZE_THRESHOLD"
+default = 0.02
+group = "cross_seed"
+label = "Size tolerance"
+help = "How far another site's listed size may be from yours before its torrent is fetched (0.02 is 2%). Change it only with good reason."
+type = "number"
+min = 0
+max = 1
+step = 0.01
+advanced = true
+
+[keys.cross_seed_exclude_older]
+env = "APP_CROSS_SEED_EXCLUDE_OLDER"
+default = "2 weeks"
+group = "cross_seed"
+label = "Stop searching after"
+help = "Leave out torrents first searched longer ago than this, such as 2 weeks or 450 days. Empty: never stop. It must be 2 to 5 times the next setting."
+type = "text"
+advanced = true
+
+[keys.cross_seed_exclude_recent_search]
+env = "APP_CROSS_SEED_EXCLUDE_RECENT_SEARCH"
+default = "3 days"
 group = "cross_seed"
 label = "Search again after"
-help = "Days before a torrent is searched again, when other sites may have it by then (four searches at most)."
-type = "number"
-unit = "days"
-min = 1
-max = 365
+help = "Leave out torrents searched more recently than this, such as 3 days or 90 days. Empty: search every time."
+type = "text"
 advanced = true
+
+[keys.cross_seed_block_list]
+env = "APP_CROSS_SEED_BLOCK_LIST"
+default = ""
+group = "cross_seed"
+label = "Block list"
+help = "Torrents never to cross-seed, one per line, each with its kind: name:, nameRegex:, folder:, folderRegex:, category:, tag:, tracker:, infoHash:, sizeBelow: or sizeAbove: (for example name:x265 or sizeBelow:100000000)."
+type = "textarea"
+advanced = true
+
+[keys.cross_seed_ignore_titles]
+env = "APP_CROSS_SEED_IGNORE_TITLES"
+default = false
+group = "cross_seed"
+label = "Ignore titles when adding saved torrents"
+help = "When kept torrents are added later, don't check that their names fit the files found."
+type = "bool"
+advanced = true
+
+[keys.cross_seed_port]
+env = "APP_CROSS_SEED_PORT"
+default = 2468
+group = "cross_seed"
+label = "cross-seed API port"
+help = "The port of the cross-seed API (webhook, announce, job, ping, status) for autobrr, Sonarr, Radarr and scripts, with Lantern's API key. 0 turns it off. A change takes effect after a restart."
+type = "number"
+min = 0
+max = 65535
+advanced = true
+
 [groups.soulseek]
 section = "downloads"
 title = "Soulseek"

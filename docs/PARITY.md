@@ -1265,30 +1265,43 @@ cross-seed has no web UI in v6; its daemon, API and CLI are ported. Its settings
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `POST /api/webhook` (search one torrent by infoHash or path) | X | partial | | fresh version |
-| `POST /api/announce` (match an announce, e.g. from autobrr) | X | todo | |  |
-| `POST /api/job` (run a job now) | X | todo | |  |
-| `GET /api/ping` | X | todo | |  |
-| `GET /api/status` | X | todo | |  |
-| API key in `X-Api-Key` header or `apikey` query | X | todo | |  |
+| `POST /api/webhook` (search one torrent by infoHash or path) | X | partial | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does`, `server/src/crossseed/daemon.rs`::webhook_schema_like_zod | answers, statuses and messages as cross-seed; an infoHash searches that client torrent; a path is searched as data but only MATCHes in the hub's clients are added (data-based search is a later slice) |
+| `POST /api/announce` (match an announce, e.g. from autobrr) | X | partial | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does`, `server/src/crossseed/daemon.rs`::announce_schema_like_zod, `server/src/crossseed/daemon.rs`::announce_statuses | statuses 200/202/204/400 and zod messages as cross-seed; client torrents like it are picked by cross-seed's keys and title comparison, not its full `getSimilarByName` with the torrent cache and data dirs |
+| `POST /api/job` (run a job now) | X | partial | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does`, `server/src/crossseed/daemon.rs`::job_schema_like_zod | the messages and 404/409/200 as cross-seed; only `search` runs here (rss, inject, cleanup and updateIndexerCaps answer "disabled in config" until their jobs are ported) |
+| `GET /api/ping` | X | done | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does` | own port, 2468 (`cross_seed_port`) |
+| `GET /api/status` | X | done | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does` | |
+| API key in `X-Api-Key` header or `apikey` query | X | done | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does` | Lantern's API key (`api_key`); 405 before 401 before 404, as cross-seed |
 
 ### Settings (`config.js`)
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
+| `matchMode` (default `flexible`) | X | done | `server/src/crossseed/config.rs`::settings_ranges_in_cross_seeds_words | `cross_seed_match_mode` |
+| `fuzzySizeThreshold` (0.02) | X | done | `server/src/crossseed/config.rs`::settings_ranges_in_cross_seeds_words | `cross_seed_fuzzy_size_threshold` |
+| `seasonFromEpisodes` (1) | X | done | `server/src/crossseed/config.rs`::settings_ranges_in_cross_seeds_words | `cross_seed_season_from_episodes` (0 = off) |
+| `includeSingleEpisodes` (false) | X | done | `server/src/crossseed/config.rs`::defaults_are_cross_seeds_template | `cross_seed_include_single_episodes` |
+| `includeNonVideos` (false) | X | done | `server/src/crossseed/config.rs`::defaults_are_cross_seeds_template | `cross_seed_include_non_videos` |
+| `ignoreTitles` | X | done | `server/src/crossseed/config.rs`::defaults_are_cross_seeds_template | `cross_seed_ignore_titles` |
+| `excludeOlder` (2 weeks) | X | done | `server/src/crossseed/config.rs`::durations_like_vercel_ms | `cross_seed_exclude_older` (replaces again_days) |
+| `excludeRecentSearch` (3 days) | X | done | `server/src/crossseed/config.rs`::durations_like_vercel_ms | `cross_seed_exclude_recent_search` |
+| `delay` (30 s, 30 s to 1 hour) | X | done | `server/src/crossseed/config.rs`::settings_ranges_in_cross_seeds_words | `cross_seed_delay` |
+| `blockList` | X | done | `server/src/crossseed/config.rs`::block_list_checks | `cross_seed_block_list` (one per line) |
+| `port` (2468) | X | done | `server/src/crossseed/config.rs`::defaults_are_cross_seeds_template | `cross_seed_port` (0 = off) |
+| `apiKey` | X | done | `server/src/crossseed/config.rs`::defaults_are_cross_seeds_template | Lantern's `api_key` |
+| Other options (`linkDirs`, `linkType`, `flatLinking`, `dataDirs`, `action`, `torrentClients`, `rssCadence`, `searchCadence`, `snatchTimeout`, `searchTimeout`, `searchLimit`, `duplicateCategories`, `notificationWebhookUrls`, `sonarr`, `radarr`, `skipRecheck`, `autoResumeMaxDownload`, `outputDir`, `torrentDir`, `maxDataDepth`, `linkCategory`) | X | partial | `server/src/crossseed/config.rs`::defaults_are_cross_seeds_template | cross-seed's defaults and checks in the config; no Lantern setting yet (their features are later slices) |
 
 ### Matching and injection
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Match modes `strict`, `flexible`, `partial` | X | partial | | strict only |
-| Decisions: `MATCH`, `MATCH_SIZE_ONLY`, `MATCH_PARTIAL`, `FUZZY_SIZE_MISMATCH`, `SIZE_MISMATCH`, `PARTIAL_SIZE_MISMATCH`, `NO_DOWNLOAD_LINK`, `DOWNLOAD_FAILED`, `MAGNET_LINK`, `RATE_LIMITED`, `SAME_INFO_HASH`, `INFO_HASH_ALREADY_EXISTS`, `FILE_TREE_MISMATCH`, `RELEASE_GROUP_MISMATCH`, `BLOCKED_RELEASE`, `PROPER_REPACK_MISMATCH`, `RESOLUTION_MISMATCH`, `SOURCE_MISMATCH` | X | todo | |  |
-| Actions `save` and `inject`; injection results | X | todo | |  |
+| Match modes `strict`, `flexible`, `partial` | X | done | `server/src/crossseed/decide.rs`::match_size_only_when_names_differ_outside_strict, `server/src/crossseed/decide.rs`::match_partial_and_partial_size_mismatch | `cross_seed_match_mode` |
+| Decisions: `MATCH`, `MATCH_SIZE_ONLY`, `MATCH_PARTIAL`, `FUZZY_SIZE_MISMATCH`, `SIZE_MISMATCH`, `PARTIAL_SIZE_MISMATCH`, `NO_DOWNLOAD_LINK`, `DOWNLOAD_FAILED`, `MAGNET_LINK`, `RATE_LIMITED`, `SAME_INFO_HASH`, `INFO_HASH_ALREADY_EXISTS`, `FILE_TREE_MISMATCH`, `RELEASE_GROUP_MISMATCH`, `BLOCKED_RELEASE`, `PROPER_REPACK_MISMATCH`, `RESOLUTION_MISMATCH`, `SOURCE_MISMATCH` | X | done | `server/src/crossseed/decide.rs` (a test per decision), `server/tests/crossseed.rs::a_finished_torrent_seeds_on_the_other_sites_that_have_the_same_files` | kept as `match_decision` on each result |
+| Actions `save` and `inject`; injection results | X | partial | `server/tests/crossseed.rs::a_finished_torrent_seeds_on_the_other_sites_that_have_the_same_files` | `MATCH` is injected at the same save path; `MATCH_SIZE_ONLY` and `MATCH_PARTIAL` are saved to `cross-seeds/` and recorded as `FAILURE` until linking is ported |
 | Link types `symlink`, `hardlink`, `reflink`, `reflinkOrCopy`; `flatLinking` | X | todo | |  |
-| Block list types (name, regex, folder, category, tag, tracker, infoHash, size) | X | todo | |  |
+| Block list types (name, regex, folder, category, tag, tracker, infoHash, size) | X | done | `server/src/crossseed/prefilter.rs`::every_block_list_type, `server/src/crossseed/config.rs`::block_list_checks | |
 | Clients: qBittorrent, rTorrent, Transmission, Deluge (several at once) | X | todo | |  |
 | Data-based searching (`dataDirs`), season packs from episodes | X | todo | |  |
-| Pre-filter rules (age, recent search, ignored titles, non-video, single episodes) | X | todo | |  |
+| Pre-filter rules (age, recent search, ignored titles, non-video, single episodes) | X | done | `server/src/crossseed/prefilter.rs`::content_rules, `server/src/crossseed/prefilter.rs`::timestamps, `server/src/crossseed/prefilter.rs`::season_pack_episodes_and_specials_from_data | |
 | Arr lookups (Sonarr/Radarr ids for better searching) | X | todo | |  |
 | Recheck and auto-resume rules | X | todo | |  |
 | Notification webhooks | X | todo | |  |
