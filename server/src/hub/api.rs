@@ -53,8 +53,10 @@ pub fn router() -> Router<AppState> {
 
 async fn clients(State(st): State<AppState>, _: SignedIn) -> Result<Json<Value>> {
     let list: Vec<Value> = st.hub.clients()?.iter().map(|c| st.hub.client_json(c)).collect();
-    let kinds: Vec<Value> =
-        super::clients::KINDS.iter().map(|(k, p, n)| json!({ "kind": k, "protocol": p, "name": n, "default": true })).collect();
+    let kinds: Vec<Value> = super::clients::KINDS
+        .iter()
+        .map(|(k, p, n)| json!({ "kind": k, "protocol": p, "name": n, "default": super::clients::DEFAULTS.contains(k) }))
+        .collect();
     Ok(Json(json!({ "clients": list, "kinds": kinds })))
 }
 

@@ -4,10 +4,19 @@
 //! | Kind | Protocol | Module |
 //! | --- | --- | --- |
 //! | `qbittorrent` (the default for torrents) | torrent | [`qbittorrent`] |
+//! | `transmission` | torrent | [`transmission`] |
+//! | `deluge` | torrent | [`deluge`] |
+//! | `rtorrent` | torrent | [`rtorrent`] (over [`xmlrpc`]) |
 //! | `sabnzbd` (the default for Usenet) | usenet | [`sabnzbd`] |
+//! | `nzbget` | usenet | [`nzbget`] |
 
+pub mod deluge;
+pub mod nzbget;
 pub mod qbittorrent;
+pub mod rtorrent;
 pub mod sabnzbd;
+pub mod transmission;
+pub mod xmlrpc;
 
 use crate::indexers::release::Protocol;
 use kit_server_core::{Row, RowExt};
@@ -15,8 +24,17 @@ use serde::Serialize;
 use std::time::Duration;
 
 /// Every kind of download client Lantern talks to, with the protocol it downloads and the name people see.
-pub const KINDS: [(&str, Protocol, &str); 2] =
-    [("qbittorrent", Protocol::Torrent, "qBittorrent"), ("sabnzbd", Protocol::Usenet, "SABnzbd")];
+pub const KINDS: [(&str, Protocol, &str); 6] = [
+    ("qbittorrent", Protocol::Torrent, "qBittorrent"),
+    ("transmission", Protocol::Torrent, "Transmission"),
+    ("deluge", Protocol::Torrent, "Deluge"),
+    ("rtorrent", Protocol::Torrent, "rTorrent"),
+    ("sabnzbd", Protocol::Usenet, "SABnzbd"),
+    ("nzbget", Protocol::Usenet, "NZBGet"),
+];
+
+/// The kinds new grabs of each protocol go to first when no client says otherwise.
+pub const DEFAULTS: [&str; 2] = ["qbittorrent", "sabnzbd"];
 
 /// The protocol a kind of client downloads; `None` for a kind Lantern doesn't know.
 pub fn protocol_of(kind: &str) -> Option<Protocol> {
@@ -28,15 +46,15 @@ pub fn protocol_of(kind: &str) -> Option<Protocol> {
 pub struct ClientConfig {
     /// Its id.
     pub id: i64,
-    /// `qbittorrent` or `sabnzbd`.
+    /// One of [`KINDS`].
     pub kind: String,
     /// The name people see.
     pub name: String,
     /// Its web address (`http://qbittorrent:8080`).
     pub url: String,
-    /// The user name it signs in with (qBittorrent).
+    /// The user name it signs in with (all but SABnzbd and Deluge).
     pub username: String,
-    /// The password it signs in with (qBittorrent). Never sent back by the API.
+    /// The password it signs in with (all but SABnzbd). Never sent back by the API.
     pub password: String,
     /// The API key (SABnzbd). Never sent back by the API.
     pub api_key: String,
@@ -175,8 +193,16 @@ pub struct Item {
 pub enum Backend {
     /// qBittorrent's Web API.
     Qbittorrent(qbittorrent::Qbittorrent),
+    /// Transmission's RPC.
+    Transmission(transmission::Transmission),
+    /// Deluge's Web UI JSON-RPC.
+    Deluge(deluge::Deluge),
+    /// rTorrent's XML-RPC.
+    Rtorrent(rtorrent::Rtorrent),
     /// SABnzbd's API.
     Sabnzbd(sabnzbd::Sabnzbd),
+    /// NZBGet's JSON-RPC.
+    Nzbget(nzbget::Nzbget),
 }
 
 impl Backend {
@@ -185,7 +211,11 @@ impl Backend {
         let http = http_client(true);
         match cfg.kind.as_str() {
             "qbittorrent" => Ok(Backend::Qbittorrent(qbittorrent::Qbittorrent::new(cfg, http))),
+            "transmission" => Ok(Backend::Transmission(transmission::Transmission::new(cfg, http_client(false)))),
+            "deluge" => Ok(Backend::Deluge(deluge::Deluge::new(cfg, http))),
+            "rtorrent" => Ok(Backend::Rtorrent(rtorrent::Rtorrent::new(cfg, http_client(false)))),
             "sabnzbd" => Ok(Backend::Sabnzbd(sabnzbd::Sabnzbd::new(cfg, http))),
+            "nzbget" => Ok(Backend::Nzbget(nzbget::Nzbget::new(cfg, http_client(false)))),
             k => Err(format!("Lantern doesn't know the download client kind {k}")),
         }
     }
@@ -194,15 +224,22 @@ impl Backend {
     pub async fn test(&self) -> Result<String, String> {
         match self {
             Backend::Qbittorrent(c) => c.test().await,
+            Backend::Transmission(c) => c.test().await,
+            Backend::Deluge(c) => c.test().await,
+            Backend::Rtorrent(c) => c.test().await,
             Backend::Sabnzbd(c) => c.test().await,
+            Backend::Nzbget(c) => c.test().await,
         }
     }
 
-    /// Makes (or points again) the client's category `name` at `save_path` (as the client sees it).
+    /// Makes (or points again) the client's category `name` at `save_path` (as the client sees it). Clients
+    /// without categories (Transmission, rTorrent, NZBGet) get the folder or category with each download instead.
     pub async fn ensure_category(&self, name: &str, save_path: &str) -> Result<(), String> {
         match self {
             Backend::Qbittorrent(c) => c.ensure_category(name, save_path).await,
+            Backend::Deluge(c) => c.ensure_category(name, save_path).await,
             Backend::Sabnzbd(c) => c.ensure_category(name, save_path).await,
+            Backend::Transmission(_) | Backend::Rtorrent(_) | Backend::Nzbget(_) => Ok(()),
         }
     }
 
@@ -210,7 +247,11 @@ impl Backend {
     pub async fn add(&self, req: &AddRequest) -> Result<String, String> {
         match self {
             Backend::Qbittorrent(c) => c.add(req).await,
+            Backend::Transmission(c) => c.add(req).await,
+            Backend::Deluge(c) => c.add(req).await,
+            Backend::Rtorrent(c) => c.add(req).await,
             Backend::Sabnzbd(c) => c.add(req).await,
+            Backend::Nzbget(c) => c.add(req).await,
         }
     }
 
@@ -218,7 +259,11 @@ impl Backend {
     pub async fn items(&self) -> Result<Vec<Item>, String> {
         match self {
             Backend::Qbittorrent(c) => c.items().await,
+            Backend::Transmission(c) => c.items().await,
+            Backend::Deluge(c) => c.items().await,
+            Backend::Rtorrent(c) => c.items().await,
             Backend::Sabnzbd(c) => c.items().await,
+            Backend::Nzbget(c) => c.items().await,
         }
     }
 
@@ -227,7 +272,10 @@ impl Backend {
     pub async fn files(&self, item: &Item) -> Result<Vec<(String, i64)>, String> {
         match self {
             Backend::Qbittorrent(c) => c.files(item).await,
-            Backend::Sabnzbd(_) => Ok(Vec::new()),
+            Backend::Transmission(c) => c.files(item).await,
+            Backend::Deluge(c) => c.files(item).await,
+            Backend::Rtorrent(c) => c.files(item).await,
+            Backend::Sabnzbd(_) | Backend::Nzbget(_) => Ok(Vec::new()),
         }
     }
 
@@ -235,7 +283,11 @@ impl Backend {
     pub async fn remove(&self, id: &str, delete_files: bool) -> Result<(), String> {
         match self {
             Backend::Qbittorrent(c) => c.remove(id, delete_files).await,
+            Backend::Transmission(c) => c.remove(id, delete_files).await,
+            Backend::Deluge(c) => c.remove(id, delete_files).await,
+            Backend::Rtorrent(c) => c.remove(id, delete_files).await,
             Backend::Sabnzbd(c) => c.remove(id, delete_files).await,
+            Backend::Nzbget(c) => c.remove(id, delete_files).await,
         }
     }
 }
