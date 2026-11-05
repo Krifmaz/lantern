@@ -19,10 +19,12 @@
 //! | `/api/cross-seed/*` | [`crossseed`] |
 //! | `GET`/`POST /api/setup` (first-run "Create your account" with the setup code from the log) | kit-server-setup |
 //! | `/prowlarr/*` (Prowlarr's web frontend, forked in `ui/prowlarr/`, and its `initialize.json`) | [`prowlarr_ui`] |
+//! | `/autobrr/*` (autobrr's web frontend, forked in `ui/autobrr/`; its API calls arrive at `/autobrr/api/*`) | [`autobrr_ui`] |
 //!
 //! Everything the app adds of its own goes into [`app`] next to them.
 
 pub mod auth;
+pub mod autobrr_ui;
 pub mod checks;
 pub mod crossseed;
 pub mod hub;
@@ -98,6 +100,9 @@ pub struct AppState {
     /// Prowlarr's built web frontend (`ui/prowlarr`'s `_output/UI`), served at `/prowlarr/`:
     /// `APP_PROWLARR_UI_DIR` (default /app/ui/prowlarr).
     pub prowlarr_ui_dir: PathBuf,
+    /// autobrr's built web frontend (`ui/autobrr`'s `dist`), served at `/autobrr/`:
+    /// `APP_AUTOBRR_UI_DIR` (default /app/ui/autobrr).
+    pub autobrr_ui_dir: PathBuf,
     /// What's new: the release notes built into this server.
     pub changelog: Arc<Changelog>,
     /// The notices (kept: the data folder notice holds its last probe).
@@ -158,6 +163,7 @@ impl AppState {
         let solver = solver::Solver::new(solver::find_program(env("APP_CHROMIUM").as_deref()), data, Some(db.clone()));
         crossseed::migrate(&db)?;
         let prowlarr_ui_dir = PathBuf::from(env("APP_PROWLARR_UI_DIR").unwrap_or_else(|| "/app/ui/prowlarr".into()));
+        let autobrr_ui_dir = PathBuf::from(env("APP_AUTOBRR_UI_DIR").unwrap_or_else(|| "/app/ui/autobrr".into()));
         let bundled = PathBuf::from(env("APP_DEFINITIONS_DIR").unwrap_or_else(|| "/app/definitions".into()));
         let library = indexers::library::Library::new(Some(bundled), data);
         let signer = indexers::LinkSigner::open(data)?;
@@ -194,6 +200,7 @@ impl AppState {
             data_dir: data.to_path_buf(),
             static_dir,
             prowlarr_ui_dir,
+            autobrr_ui_dir,
             changelog,
             notices,
             limits: Arc::new(auth::Limits::default()),
@@ -343,6 +350,8 @@ pub fn app(st: AppState) -> Router {
         .merge(releases::api::router())
         .merge(crossseed::api::router())
         .merge(prowlarr_ui::router(&st))
+        // autobrr's frontend; its API (track A-api, server/src/releases/) goes in place of the empty router
+        .merge(autobrr_ui::router(&st, Router::new()))
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))

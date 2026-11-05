@@ -44,6 +44,21 @@ RUN yarn build --env production \
  && find _output/UI -name '*.map' -delete \
  && test -f _output/UI/index.html
 
+# autobrr's web frontend (ui/autobrr, a snapshot fork of autobrr's web/, see UPSTREAM.md), built as autobrr's own
+# Dockerfile builds it: Node 24.19.0, pnpm at the version its package.json pins (packageManager), through corepack,
+# from the frozen lockfile, then tsc and vite. Served by the server at /autobrr/; only the built static files go into
+# the image, the source maps are left out.
+FROM --platform=$BUILDPLATFORM node:24.19.0-trixie-slim AS autobrr-ui
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable
+WORKDIR /src/ui/autobrr
+COPY ui/autobrr/package.json ui/autobrr/pnpm-lock.yaml ui/autobrr/pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY ui/autobrr ./
+RUN pnpm run build \
+ && find dist -name '*.map' -delete \
+ && test -f dist/index.html
+
 # The indexer definitions (Prowlarr/Indexers, schema v11) at build time, so Lantern has every site from the first
 # start; it updates them in the data folder by itself afterwards.
 FROM --platform=$BUILDPLATFORM alpine:3.22 AS defs
@@ -95,12 +110,13 @@ COPY --from=build /app /usr/local/bin/lantern
 COPY --from=build --chown=65532:65532 /data /data
 COPY --from=ui /src/web/dist /app/static
 COPY --from=prowlarr-ui /src/ui/prowlarr/_output/UI /app/ui/prowlarr
+COPY --from=autobrr-ui /src/ui/autobrr/dist /app/ui/autobrr
 COPY --from=defs /defs /app/definitions
 COPY --from=browser /out/ /
 COPY --from=announce /announce /app/announce
 ARG APP_VERSION=
 LABEL org.opencontainers.image.version="${APP_VERSION}"
-ENV APP_DATA_DIR=/data APP_STATIC_DIR=/app/static APP_PROWLARR_UI_DIR=/app/ui/prowlarr APP_DEFINITIONS_DIR=/app/definitions APP_ANNOUNCE_DIR=/app/announce APP_PORT=9696 \
+ENV APP_DATA_DIR=/data APP_STATIC_DIR=/app/static APP_PROWLARR_UI_DIR=/app/ui/prowlarr APP_AUTOBRR_UI_DIR=/app/ui/autobrr APP_DEFINITIONS_DIR=/app/definitions APP_ANNOUNCE_DIR=/app/announce APP_PORT=9696 \
     APP_SOLVER_PORT=8191 APP_CHROMIUM=/usr/lib/chromium/headless_shell
 USER nonroot
 VOLUME /data
