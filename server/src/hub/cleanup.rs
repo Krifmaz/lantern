@@ -1,6 +1,6 @@
 //! Seeding rules and cleanup. A torrent has seeded enough when it reaches the `seed_ratio` or has seeded for
 //! `seed_hours` (with neither set: when its client stopped it on its own limits); a Usenet download needs no
-//! seeding. Once an app says it has imported a grab (`POST /api/hub/grabs/{id}/imported`) and the grab has seeded
+//! seeding, nor does a Soulseek one. Once an app says it has imported a grab (`POST /api/hub/grabs/{id}/imported`) and the grab has seeded
 //! enough, the `cleanup` setting decides: `off` keeps everything, `remove` takes it out of the client and keeps
 //! the files, `delete` takes it out and deletes the files. A grab no app has imported is never cleaned up, and the
 //! files of a grab that cross-seed copies seed from are always kept (the copies still need them).
@@ -16,7 +16,7 @@ pub const CLEANUP: [&str; 3] = ["off", "remove", "delete"];
 impl Hub {
     /// Whether grab `g` has seeded enough under the seeding rules.
     pub fn seeded(&self, g: &Grab) -> bool {
-        if g.protocol == "usenet" {
+        if g.protocol == "usenet" || g.protocol == "soulseek" {
             return true;
         }
         let ratio = self.settings.float("seed_ratio");
@@ -54,19 +54,23 @@ impl Hub {
             return Ok(());
         }
         let rows = self.db.query(
-            "SELECT * FROM hub_grabs WHERE state IN ('seeding','completed') AND imported>0 AND client_id<>0 AND client_ref<>'' ORDER BY id",
+            "SELECT * FROM hub_grabs WHERE state IN ('seeding','completed') AND imported>0 AND ((client_id<>0 AND client_ref<>'') OR protocol='soulseek') ORDER BY id",
             p![],
         )?;
         for g in rows.iter().map(Grab::from_row) {
             if !self.seeded(&g) {
                 continue;
             }
-            let Ok(cfg) = self.client(g.client_id) else { continue };
-            let backend = self.backend(&cfg)?;
             let delete = how == "delete" && !self.shares_files(g.id);
-            if let Err(e) = backend.remove(&g.client_ref, delete).await {
-                tracing::warn!("download hub: cleaning up {}: {e}", g.title);
-                continue;
+            if g.protocol == "soulseek" {
+                self.drop_soulseek(&g, delete).await;
+            } else {
+                let Ok(cfg) = self.client(g.client_id) else { continue };
+                let backend = self.backend(&cfg)?;
+                if let Err(e) = backend.remove(&g.client_ref, delete).await {
+                    tracing::warn!("download hub: cleaning up {}: {e}", g.title);
+                    continue;
+                }
             }
             self.db.execute("UPDATE hub_grabs SET state='removed', speed=0, eta=0, updated=? WHERE id=?", p![crate::auth::now(), g.id])?;
             let g = self.get_grab(g.id)?;

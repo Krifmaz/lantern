@@ -57,6 +57,8 @@
   Cleanup never deletes files a cross-seed copy seeds from.
 - Apps and Download clients pages: every connected app with how it connects, its category, folders and
   downloads (live, with Try again and Stop), and the download clients with Add, Edit, Test, on/off and Remove.
+- Download hub: Soulseek as a music source through slskd: music searches also search Soulseek, and a grab
+  downloads the user's folder and puts it into the app's folder (Settings → Downloads → Soulseek).
 - Lantern can be added as a qBittorrent download client by any app (user name: the app's name, password: Lantern's
   API key). The app is registered on sight, its torrents go to the real client through the hub with Lantern's
   categories and folders, and it sees them by their info hash with paths in its own view.

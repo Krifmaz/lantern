@@ -28,7 +28,7 @@ pub const FILE_LINK: &str = "lantern-file:";
 const BACKOFF: [f64; 5] = [30.0, 120.0, 600.0, 1800.0, 3600.0];
 
 /// How long a download may be missing from its client right after it was sent (the client may not list it yet).
-const GRACE: f64 = 120.0;
+pub(super) const GRACE: f64 = 120.0;
 
 /// A grab, as stored (`hub_grabs`).
 #[derive(Debug, Clone)]
@@ -145,6 +145,8 @@ pub enum Source {
     Magnet(String),
     /// A `.torrent` or `.nzb` at an address.
     Url(String),
+    /// Files a Soulseek user shares (a [`super::soulseek::Pick`] link).
+    Soulseek(String),
 }
 
 /// The token a hub search hands out for a release: `<indexer>.<link>.<signature>`.
@@ -167,6 +169,9 @@ impl Hub {
                 .signer
                 .open_link(id, link, sig)
                 .ok_or_else(|| err(400, "This grab token is not one Lantern made. Search again and use the new one."))?;
+            if link.starts_with(super::soulseek::LINK) {
+                return Ok(Source::Soulseek(link));
+            }
             return Ok(if link.starts_with("magnet:") { Source::Magnet(link) } else { Source::Indexer(id, link) });
         }
         let url = text(body, "url").or_else(|| text(body, "download_url")).unwrap_or_default();
@@ -205,12 +210,16 @@ impl Hub {
                 (*id, link.clone(), protocol_name(ix.protocol()).to_string())
             }
             Source::Magnet(m) => (0, m.clone(), "torrent".to_string()),
+            Source::Soulseek(l) => (0, l.clone(), "soulseek".to_string()),
             Source::Url(u) => {
                 let guess = if u.to_lowercase().contains(".nzb") { "usenet" } else { "torrent" };
                 (0, u.clone(), given.filter(|g| g == "usenet" || g == "torrent").unwrap_or_else(|| guess.to_string()))
             }
         };
-        let title = text(body, "title").filter(|t| !t.is_empty()).unwrap_or_else(|| title_of(&link));
+        let title = text(body, "title").filter(|t| !t.is_empty()).unwrap_or_else(|| match super::soulseek::Pick::from_link(&link) {
+            Some(p) => p.title(),
+            None => title_of(&link),
+        });
         let now = crate::auth::now();
         let id = self.db.execute(
             "INSERT INTO hub_grabs (app_id, title, protocol, indexer_id, link, category, state, added, updated) VALUES (?,?,?,?,?,?,'queued',?,?)",
@@ -319,6 +328,9 @@ impl Hub {
         let g = self.get_grab(id)?;
         // a finished download may still sit in its client's history: removing it there is best effort
         let finished = g.state == "completed";
+        if g.protocol == "soulseek" && g.state != "removed" {
+            self.drop_soulseek(&g, delete_files).await;
+        }
         if g.client_id != 0 && (IN_CLIENT.contains(&g.state.as_str()) || finished) {
             if let Ok(cfg) = self.client(g.client_id) {
                 let backend = self.backend(&cfg)?;
@@ -349,7 +361,7 @@ impl Hub {
     }
 
     /// Sets `fields` of grab `id` and its `updated` time.
-    fn set(&self, id: i64, fields: &[(&str, Value)]) -> Result<()> {
+    pub(super) fn set(&self, id: i64, fields: &[(&str, Value)]) -> Result<()> {
         let mut sql = String::from("UPDATE hub_grabs SET updated=?");
         let mut params = p![crate::auth::now()];
         for (k, v) in fields {
@@ -372,6 +384,9 @@ impl Hub {
         if let Err(e) = self.follow().await {
             tracing::warn!("download hub: {}", e.detail);
         }
+        if let Err(e) = self.follow_soulseek().await {
+            tracing::warn!("download hub: {}", e.detail);
+        }
         if let Err(e) = self.clean_up().await {
             tracing::warn!("download hub: {}", e.detail);
         }
@@ -382,7 +397,8 @@ impl Hub {
         let due = self.db.query("SELECT * FROM hub_grabs WHERE state='queued' AND next_try<=? ORDER BY id", p![crate::auth::now()])?;
         for g in due.iter().map(Grab::from_row) {
             let Ok(app) = self.app(g.app_id) else { continue };
-            match self.send(&g, &app).await {
+            let sent = if g.protocol == "soulseek" { self.send_soulseek(&g).await } else { self.send(&g, &app).await };
+            match sent {
                 Ok(()) => {
                     let g = self.get_grab(g.id)?;
                     self.emit("grab.sent", &app, self.grab_json(&g, &app));
@@ -521,7 +537,7 @@ impl Hub {
     }
 
     /// Grab `g` failed with `why`: queued again after a wait, or failed for good after the last attempt.
-    fn failed(&self, g: &Grab, app: &App, why: &str) -> Result<()> {
+    pub(super) fn failed(&self, g: &Grab, app: &App, why: &str) -> Result<()> {
         let attempts = g.attempts + 1;
         let now = crate::auth::now();
         if attempts >= self.max_attempts() {

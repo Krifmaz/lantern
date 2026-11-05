@@ -105,3 +105,8 @@ Non-obvious calls, one line each, newest last.
   uses (a new app `SABnzbd <category>` the first time), since SABnzbd's API has only one key. The emulated NZBGet
   knows it by its Basic-auth user name, like qBittorrent, and keeps the parameters the app attaches (Sonarr's
   `drone`), which apps use to find their downloads again.
+- 2026-11-05 — Soulseek goes through slskd's web API rather than speaking the Soulseek protocol itself: slskd is
+  free, runs in Docker, and already handles the network, shares and queues. It is set up under Settings (one
+  slskd per Lantern), not as a download client, because it is a source and a client at once. Each search result is
+  one user folder; finished files are hardlinked (copied across file systems) into the app's folder so the app gets
+  one folder with exact paths, like every other download. Only music searches ask Soulseek (`soulseek=1` forces it).

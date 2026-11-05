@@ -112,6 +112,11 @@ When an app has its files it can say so (`POST /api/hub/grabs/{id}/imported`). U
 that seeded enough (`APP_SEED_RATIO`, `APP_SEED_HOURS`) is then kept, removed from its client, or removed with its
 files (`APP_CLEANUP`: `off`, `remove`, `delete`; `off` by default).
 
+**Soulseek** (music): run [slskd](https://github.com/slskd/slskd) and give Lantern its address and an API key
+(`APP_SOULSEEK_URL`, `APP_SOULSEEK_API_KEY`), plus where Lantern sees slskd's downloads folder
+(`APP_SOULSEEK_DOWNLOADS`, default `<downloads>/soulseek`). Music searches then also search Soulseek (one result
+per shared folder), and a finished grab is hardlinked into the app's folder.
+
 ## Checks
 
 In `server/`, `web/` and `desktop/`: `cargo fmt --all --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`.
