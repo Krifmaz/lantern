@@ -21,11 +21,14 @@ use std::collections::HashMap;
 /// The grabs Lantern still follows in a client.
 pub const IN_CLIENT: [&str; 4] = ["waiting", "downloading", "paused", "seeding"];
 
+/// How a grab's link names a release file kept in the data folder (`lantern-file:12.torrent`).
+pub const FILE_LINK: &str = "lantern-file:";
+
 /// Seconds before sending again, after the 1st, 2nd … failure.
 const BACKOFF: [f64; 5] = [30.0, 120.0, 600.0, 1800.0, 3600.0];
 
 /// How long a download may be missing from its client right after it was sent (the client may not list it yet).
-const GRACE: f64 = 120.0;
+pub(super) const GRACE: f64 = 120.0;
 
 /// A grab, as stored (`hub_grabs`).
 #[derive(Debug, Clone)]
@@ -82,6 +85,12 @@ pub struct Grab {
     pub seed_secs: i64,
     /// When its app said it imported the files (0: not yet).
     pub imported: f64,
+    /// The torrent's info hash in lower-case hex (empty: Usenet, or not known yet).
+    pub infohash: String,
+    /// The category the app asked for through an emulated client (`tv-sonarr`); empty for Lantern's own API.
+    pub ext_category: String,
+    /// The parameters the app attached through the emulated NZBGet (JSON, `[{"Name": "drone", "Value": …}]`).
+    pub ext_params: String,
 }
 
 impl Grab {
@@ -115,6 +124,9 @@ impl Grab {
             ratio: r.f("ratio"),
             seed_secs: r.i("seed_secs"),
             imported: r.f("imported"),
+            infohash: r.s("infohash"),
+            ext_category: r.s("ext_category"),
+            ext_params: r.s("ext_params"),
         }
     }
 
@@ -133,6 +145,8 @@ pub enum Source {
     Magnet(String),
     /// A `.torrent` or `.nzb` at an address.
     Url(String),
+    /// Files a Soulseek user shares (a [`super::soulseek::Pick`] link).
+    Soulseek(String),
 }
 
 /// The token a hub search hands out for a release: `<indexer>.<link>.<signature>`.
@@ -155,6 +169,9 @@ impl Hub {
                 .signer
                 .open_link(id, link, sig)
                 .ok_or_else(|| err(400, "This grab token is not one Lantern made. Search again and use the new one."))?;
+            if link.starts_with(super::soulseek::LINK) {
+                return Ok(Source::Soulseek(link));
+            }
             return Ok(if link.starts_with("magnet:") { Source::Magnet(link) } else { Source::Indexer(id, link) });
         }
         let url = text(body, "url").or_else(|| text(body, "download_url")).unwrap_or_default();
@@ -193,17 +210,64 @@ impl Hub {
                 (*id, link.clone(), protocol_name(ix.protocol()).to_string())
             }
             Source::Magnet(m) => (0, m.clone(), "torrent".to_string()),
+            Source::Soulseek(l) => (0, l.clone(), "soulseek".to_string()),
             Source::Url(u) => {
                 let guess = if u.to_lowercase().contains(".nzb") { "usenet" } else { "torrent" };
                 (0, u.clone(), given.filter(|g| g == "usenet" || g == "torrent").unwrap_or_else(|| guess.to_string()))
             }
         };
-        let title = text(body, "title").filter(|t| !t.is_empty()).unwrap_or_else(|| title_of(&link));
+        let title = text(body, "title").filter(|t| !t.is_empty()).unwrap_or_else(|| match super::soulseek::Pick::from_link(&link) {
+            Some(p) => p.title(),
+            None => title_of(&link),
+        });
         let now = crate::auth::now();
         let id = self.db.execute(
             "INSERT INTO hub_grabs (app_id, title, protocol, indexer_id, link, category, state, added, updated) VALUES (?,?,?,?,?,?,'queued',?,?)",
             p![app.id, title, protocol, indexer_id, link, app.category, now, now],
         )?;
+        self.seen(app.id);
+        if let Some(h) = super::torrent::magnet_hash(&link) {
+            self.set(id, &[("infohash", json!(h))])?;
+        }
+        let g = self.get_grab(id)?;
+        self.emit("grab.queued", app, self.grab_json(&g, app));
+        Ok(g)
+    }
+
+    /// Queues a grab for `app` of `content` an app handed over itself (an emulated client's upload or magnet),
+    /// in the category `ext_category` the app asked for. A file is kept in the data folder until the grab is
+    /// removed, so it can be sent again.
+    pub fn grab_content(&self, app: &App, content: Content, title: &str, ext_category: &str) -> Result<Grab> {
+        let (protocol, infohash) = match &content {
+            Content::Magnet(m) => ("torrent", super::torrent::magnet_hash(m).unwrap_or_default()),
+            Content::Torrent(b) => ("torrent", super::torrent::info_hash(b).unwrap_or_default()),
+            Content::Nzb(_) => ("usenet", String::new()),
+        };
+        let title = if title.trim().is_empty() {
+            match &content {
+                Content::Magnet(m) => title_of(m),
+                _ => "Release".to_string(),
+            }
+        } else {
+            title.trim().to_string()
+        };
+        let now = crate::auth::now();
+        let id = self.db.execute(
+            "INSERT INTO hub_grabs (app_id, title, protocol, category, state, infohash, ext_category, added, updated) VALUES (?,?,?,?,'queued',?,?,?,?)",
+            p![app.id, title, protocol, app.category, infohash, ext_category, now, now],
+        )?;
+        let link = match &content {
+            Content::Magnet(m) => m.clone(),
+            Content::Torrent(b) | Content::Nzb(b) => {
+                let name = format!("{id}.{}", if protocol == "usenet" { "nzb" } else { "torrent" });
+                let dir = self.data_dir.join("grabs");
+                std::fs::create_dir_all(&dir)
+                    .and_then(|_| std::fs::write(dir.join(&name), b))
+                    .map_err(|e| err(507, format!("Lantern couldn't keep the release file in its data folder: {e}")))?;
+                format!("{FILE_LINK}{name}")
+            }
+        };
+        self.set(id, &[("link", json!(link))])?;
         self.seen(app.id);
         let g = self.get_grab(id)?;
         self.emit("grab.queued", app, self.grab_json(&g, app));
@@ -233,12 +297,12 @@ impl Hub {
         let view = |p: &str| if p.is_empty() { String::new() } else { paths::to_app(p, &folder, &app.import_path) };
         json!({
             "id": g.id, "app_id": g.app_id, "app": app.name, "title": g.title, "protocol": g.protocol,
-            "indexer_id": g.indexer_id, "category": g.category, "state": g.state, "progress": g.progress,
+            "indexer_id": g.indexer_id, "client_id": g.client_id, "category": g.category, "state": g.state, "progress": g.progress,
             "size": g.size, "speed": g.speed, "eta": g.eta, "path": view(&g.path),
             "files": g.files.iter().map(|(p, s)| json!({ "path": view(p), "size": s })).collect::<Vec<_>>(),
             "error": g.error, "attempts": g.attempts, "next_try": g.next_try, "added": g.added,
             "updated": g.updated, "finished": g.finished, "ratio": g.ratio, "seed_secs": g.seed_secs,
-            "imported": g.imported, "seeded": matches!(g.state.as_str(), "seeding" | "completed") && self.seeded(g),
+            "imported": g.imported, "infohash": g.infohash, "seeded": matches!(g.state.as_str(), "seeding" | "completed") && self.seeded(g),
         })
     }
 
@@ -262,16 +326,27 @@ impl Hub {
     /// Stops grab `id`: removes it from its client (and its files when `delete_files`) and marks it removed.
     pub async fn remove_grab(&self, id: i64, delete_files: bool) -> Result<Grab> {
         let g = self.get_grab(id)?;
-        if g.client_id != 0 && IN_CLIENT.contains(&g.state.as_str()) {
+        // a finished download may still sit in its client's history: removing it there is best effort
+        let finished = g.state == "completed";
+        if g.protocol == "soulseek" && g.state != "removed" {
+            self.drop_soulseek(&g, delete_files).await;
+        }
+        if g.client_id != 0 && (IN_CLIENT.contains(&g.state.as_str()) || finished) {
             if let Ok(cfg) = self.client(g.client_id) {
                 let backend = self.backend(&cfg)?;
                 let item_id = if g.client_ref.is_empty() { self.find_ref(&cfg, &g).await } else { Some(g.client_ref.clone()) };
                 if let Some(item_id) = item_id {
-                    backend.remove(&item_id, delete_files).await.map_err(|e| err(502, e))?;
+                    match backend.remove(&item_id, delete_files).await {
+                        Err(e) if !finished => return Err(err(502, e)),
+                        _ => {}
+                    }
                 }
             }
         }
         self.set(id, &[("state", json!("removed")), ("speed", json!(0)), ("eta", json!(0))])?;
+        if let Some(name) = g.link.strip_prefix(FILE_LINK) {
+            let _ = std::fs::remove_file(self.data_dir.join("grabs").join(name));
+        }
         let g = self.get_grab(id)?;
         if let Ok(app) = self.app(g.app_id) {
             self.emit("grab.removed", &app, self.grab_json(&g, &app));
@@ -286,7 +361,7 @@ impl Hub {
     }
 
     /// Sets `fields` of grab `id` and its `updated` time.
-    fn set(&self, id: i64, fields: &[(&str, Value)]) -> Result<()> {
+    pub(super) fn set(&self, id: i64, fields: &[(&str, Value)]) -> Result<()> {
         let mut sql = String::from("UPDATE hub_grabs SET updated=?");
         let mut params = p![crate::auth::now()];
         for (k, v) in fields {
@@ -309,6 +384,9 @@ impl Hub {
         if let Err(e) = self.follow().await {
             tracing::warn!("download hub: {}", e.detail);
         }
+        if let Err(e) = self.follow_soulseek().await {
+            tracing::warn!("download hub: {}", e.detail);
+        }
         if let Err(e) = self.clean_up().await {
             tracing::warn!("download hub: {}", e.detail);
         }
@@ -319,7 +397,8 @@ impl Hub {
         let due = self.db.query("SELECT * FROM hub_grabs WHERE state='queued' AND next_try<=? ORDER BY id", p![crate::auth::now()])?;
         for g in due.iter().map(Grab::from_row) {
             let Ok(app) = self.app(g.app_id) else { continue };
-            match self.send(&g, &app).await {
+            let sent = if g.protocol == "soulseek" { self.send_soulseek(&g).await } else { self.send(&g, &app).await };
+            match sent {
                 Ok(()) => {
                     let g = self.get_grab(g.id)?;
                     self.emit("grab.sent", &app, self.grab_json(&g, &app));
@@ -334,6 +413,16 @@ impl Hub {
     async fn send(&self, g: &Grab, app: &App) -> std::result::Result<(), String> {
         let content = self.fetch(g).await?;
         let protocol = content.protocol();
+        if g.infohash.is_empty() {
+            let h = match &content {
+                Content::Magnet(m) => super::torrent::magnet_hash(m),
+                Content::Torrent(b) => super::torrent::info_hash(b),
+                Content::Nzb(_) => None,
+            };
+            if let Some(h) = h {
+                self.set(g.id, &[("infohash", json!(h))]).map_err(|e| e.detail)?;
+            }
+        }
         let cfg = self.client_for(protocol).map_err(|e| e.detail)?.ok_or_else(|| {
             format!(
                 "There is no download client for {} yet. Add one under Download clients.",
@@ -367,6 +456,11 @@ impl Hub {
     async fn fetch(&self, g: &Grab) -> std::result::Result<Content, String> {
         if g.link.starts_with("magnet:") {
             return Ok(Content::Magnet(g.link.clone()));
+        }
+        if let Some(name) = g.link.strip_prefix(FILE_LINK) {
+            let bytes = std::fs::read(self.data_dir.join("grabs").join(name))
+                .map_err(|_| "The release file the app sent is no longer in Lantern's data folder.".to_string())?;
+            return Ok(if g.protocol == "usenet" { Content::Nzb(bytes) } else { Content::Torrent(bytes) });
         }
         let bytes = if g.indexer_id != 0 {
             match self.indexers.grab(g.indexer_id, &g.link, &g.title, "Lantern").await.map_err(|e| e.detail)? {
@@ -411,6 +505,27 @@ impl Hub {
         }
     }
 
+    /// The release at `url` (a `.torrent` or `.nzb` address an app gave, or a redirect to a magnet).
+    pub async fn fetch_url(&self, url: &str) -> std::result::Result<Content, String> {
+        let probe = Grab { link: url.to_string(), ..self.blank() };
+        self.fetch(&probe).await
+    }
+
+    /// Sets the category grab `id` shows in an emulated client.
+    pub fn set_ext_category_of(&self, id: i64, category: &str) -> Result<()> {
+        self.set(id, &[("ext_category", json!(category))])
+    }
+
+    /// Keeps the parameters an app attached to grab `id` (NZBGet's `PPParameters`).
+    pub fn set_ext_params(&self, id: i64, params: Value) -> Result<()> {
+        self.set(id, &[("ext_params", json!(params.to_string()))])
+    }
+
+    /// An empty grab, for fetching an address before there is a grab.
+    fn blank(&self) -> Grab {
+        Grab::from_row(&Row::new())
+    }
+
     /// An HTTP client that doesn't follow redirects (a redirect may lead to a magnet link).
     fn http_no_redirect(&self) -> reqwest::Client {
         reqwest::Client::builder()
@@ -422,7 +537,7 @@ impl Hub {
     }
 
     /// Grab `g` failed with `why`: queued again after a wait, or failed for good after the last attempt.
-    fn failed(&self, g: &Grab, app: &App, why: &str) -> Result<()> {
+    pub(super) fn failed(&self, g: &Grab, app: &App, why: &str) -> Result<()> {
         let attempts = g.attempts + 1;
         let now = crate::auth::now();
         if attempts >= self.max_attempts() {

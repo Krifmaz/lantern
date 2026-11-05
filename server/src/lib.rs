@@ -16,11 +16,13 @@
 //! | `/api/keeper`, `/api/keeper/*` (the account keeper) | [`keeper`] |
 //! | `/api/import/*` (Prowlarr and FlareSolverr, dry run first) | [`migrate`] |
 //! | `/api/releases/*` (IRC announces, RSS, filters) | [`releases`] |
+//! | `/api/cross-seed/*` | [`crossseed`] |
 //!
 //! Everything the app adds of its own goes into [`app`] next to them.
 
 pub mod auth;
 pub mod checks;
+pub mod crossseed;
 pub mod hub;
 pub mod indexers;
 pub mod keeper;
@@ -109,6 +111,8 @@ pub struct AppState {
     pub vault: vault::Vault,
     /// Releases as they appear: IRC announces, RSS, filters.
     pub releases: releases::Releases,
+    /// Cross-seeding: finished torrents seeded on the other sites that have the same files.
+    pub cross_seed: crossseed::CrossSeed,
 }
 
 impl AppState {
@@ -145,6 +149,7 @@ impl AppState {
         releases::migrate(&db)?;
         solver::migrate(&db)?;
         let solver = solver::Solver::new(solver::find_program(env("APP_CHROMIUM").as_deref()), data, Some(db.clone()));
+        crossseed::migrate(&db)?;
         let bundled = PathBuf::from(env("APP_DEFINITIONS_DIR").unwrap_or_else(|| "/app/definitions".into()));
         let library = indexers::library::Library::new(Some(bundled), data);
         let signer = indexers::LinkSigner::open(data)?;
@@ -168,7 +173,7 @@ impl AppState {
             Ok(n) => tracing::info!("{n} indexers' logins and cookies sealed in the vault"),
             Err(e) => tracing::warn!("The indexers' logins can't be sealed yet: {}", e.detail),
         }
-        let hub = hub::Hub::new(db.clone(), indexers.clone(), signer.clone(), settings.clone());
+        let hub = hub::Hub::new(db.clone(), indexers.clone(), signer.clone(), settings.clone(), data);
         let announce_dir = PathBuf::from(env("APP_ANNOUNCE_DIR").unwrap_or_else(|| "/app/announce".into()));
         let announce = releases::announce::Library::new(vec![announce_dir, data.join("announce")]);
         let releases = releases::Releases::new(db.clone(), announce, indexers.clone(), signer.clone(), settings.clone());
@@ -185,6 +190,7 @@ impl AppState {
             limits: Arc::new(auth::Limits::default()),
             indexers,
             signer,
+            cross_seed: crossseed::CrossSeed::new(hub.clone()),
             hub,
             vault,
             releases,
@@ -309,6 +315,7 @@ pub fn app(st: AppState) -> Router {
         .merge(keeper::api::router())
         .merge(migrate::api::router())
         .merge(releases::api::router())
+        .merge(crossseed::api::router())
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))

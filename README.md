@@ -50,6 +50,12 @@ Outside the image, set `APP_CHROMIUM` to a Chromium or Chrome program.
    to Sonarr, Radarr, Lidarr, Readarr or Whisparr. **Check a release** shows which filter would take a name and why.
 3. **Recent** lists every release seen and what happened to it. A release goes out seconds after it is announced.
 
+## Cross-seed
+
+When a torrent grab finishes, Lantern looks for the same release on your other torrent sites. A copy with exactly
+the same files is added to the same download client next to the files already there, so it seeds on more sites
+without downloading again. The Cross-seed page lists every copy found and what happened to it.
+
 ## First steps
 
 1. Make the lock files and commit them (CI and the Docker build use `--locked`):
@@ -90,6 +96,11 @@ docker run --read-only -p 9696:9696 -p 8191:8191 -v lantern-data:/data lantern
 Download clients: qBittorrent (default for torrents), Transmission, Deluge, rTorrent, SABnzbd (default for Usenet)
 and NZBGet. Apps never see which one a grab went to.
 
+Apps that only know download clients can add Lantern as one, at Lantern's address and port:
+**qBittorrent** (user name: the app's name, password: Lantern's API key), **SABnzbd** (API key: Lantern's; URL base
+empty or `/sabnzbd`) or **NZBGet** (user name: the app's name, password: Lantern's API key). Set each app's own
+view of its folder on the Apps page (`import_path`) when its container mounts the downloads elsewhere.
+
 Apps need only Lantern's address and API key (`X-Api-Key`). They register once (`POST /api/hub/apps` with `name`,
 `media`, `import_path`, `callback_url`), search (`GET /api/hub/search?app=`), grab (`POST /api/hub/grabs` with a
 result's `token` or any `url`), and hear back through their callback address or the live stream
@@ -100,6 +111,11 @@ result's `token` or any `url`), and hear back through their callback address or 
 When an app has its files it can say so (`POST /api/hub/grabs/{id}/imported`). Under Settings → Downloads, a download
 that seeded enough (`APP_SEED_RATIO`, `APP_SEED_HOURS`) is then kept, removed from its client, or removed with its
 files (`APP_CLEANUP`: `off`, `remove`, `delete`; `off` by default).
+
+**Soulseek** (music): run [slskd](https://github.com/slskd/slskd) and give Lantern its address and an API key
+(`APP_SOULSEEK_URL`, `APP_SOULSEEK_API_KEY`), plus where Lantern sees slskd's downloads folder
+(`APP_SOULSEEK_DOWNLOADS`, default `<downloads>/soulseek`). Music searches then also search Soulseek (one result
+per shared folder), and a finished grab is hardlinked into the app's folder.
 
 ## Checks
 

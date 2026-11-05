@@ -40,6 +40,9 @@
   value can be copied, secrets marked sensitive on the clipboard.
 - Android: Downloads (what Lantern downloads for the apps, with progress, speed, time left and what went wrong;
   Try again and Remove for admins) and Apps (every connected app with its folder and downloads by state).
+- Android: Account health. Every tracker and Usenet account, the ones at risk first, with ratio, upload,
+  download, seed time, bonus and hit-and-runs and each risk in words; Sign in now and I signed in today. Home shows
+  how many accounts are at risk.
 - Import from Prowlarr (a backup, its database or its API) and FlareSolverr (its settings pasted in), on a new
   Import page: a dry run first that says line by line what would be added, skipped or left to you, then Import.
   Indexers keep their logins (also saved in the vault) and Prowlarr's numbers, Lantern can take Prowlarr's API key and proxy, and the apps
@@ -50,6 +53,21 @@
   or to a download client through the download hub, within seconds. A Releases page shows what came and why each was sent or skipped, and checks any release name.
 - Download hub: seeding rules (seed to a ratio or for some hours) and cleanup once an app says it imported a
   download: keep it, remove it from the client, or remove it with its files (off by default).
+- Cross-seed: finished torrents are searched on the other torrent indexers; a copy with exactly the same files is
+  added to the same download client next to the files already there (category `<app>.cross-seed`, so apps don't
+  import it twice). A Cross-seed page shows what happened to every copy found; Settings → Downloads turns it off.
+  Cleanup never deletes files a cross-seed copy seeds from.
+- Apps and Download clients pages: every connected app with how it connects, its category, folders and
+  downloads (live, with Try again and Stop), and the download clients with Add, Edit, Test, on/off and Remove.
+- Download hub: Soulseek as a music source through slskd: music searches also search Soulseek, and a grab
+  downloads the user's folder and puts it into the app's folder (Settings → Downloads → Soulseek).
+- Contract test: real Sonarr, Radarr, Lidarr and Readarr also add Lantern as their qBittorrent, SABnzbd and NZBGet.
+- Lantern can be added as a qBittorrent download client by any app (user name: the app's name, password: Lantern's
+  API key). The app is registered on sight, its torrents go to the real client through the hub with Lantern's
+  categories and folders, and it sees them by their info hash with paths in its own view.
+- Lantern can also be added as a SABnzbd (`/api`, `/sabnzbd/api`) or NZBGet (`/jsonrpc`) download client; NZBs go to
+  the real Usenet client through the hub and the queue and history answer in each app's own terms. A finished
+  download an app removes is also taken out of the real client's history.
 
 ## 0.0.1
 

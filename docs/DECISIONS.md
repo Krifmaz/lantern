@@ -82,6 +82,12 @@ Non-obvious calls, one line each, newest last.
   switch by address only; `APP_SOLVER_PORT=0` turns it off for anyone who doesn't need it.
 - 2026-11-05 — When a site checks every plain request even with the cookies, a GET is read through the browser
   instead (pages only; files still go through Lantern's own client).
+- 2026-11-05 — Cross-seed matches strictly: same release name (punctuation and file ending aside), size within 2 %,
+  then every file's path and size equal in the candidate's `.torrent`. Copies whose files differ are listed, never
+  added, so nothing is ever downloaded again or renamed. Magnet-only sites are skipped (no file list to compare).
+- 2026-11-05 — Cross-seed copies go into `<app category>.cross-seed` at the app's folder, tagged `lantern-xs-<grab>`,
+  so the app doesn't import them again and the hub's grab tracking never mistakes them for grabs. Each grab is
+  searched when it finishes and again weekly, four times at most, 30 s apart by default.
 - 2026-11-05 — The keeper's account numbers (ratio, upload, download, bonus) are typed in or sent through
   `PUT /api/keeper/{id}/stats`: tracker profile pages differ per site and the Cardigann definitions don't describe them.
   Sign-ins and activity are automatic for accounts linked to an indexer (its search, test and grab history).
@@ -93,3 +99,21 @@ Non-obvious calls, one line each, newest last.
   associated text per column, not per id, since an import may renumber indexers) rather than copied into vault items:
   the indexer stays the one place its login is edited, and nothing else reads that table. The first start after the
   change seals older rows and vacuums the database so no plain copy is left in free pages.
+- 2026-11-05 — The emulated qBittorrent identifies each app by the user name it signs in with (its password is
+  Lantern's API key), and registers it on first sign-in. Sessions live in memory: after a restart the app signs in
+  again on its own, as it does with a real qBittorrent. Calls that only tune the client (tags, priorities, share
+  limits, pause/resume) are accepted and ignored, since Lantern's own rules decide.
+- 2026-11-05 — Torrents an app uploads are kept in `<data>/grabs/` until the grab is removed, so a failed send can
+  be retried; their info hash is worked out from the file (SHA-1 of the `info` dictionary), as apps expect.
+- 2026-11-05 — The emulated SABnzbd knows the app by `ma_username` when the app sends one, else by the category it
+  uses (a new app `SABnzbd <category>` the first time), since SABnzbd's API has only one key. The emulated NZBGet
+  knows it by its Basic-auth user name, like qBittorrent, and keeps the parameters the app attaches (Sonarr's
+  `drone`), which apps use to find their downloads again.
+- 2026-11-05 — Soulseek goes through slskd's web API rather than speaking the Soulseek protocol itself: slskd is
+  free, runs in Docker, and already handles the network, shares and queues. It is set up under Settings (one
+  slskd per Lantern), not as a download client, because it is a source and a client at once. Each search result is
+  one user folder; finished files are hardlinked (copied across file systems) into the app's folder so the app gets
+  one folder with exact paths, like every other download. Only music searches ask Soulseek (`soulseek=1` forces it).
+- 2026-11-05 — The emulated SABnzbd and NZBGet offer the categories Sonarr, Radarr, Lidarr and Readarr use out of the
+  box (in small letters and with a capital, as Radarr's NZBGet `Movies` and Readarr's `Readarr`), besides each app's
+  own, because the apps refuse to save a client whose category they don't see; Lantern takes any category anyway.

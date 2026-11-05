@@ -36,6 +36,9 @@ sealed interface Page {
     /** The apps connected to Lantern; [admin] is passed on to their downloads. */
     data class Apps(val admin: Boolean?) : Page
 
+    /** How every tracker and Usenet account is doing; [admin] may sign in now (null: not known yet). */
+    data class Accounts(val admin: Boolean?) : Page
+
     /** The accounts in the vault; the [owner] may see their secrets (null: not known yet). */
     data class Vault(val owner: Boolean?) : Page
 
@@ -87,6 +90,8 @@ fun AppShell(app: App) {
         Page.Search -> SearchPage(app, onBack = back)
 
         is Page.Vault -> VaultPage(app, page.owner, onBack = back)
+
+        is Page.Accounts -> AccountsPage(app, page.admin, onBack = back)
 
         is Page.Downloads -> DownloadsPage(app, page.admin, page.appId, page.appName, onBack = back)
 

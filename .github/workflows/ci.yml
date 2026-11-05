@@ -40,7 +40,8 @@ jobs:
       project-dir: android
       baseline-profile: true
 
-  # Real Sonarr, Radarr, Lidarr and Readarr add Lantern as a Torznab indexer (scripts/contract-arrs.sh)
+  # Real Sonarr, Radarr, Lidarr and Readarr add Lantern as a Torznab indexer and as their qBittorrent, SABnzbd and
+  # NZBGet (scripts/contract-arrs.sh)
   contract:
     needs: test
     runs-on: ubuntu-latest
