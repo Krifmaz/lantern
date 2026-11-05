@@ -40,6 +40,17 @@ pub type HubFuture<'a> = Pin<Box<dyn Future<Output = Result<String, String>> + S
 pub trait DownloadHub: Send + Sync + 'static {
     /// Starts downloading `grab`; what happened in words, or why it couldn't.
     fn add<'a>(&'a self, grab: &'a Grab) -> HubFuture<'a>;
+
+    /// The hub's download clients as (kind, address), so an autobrr action whose client is one of them goes
+    /// through the hub.
+    fn clients(&self) -> Vec<(String, String)> {
+        Vec::new()
+    }
+
+    /// Whether the hub has an app named `name`.
+    fn has_app(&self, _name: &str) -> bool {
+        false
+    }
 }
 
 /// The hub app a client push goes to when the filter names none.
@@ -61,6 +72,14 @@ impl DownloadHub for crate::hub::Hub {
                 .map_err(|e| e.detail)?;
             Ok(format!("Sent to the download hub for {} (grab {})", app.name, g.id))
         })
+    }
+
+    fn clients(&self) -> Vec<(String, String)> {
+        crate::hub::Hub::clients(self).unwrap_or_default().into_iter().filter(|c| c.enabled).map(|c| (c.kind, c.url)).collect()
+    }
+
+    fn has_app(&self, name: &str) -> bool {
+        self.app_named(name).is_ok()
     }
 }
 

@@ -658,33 +658,33 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `PATCH /api/auth/user/{username}` | A-api | todo | |  |
 | `GET /api/healthz/liveness` | A-api | todo | |  |
 | `GET /api/healthz/readiness` | A-api | todo | |  |
-| `GET /api/actions` | A-api | todo | |  |
-| `POST /api/actions` | A-api | todo | |  |
-| `DELETE /api/actions/{actionID}` | A-api | todo | |  |
-| `PUT /api/actions/{actionID}` | A-api | todo | |  |
-| `PATCH /api/actions/{actionID}/toggleEnabled` | A-api | todo | |  |
+| `GET /api/actions` | A-api | done | server/tests/autobrr_api.rs::actions_store_toggle_and_delete | ported; served at `/autobrr/api` |
+| `POST /api/actions` | A-api | done | server/tests/autobrr_api.rs::actions_store_toggle_and_delete | ported; served at `/autobrr/api` |
+| `DELETE /api/actions/{actionID}` | A-api | done | server/tests/autobrr_api.rs::actions_store_toggle_and_delete | ported; served at `/autobrr/api` |
+| `PUT /api/actions/{actionID}` | A-api | done | server/tests/autobrr_api.rs::actions_store_toggle_and_delete | ported; served at `/autobrr/api` |
+| `PATCH /api/actions/{actionID}/toggleEnabled` | A-api | done | server/tests/autobrr_api.rs::actions_store_toggle_and_delete | ported; served at `/autobrr/api` |
 | `GET /api/alerts` | A-api | todo | |  |
 | `GET /api/config` | A-api | todo | |  |
 | `PATCH /api/config` | A-api | todo | |  |
-| `GET /api/downloaders` | A-api | todo | |  |
-| `POST /api/downloaders` | A-api | todo | |  |
-| `PUT /api/downloaders` | A-api | todo | |  |
-| `POST /api/downloaders/test` | A-api | todo | |  |
-| `GET /api/downloaders/{clientID}` | A-api | todo | |  |
-| `DELETE /api/downloaders/{clientID}` | A-api | todo | |  |
-| `GET /api/downloaders/{clientID}/arr/tags` | A-api | todo | |  |
-| `GET /api/filters` | A-api | todo | |  |
-| `POST /api/filters` | A-api | todo | |  |
-| `POST /api/filters/indexers/prune-deprecated` | A-api | todo | |  |
-| `POST /api/filters/external/test` | A-api | todo | |  |
-| `GET /api/filters/{filterID}` | A-api | todo | |  |
-| `PUT /api/filters/{filterID}` | A-api | todo | |  |
-| `PATCH /api/filters/{filterID}` | A-api | todo | |  |
-| `DELETE /api/filters/{filterID}` | A-api | todo | |  |
-| `GET /api/filters/{filterID}/duplicate` | A-api | todo | |  |
-| `PUT /api/filters/{filterID}/enabled` | A-api | todo | |  |
-| `GET /api/filters/{filterID}/notifications` | A-api | todo | |  |
-| `PUT /api/filters/{filterID}/notifications` | A-api | todo | |  |
+| `GET /api/downloaders` | A-api | done | server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported; served at `/autobrr/api` |
+| `POST /api/downloaders` | A-api | done | server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported; served at `/autobrr/api` |
+| `PUT /api/downloaders` | A-api | done | server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported; served at `/autobrr/api` |
+| `POST /api/downloaders/test` | A-api | partial | server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported; served at `/autobrr/api`; only the error answer is proven (each client's test is ported, not run against a real client) |
+| `GET /api/downloaders/{clientID}` | A-api | done | server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported; served at `/autobrr/api` |
+| `DELETE /api/downloaders/{clientID}` | A-api | done | server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported; served at `/autobrr/api` |
+| `GET /api/downloaders/{clientID}/arr/tags` | A-api | partial | server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported; served at `/autobrr/api`; only the empty answer for a torrent client is proven |
+| `GET /api/filters` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
+| `POST /api/filters` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
+| `POST /api/filters/indexers/prune-deprecated` | A-api | partial | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | answers autobrr's shape; always removes 0, since release sources stand in for indexers |
+| `POST /api/filters/external/test` | A-api | done | server/tests/autobrr_api.rs::external_filter_test_route, server/src/releases/external.rs::tests::test_external_reports | ported; served at `/autobrr/api` |
+| `GET /api/filters/{filterID}` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
+| `PUT /api/filters/{filterID}` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
+| `PATCH /api/filters/{filterID}` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
+| `DELETE /api/filters/{filterID}` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
+| `GET /api/filters/{filterID}/duplicate` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
+| `PUT /api/filters/{filterID}/enabled` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
+| `GET /api/filters/{filterID}/notifications` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
+| `PUT /api/filters/{filterID}/notifications` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
 | `GET /api/feeds` | A-api | todo | |  |
 | `POST /api/feeds` | A-api | todo | |  |
 | `POST /api/feeds/test` | A-api | todo | |  |
@@ -905,70 +905,70 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `IsAutoUpdated` | A-api | partial | | stored; set by lists (lists slice) |
 | `ReleaseProfileDuplicateID` | A-api | partial | | stored; duplicate profiles come with the releases slice |
 | `DuplicateHandling` | A-api | todo | |  |
-| External filters (exec, webhook) with expected status | A-api | todo | |  |
-| Filter notifications per event | A-api | todo | |  |
+| External filters (exec, webhook) with expected status | A-api | done | server/src/releases/external.rs::tests::exec_exit_code_decides, server/src/releases/external.rs::tests::webhook_status_and_retries, server/tests/autobrr_api.rs::a_passing_release_runs_the_filters_autobrr_actions | ported (exec with an argument list; webhook with retries) |
+| Filter notifications per event | A-api | partial | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | stored and validated; sending comes with the notifications slice |
 
 ### Actions
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `TEST` | A-api | todo | |  |
-| `EXEC` | A-api | todo | |  |
-| `QBITTORRENT` | A-api | partial | | fresh version |
-| `DELUGE_V1` | A-api | todo | |  |
-| `DELUGE_V2` | A-api | todo | |  |
-| `RTORRENT` | A-api | todo | |  |
-| `TRANSMISSION` | A-api | todo | |  |
-| `PORLA` | A-api | todo | |  |
-| `ARIA2` | A-api | todo | |  |
-| `WATCH_FOLDER` | A-api | partial | | fresh version |
-| `WEBHOOK` | A-api | todo | |  |
-| `RADARR` | A-api | partial | | fresh version |
-| `SONARR` | A-api | partial | | fresh version |
-| `LIDARR` | A-api | partial | | fresh version |
-| `WHISPARR` | A-api | todo | |  |
-| `WHISPARR_V3` | A-api | todo | |  |
-| `READARR` | A-api | partial | | fresh version |
-| `SPORTARR` | A-api | todo | |  |
-| `SABNZBD` | A-api | todo | |  |
-| `NZBGET` | A-api | todo | |  |
+| `TEST` | A-api | done | server/src/releases/run.rs::tests::test_webhook_unsupported_and_usenet_protocol | ported |
+| `EXEC` | A-api | done | server/src/releases/run.rs::tests::exec_runs_with_an_argument_list, server/src/releases/run.rs::tests::preconditions_skip_download_for_plain_exec | ported; runs with an argument list split like go-shellquote, never a shell |
+| `QBITTORRENT` | A-api | partial | server/src/releases/run.rs::tests::option_builders | ported; not yet proven against a stand-in client; goes through the download hub when the hub has the same client (server/src/releases/run.rs::tests::hub_routing_matches_kind_and_address) |
+| `DELUGE_V1` | A-api | partial | server/src/releases/clients/deluge.rs::tests::answers_and_errors | ported (rencode RPC); not yet proven against a stand-in client; goes through the download hub when the hub has the same client (server/src/releases/run.rs::tests::hub_routing_matches_kind_and_address) |
+| `DELUGE_V2` | A-api | partial | server/src/releases/clients/deluge.rs::tests::deluge2_request_has_header_and_body | ported (rencode RPC); not yet proven against a stand-in client; goes through the download hub when the hub has the same client (server/src/releases/run.rs::tests::hub_routing_matches_kind_and_address) |
+| `RTORRENT` | A-api | done | server/src/releases/run.rs::tests::rtorrent_ratio_group_and_priority | ported; goes through the download hub when the hub has the same client (server/src/releases/run.rs::tests::hub_routing_matches_kind_and_address) |
+| `TRANSMISSION` | A-api | partial |  | ported; not yet proven against a stand-in client; goes through the download hub when the hub has the same client (server/src/releases/run.rs::tests::hub_routing_matches_kind_and_address) |
+| `PORLA` | A-api | partial |  | ported; not yet proven against a stand-in client |
+| `ARIA2` | A-api | done | server/src/releases/clients/aria2.rs::tests::add_torrent, server/src/releases/clients/aria2.rs::tests::add_uri_with_and_without_secret | ported |
+| `WATCH_FOLDER` | A-api | done | server/src/releases/run.rs::tests::watch_folder_cases | ported |
+| `WEBHOOK` | A-api | done | server/src/releases/run.rs::tests::test_webhook_unsupported_and_usenet_protocol | ported |
+| `RADARR` | A-api | partial |  | ported (same push as Sonarr); not yet proven on its own |
+| `SONARR` | A-api | done | server/src/releases/run.rs::tests::sonarr_indexer_not_found_and_found, server/src/releases/run.rs::tests::sonarr_pushes_feed_metadata_and_omits_missing_tvdb | ported |
+| `LIDARR` | A-api | partial |  | ported (same push as Sonarr); not yet proven on its own |
+| `WHISPARR` | A-api | partial |  | ported (same push as Sonarr); not yet proven on its own |
+| `WHISPARR_V3` | A-api | partial |  | ported (same push as Sonarr); not yet proven on its own |
+| `READARR` | A-api | partial |  | ported (same push as Sonarr); not yet proven on its own |
+| `SPORTARR` | A-api | partial |  | ported (same push as Sonarr); not yet proven on its own |
+| `SABNZBD` | A-api | partial | server/src/releases/run.rs::tests::test_webhook_unsupported_and_usenet_protocol | ported; only the wrong-protocol answer is proven; goes through the download hub when the hub has the same client (server/src/releases/run.rs::tests::hub_routing_matches_kind_and_address) |
+| `NZBGET` | A-api | partial | server/src/releases/run.rs::tests::test_webhook_unsupported_and_usenet_protocol | ported; only the wrong-protocol answer is proven; goes through the download hub when the hub has the same client (server/src/releases/run.rs::tests::hub_routing_matches_kind_and_address) |
 
 #### Action fields
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `Name` | A-api | todo | |  |
-| `Type` | A-api | todo | |  |
-| `Enabled` | A-api | todo | |  |
-| `ExecCmd` | A-api | todo | |  |
-| `ExecArgs` | A-api | todo | |  |
-| `WatchFolder` | A-api | todo | |  |
-| `Category` | A-api | todo | |  |
-| `Tags` | A-api | todo | |  |
-| `Label` | A-api | todo | |  |
-| `SavePath` | A-api | todo | |  |
-| `DownloadPath` | A-api | todo | |  |
-| `Paused` | A-api | todo | |  |
-| `IgnoreRules` | A-api | todo | |  |
-| `FirstLastPiecePrio` | A-api | todo | |  |
-| `SkipHashCheck` | A-api | todo | |  |
-| `ContentLayout` | A-api | todo | |  |
-| `LimitUploadSpeed` | A-api | todo | |  |
-| `LimitDownloadSpeed` | A-api | todo | |  |
-| `LimitRatio` | A-api | todo | |  |
-| `LimitSeedTime` | A-api | todo | |  |
-| `PriorityLayout` | A-api | todo | |  |
-| `RatioGroup` | A-api | todo | |  |
-| `ReAnnounceSkip` | A-api | todo | |  |
-| `ReAnnounceDelete` | A-api | todo | |  |
-| `ReAnnounceInterval` | A-api | todo | |  |
-| `ReAnnounceMaxAttempts` | A-api | todo | |  |
-| `WebhookHost` | A-api | todo | |  |
-| `WebhookType` | A-api | todo | |  |
-| `WebhookMethod` | A-api | todo | |  |
-| `WebhookData` | A-api | todo | |  |
-| `WebhookHeaders` | A-api | todo | |  |
-| `ExternalDownloadClientID` | A-api | todo | |  |
+| `Name` | A-api | done | server/src/releases/action.rs::tests::json_is_autobrrs, server/tests/autobrr_api.rs::actions_store_toggle_and_delete | ported |
+| `Type` | A-api | done | server/src/releases/action.rs::tests::json_is_autobrrs, server/tests/autobrr_api.rs::actions_store_toggle_and_delete, server/src/releases/run.rs::tests::test_webhook_unsupported_and_usenet_protocol | ported |
+| `Enabled` | A-api | done | server/src/releases/action.rs::tests::json_is_autobrrs, server/tests/autobrr_api.rs::actions_store_toggle_and_delete | ported; only enabled actions run |
+| `ExecCmd` | A-api | done | server/src/releases/run.rs::tests::exec_runs_with_an_argument_list | ported |
+| `ExecArgs` | A-api | done | server/src/releases/run.rs::tests::exec_runs_with_an_argument_list, server/src/releases/shellquote.rs::tests::simple_split | ported (go-shellquote split) |
+| `WatchFolder` | A-api | done | server/src/releases/run.rs::tests::watch_folder_cases | ported |
+| `Category` | A-api | done | server/src/releases/run.rs::tests::option_builders, server/src/releases/run.rs::tests::hub_routing_matches_kind_and_address | ported; also picks the hub app |
+| `Tags` | A-api | done | server/src/releases/run.rs::tests::option_builders | ported |
+| `Label` | A-api | partial | server/src/releases/run.rs::tests::option_builders | ported (rTorrent, Deluge); Deluge label not proven against a client |
+| `SavePath` | A-api | done | server/src/releases/run.rs::tests::option_builders | ported |
+| `DownloadPath` | A-api | partial | server/src/releases/run.rs::tests::option_builders | ported (qBittorrent); not proven against a client |
+| `Paused` | A-api | done | server/src/releases/run.rs::tests::option_builders | ported |
+| `IgnoreRules` | A-api | partial |  | ported; client rules not proven against a client |
+| `FirstLastPiecePrio` | A-api | done | server/src/releases/run.rs::tests::option_builders | ported |
+| `SkipHashCheck` | A-api | done | server/src/releases/run.rs::tests::option_builders | ported |
+| `ContentLayout` | A-api | done | server/src/releases/run.rs::tests::option_builders | ported |
+| `LimitUploadSpeed` | A-api | done | server/src/releases/run.rs::tests::option_builders | ported |
+| `LimitDownloadSpeed` | A-api | done | server/src/releases/run.rs::tests::option_builders | ported |
+| `LimitRatio` | A-api | done | server/src/releases/run.rs::tests::option_builders | ported |
+| `LimitSeedTime` | A-api | done | server/src/releases/run.rs::tests::option_builders | ported |
+| `PriorityLayout` | A-api | done | server/src/releases/run.rs::tests::rtorrent_ratio_group_and_priority | ported |
+| `RatioGroup` | A-api | done | server/src/releases/run.rs::tests::rtorrent_ratio_group_and_priority | ported |
+| `ReAnnounceSkip` | A-api | partial |  | ported; not proven against a client |
+| `ReAnnounceDelete` | A-api | partial |  | ported; not proven against a client |
+| `ReAnnounceInterval` | A-api | partial |  | ported; not proven against a client |
+| `ReAnnounceMaxAttempts` | A-api | partial |  | ported; not proven against a client |
+| `WebhookHost` | A-api | done | server/src/releases/run.rs::tests::test_webhook_unsupported_and_usenet_protocol | ported |
+| `WebhookType` | A-api | partial | server/src/releases/action.rs::tests::json_is_autobrrs, server/tests/autobrr_api.rs::actions_store_toggle_and_delete | stored; autobrr's webhook action doesn't read it either |
+| `WebhookMethod` | A-api | partial | server/src/releases/action.rs::tests::json_is_autobrrs, server/tests/autobrr_api.rs::actions_store_toggle_and_delete | stored; autobrr's webhook action doesn't read it either (always POST) |
+| `WebhookData` | A-api | done | server/src/releases/run.rs::tests::test_webhook_unsupported_and_usenet_protocol | ported (macros filled in) |
+| `WebhookHeaders` | A-api | partial | server/src/releases/action.rs::tests::json_is_autobrrs, server/tests/autobrr_api.rs::actions_store_toggle_and_delete | taken but not stored, as in autobrr |
+| `ExternalDownloadClientID` | A-api | done | server/src/releases/run.rs::tests::arr_download_client_cases | ported |
 
 #### Macros (template variables for actions)
 
@@ -989,22 +989,22 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `ARIA2` | A-api | todo | |  |
-| `DELUGE_V1` | A-api | todo | |  |
-| `DELUGE_V2` | A-api | todo | |  |
-| `LIDARR` | A-api | todo | |  |
-| `NZBGET` | A-api | todo | |  |
-| `PORLA` | A-api | todo | |  |
-| `QBITTORRENT` | A-api | todo | |  |
-| `RADARR` | A-api | todo | |  |
-| `READARR` | A-api | todo | |  |
-| `RTORRENT` | A-api | todo | |  |
-| `SABNZBD` | A-api | todo | |  |
-| `SONARR` | A-api | todo | |  |
-| `SPORTARR` | A-api | todo | |  |
-| `TRANSMISSION` | A-api | todo | |  |
-| `WHISPARR` | A-api | todo | |  |
-| `WHISPARR_V3` | A-api | todo | |  |
+| `ARIA2` | A-api | done | server/src/releases/clients/aria2.rs::tests::build_endpoint_cases, server/src/releases/clients/aria2.rs::tests::tell_active, server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported |
+| `DELUGE_V1` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `DELUGE_V2` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `LIDARR` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `NZBGET` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `PORLA` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `QBITTORRENT` | A-api | partial | server/src/releases/downloader.rs::tests::qbit_build_legacy_host, server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test not proven against a client |
+| `RADARR` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `READARR` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `RTORRENT` | A-api | done | server/src/releases/run.rs::tests::rtorrent_ratio_group_and_priority, server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported |
+| `SABNZBD` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `SONARR` | A-api | done | server/src/releases/run.rs::tests::sonarr_indexer_not_found_and_found, server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | ported |
+| `SPORTARR` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `TRANSMISSION` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `WHISPARR` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
+| `WHISPARR_V3` | A-api | partial | server/src/releases/downloader.rs::tests::secrets_are_redacted_and_kept, server/tests/autobrr_api.rs::download_clients_redact_and_keep_secrets | stored as autobrr stores them; connection test ported, not proven against a client |
 
 ### Notifications
 
