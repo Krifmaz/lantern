@@ -17,6 +17,12 @@
   docs, GitHub or Discord. Its pages show errors where Lantern doesn't answer autobrr's API yet.
   `scripts/upstream-merge.sh --project autobrr` keeps it up to date (`ui/autobrr/`, see `UPSTREAM.md`), and
   `docs/parity/a-ui/` shows the Dashboard, Filters and Settings → IRC at desktop and phone width.
+- Prowlarr's applications: Sonarr, Radarr, Lidarr, Readarr, Whisparr, Mylar and LazyLibrarian can be added under
+  `/api/v1/applications` (with Prowlarr's schema, test, test all and bulk edit), and Lantern keeps their indexer lists
+  in step as Prowlarr does: Add and Remove Only or Full Sync, sync categories, tags, app profiles
+  (`/api/v1/appprofile`), seeding settings, every 6 hours and when an indexer is added, changed or removed. The
+  `ApplicationIndexerSync` command runs a sync now, and the health page says when apps keep failing. Apps imported
+  from Prowlarr are taken over.
 - Import never skips an indexer: custom definitions in a Prowlarr backup become your custom definitions, Prowlarr's
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
   Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition

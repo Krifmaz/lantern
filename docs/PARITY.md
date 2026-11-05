@@ -38,23 +38,23 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
 | `GET /api` | P-api | partial | | fresh version |
-| `GET /api/v1/applications/{id}` | P-app | todo | |  |
-| `PUT /api/v1/applications/{id}` | P-app | todo | |  |
-| `DELETE /api/v1/applications/{id}` | P-app | todo | |  |
-| `GET /api/v1/applications` | P-app | todo | |  |
-| `POST /api/v1/applications` | P-app | todo | |  |
-| `PUT /api/v1/applications/bulk` | P-app | todo | |  |
-| `DELETE /api/v1/applications/bulk` | P-app | todo | |  |
-| `GET /api/v1/applications/schema` | P-app | todo | |  |
-| `POST /api/v1/applications/test` | P-app | todo | |  |
-| `POST /api/v1/applications/testall` | P-app | todo | |  |
-| `POST /api/v1/applications/action/{name}` | P-app | todo | |  |
-| `POST /api/v1/appprofile` | P-app | todo | |  |
-| `GET /api/v1/appprofile` | P-app | todo | |  |
-| `DELETE /api/v1/appprofile/{id}` | P-app | todo | |  |
-| `PUT /api/v1/appprofile/{id}` | P-app | todo | |  |
-| `GET /api/v1/appprofile/{id}` | P-app | todo | |  |
-| `GET /api/v1/appprofile/schema` | P-app | todo | |  |
+| `GET /api/v1/applications/{id}` | P-app | done | `server/tests/prowlarr_apps.rs::the_application_api_follows_prowlarrs_provider_controller` | ported (`prowlarr/apps/provider.rs`, `applications.rs`) |
+| `PUT /api/v1/applications/{id}` | P-app | done | `server/tests/prowlarr_apps.rs::the_application_api_follows_prowlarrs_provider_controller` | ported (`prowlarr/apps/provider.rs`, `applications.rs`) |
+| `DELETE /api/v1/applications/{id}` | P-app | done | `server/tests/prowlarr_apps.rs::the_application_api_follows_prowlarrs_provider_controller` | ported (`prowlarr/apps/provider.rs`, `applications.rs`) |
+| `GET /api/v1/applications` | P-app | done | `server/tests/prowlarr_apps.rs::the_application_api_follows_prowlarrs_provider_controller` | ported (`prowlarr/apps/provider.rs`, `applications.rs`) |
+| `POST /api/v1/applications` | P-app | done | `server/tests/prowlarr_apps.rs::the_application_api_follows_prowlarrs_provider_controller` | ported (`prowlarr/apps/provider.rs`, `applications.rs`) |
+| `PUT /api/v1/applications/bulk` | P-app | done | `server/tests/prowlarr_apps.rs::the_application_api_follows_prowlarrs_provider_controller` | ported (`prowlarr/apps/provider.rs`, `applications.rs`) |
+| `DELETE /api/v1/applications/bulk` | P-app | done | `server/tests/prowlarr_apps.rs::the_application_api_follows_prowlarrs_provider_controller` | ported (`prowlarr/apps/provider.rs`, `applications.rs`) |
+| `GET /api/v1/applications/schema` | P-app | done | `server/tests/prowlarr_apps.rs::the_application_api_follows_prowlarrs_provider_controller` | ported (`prowlarr/apps/provider.rs`, `applications.rs`); `apps_schema_sonarr.json` |
+| `POST /api/v1/applications/test` | P-app | done | `server/tests/prowlarr_apps.rs::an_old_sonarr_or_a_wrong_key_fails_the_test_with_prowlarrs_messages` | ported (`prowlarr/apps/provider.rs`, `applications.rs`) |
+| `POST /api/v1/applications/testall` | P-app | done | `server/tests/prowlarr_apps.rs::an_old_sonarr_or_a_wrong_key_fails_the_test_with_prowlarrs_messages` | ported (`prowlarr/apps/provider.rs`, `applications.rs`) |
+| `POST /api/v1/applications/action/{name}` | P-app | done | `server/tests/prowlarr_apps.rs::an_old_sonarr_or_a_wrong_key_fails_the_test_with_prowlarrs_messages` | ported (`prowlarr/apps/provider.rs`, `applications.rs`); apps have no actions (null) |
+| `POST /api/v1/appprofile` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr` | ported (`prowlarr/apps/profiles.rs`) |
+| `GET /api/v1/appprofile` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr` | ported (`prowlarr/apps/profiles.rs`) |
+| `DELETE /api/v1/appprofile/{id}` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr` | ported (`prowlarr/apps/profiles.rs`) |
+| `PUT /api/v1/appprofile/{id}` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr` | ported (`prowlarr/apps/profiles.rs`) |
+| `GET /api/v1/appprofile/{id}` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr` | ported (`prowlarr/apps/profiles.rs`) |
+| `GET /api/v1/appprofile/schema` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr` | ported (`prowlarr/apps/profiles.rs`) |
 | `POST /login` | P-ui | todo | |  |
 | `GET /login` | P-ui | todo | |  |
 | `GET /logout` | P-ui | todo | |  |
@@ -270,21 +270,21 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `SyncLevel` (Disabled, Add and Remove Only, Full Sync) | P-app | todo | |  |
-| `ProwlarrUrl`, `BaseUrl`, `ApiKey` | P-app | todo | |  |
-| `SyncCategories` (and anime/other categories per app) | P-app | todo | |  |
-| `SyncRejectBlocklistedTorrentHashesWhileGrabbing` (Sonarr/Radarr) | P-app | todo | |  |
-| `Tags` (sync only matching indexers) | P-app | todo | |  |
+| `SyncLevel` (Disabled, Add and Remove Only, Full Sync) | P-app | done | `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step`, `server/tests/prowlarr_apps.rs::radarr_gets_its_first_sync_fields_and_add_only_skips_changes` | ported (`prowlarr/apps/sync.rs`) |
+| `ProwlarrUrl`, `BaseUrl`, `ApiKey` | P-app | done | `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step` | ported; the pushed indexer's address is `<ProwlarrUrl>/<id>/` |
+| `SyncCategories` (and anime/other categories per app) | P-app | done | `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step`, `server/tests/prowlarr_apps.rs::radarr_gets_its_first_sync_fields_and_add_only_skips_changes` | ported (`prowlarr/apps/categories.rs`) |
+| `SyncRejectBlocklistedTorrentHashesWhileGrabbing` (Sonarr/Radarr) | P-app | done | `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step`, `server/tests/prowlarr_apps.rs::radarr_gets_its_first_sync_fields_and_add_only_skips_changes` | ported |
+| `Tags` (sync only matching indexers) | P-app | done | `server/tests/prowlarr_apps.rs::an_app_with_tags_gets_only_the_indexers_that_share_one` | ported; Lantern's indexer tags are matched by label |
 
 #### App profiles
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `Name` | P-app | todo | |  |
-| `EnableRss` | P-app | todo | |  |
-| `EnableAutomaticSearch` | P-app | todo | |  |
-| `EnableInteractiveSearch` | P-app | todo | |  |
-| `MinimumSeeders` | P-app | todo | |  |
+| `Name` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr` | ported |
+| `EnableRss` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr`, `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step` | ported |
+| `EnableAutomaticSearch` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr`, `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step` | ported |
+| `EnableInteractiveSearch` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr`, `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step` | ported |
+| `MinimumSeeders` | P-app | done | `server/tests/prowlarr_apps.rs::app_profiles_follow_prowlarr`, `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step` | ported |
 
 #### Indexer proxies
 
@@ -302,13 +302,13 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| LazyLibrarian | P-app | todo | |  |
-| Lidarr | P-app | todo | |  |
-| Mylar | P-app | todo | |  |
-| Radarr | P-app | todo | |  |
-| Readarr | P-app | todo | |  |
-| Sonarr | P-app | todo | |  |
-| Whisparr | P-app | todo | |  |
+| LazyLibrarian | P-app | partial | `server/src/prowlarr/apps/nab.rs::tests` | ported (`prowlarr/apps/nab.rs`); no stand-in LazyLibrarian test yet |
+| Lidarr | P-app | partial |  | ported (`prowlarr/apps/arr.rs`, same code as Sonarr/Radarr); no stand-in Lidarr test yet |
+| Mylar | P-app | partial | `server/src/prowlarr/apps/nab.rs::tests` | ported (`prowlarr/apps/nab.rs`); no stand-in Mylar test yet |
+| Radarr | P-app | done | `server/tests/prowlarr_apps.rs::radarr_gets_its_first_sync_fields_and_add_only_skips_changes` | ported (`prowlarr/apps/arr.rs`) |
+| Readarr | P-app | partial |  | ported (`prowlarr/apps/arr.rs`, same code as Sonarr/Radarr); no stand-in Readarr test yet |
+| Sonarr | P-app | done | `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step`, `scripts/contract-arrs.sh` (real Sonarr) | ported (`prowlarr/apps/arr.rs`) |
+| Whisparr | P-app | partial |  | ported (`prowlarr/apps/arr.rs`, same code as Sonarr/Radarr); no stand-in Whisparr test yet |
 
 #### Download clients
 
@@ -591,14 +591,14 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `HousekeepingCommand` every 24 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
 | `CleanUpHistoryCommand` every 24 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
 | `IndexerDefinitionUpdateCommand` every 24 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
-| `ApplicationIndexerSyncCommand` every 6 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
+| `ApplicationIndexerSyncCommand` every 6 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; queued every 6 h by the app sync watcher (`prowlarr/apps/sync.rs`, P-app); no test of the schedule yet |
 | `BackupCommand` (backup interval setting) | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
 
 #### Commands (`POST /api/v1/command`)
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `ApplicationIndexerSyncCommand` | P-api | todo | |  |
+| `ApplicationIndexerSyncCommand` | P-api | done | `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step` | ported by P-app (`prowlarr/commands.rs` runs `prowlarr/apps/sync.rs`), with `forceSync` |
 | `ApplicationUpdateCheckCommand` | P-api | todo | |  |
 | `ApplicationUpdateCommand` | P-api | todo | |  |
 | `BackupCommand` | P-api | todo | |  |
@@ -624,8 +624,8 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `AllowedHostsCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
 | `ApiKeyValidationCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
 | `AppDataLocationCheck` | P-api | todo | |  |
-| `ApplicationLongTermStatusCheck` | P-api | todo | |  |
-| `ApplicationStatusCheck` | P-api | todo | |  |
+| `ApplicationLongTermStatusCheck` | P-api | done | `server/tests/prowlarr_apps.rs::apps_held_back_after_failures_show_in_health`, `server/src/prowlarr/apps/status.rs::tests` | ported by P-app (`prowlarr/apps/mod.rs`) |
+| `ApplicationStatusCheck` | P-api | done | `server/tests/prowlarr_apps.rs::apps_held_back_after_failures_show_in_health`, `server/src/prowlarr/apps/status.rs::tests` | ported by P-app (`prowlarr/apps/mod.rs`) |
 | `DownloadClientStatusCheck` | P-api | todo | |  |
 | `IndexerCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
 | `IndexerDownloadClientCheck` | P-api | todo | |  |

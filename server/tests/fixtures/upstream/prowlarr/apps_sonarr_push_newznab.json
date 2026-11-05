@@ -1,0 +1,59 @@
+{
+  "id": 0,
+  "enableRss": true,
+  "enableAutomaticSearch": true,
+  "enableInteractiveSearch": true,
+  "priority": 25,
+  "name": "Usenet Site (Prowlarr)",
+  "implementation": "Newznab",
+  "configContract": "NewznabSettings",
+  "tags": [],
+  "fields": [
+    {
+      "name": "baseUrl",
+      "value": "http://lantern:9696/1/",
+      "type": "textbox",
+      "advanced": false
+    },
+    {
+      "name": "apiPath",
+      "value": "/api",
+      "type": "textbox",
+      "advanced": true
+    },
+    {
+      "name": "apiKey",
+      "value": "test-key",
+      "type": "textbox",
+      "advanced": false
+    },
+    {
+      "name": "categories",
+      "value": [
+        5000,
+        5040
+      ],
+      "type": "select",
+      "advanced": false
+    },
+    {
+      "name": "animeCategories",
+      "value": [
+        5070
+      ],
+      "type": "select",
+      "advanced": false
+    },
+    {
+      "name": "animeStandardFormatSearch",
+      "value": true,
+      "type": "checkbox",
+      "advanced": false
+    },
+    {
+      "name": "additionalParameters",
+      "type": "textbox",
+      "advanced": true
+    }
+  ]
+}

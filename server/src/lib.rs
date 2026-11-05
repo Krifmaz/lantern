@@ -333,6 +333,7 @@ pub fn app(st: AppState) -> Router {
     let spa = ServeDir::new(&st.static_dir).precompressed_br().precompressed_gzip().fallback(index);
     let spa = tower_http::set_header::SetResponseHeader::if_not_present(spa, header::VARY, HeaderValue::from_static("accept-encoding"));
     kit_server_notices::spawn_rechecks(st.clone());
+    prowlarr::apps::sync::spawn(st.clone());
     Router::new()
         .merge(kit_server_health::router(kit_server_health::Health::new(VERSION, web)))
         .merge(kit_server_changelog::router())
