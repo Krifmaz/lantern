@@ -30,6 +30,11 @@
   same way, with autobrr's rejection reasons. Download limits count per minute, hour, day, week, month or ever, in
   fixed or rolling windows. autobrr's macros (`{{ .TorrentName }}` …) are ready for the actions. Filters saved
   earlier keep working.
+- The FlareSolverr API is now a port of FlareSolverr 3.5.2: the same answers and error messages, sessions
+  (`sessions.create`, `.list`, `.destroy`, `session_ttl_minutes`), proxies with a user name and password,
+  `returnScreenshot`, `waitInSeconds`, `disableMedia`, Turnstile tokens (`tabs_till_verify`), the "Verify you are
+  human" click, and FlareSolverr's settings (`BROWSER_WAIT_TIMEOUT`, `DISABLE_MEDIA`, `LANG`, `TZ`, `PROXY_URL`,
+  `PROMETHEUS_ENABLED` and the rest) under their own names. The browser now sends a normal Accept-Language header.
 - Lantern now ports Prowlarr, autobrr, cross-seed and FlareSolverr instead of rewriting them: `UPSTREAM.lock` pins
   the versions it follows and `docs/PARITY.md` lists everything each one does, with what Lantern already matches.
 - First-run setup: a new Lantern asks for "Create your account" (username, password twice, optional email) on the
