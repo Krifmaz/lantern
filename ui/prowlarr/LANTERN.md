@@ -23,3 +23,20 @@ in `_output/UI`, which Lantern serves at `/prowlarr/` (`APP_PROWLARR_UI_DIR`).
 | `Settings/Settings.css`, `Components/FieldSet.css`, `Components/Page/Toolbar/PageToolbarSeparator.css`, `System/Status/styles.css`, `System/Updates/Updates.css`, `App/AppUpdatedModalContent.css` | Rules that were a fixed light grey (`#e5e5e5`) use `--borderColor`. |
 | `Components/Page/Header/PageHeader.css`, `PageHeaderActionsMenu.css` | Header links use the header's text colour and the accent on hover instead of fixed greys. |
 | `.stylelintignore` (new) | Prowlarr's style rules skip the copied kit tokens. |
+
+## Branding and links
+
+| File | Change |
+| --- | --- |
+| `Components/Page/Header/PageHeader.js`, `.css`, `.css.d.ts` | The header shows the instance name (Lantern) as Lantern's own pages do, in place of Prowlarr's logo; no donate or translate links. |
+| `System/Status/Status.tsx` | No "More info" (Prowlarr's home page, wiki, Reddit, Discord, GitHub) and no donations. |
+| `System/Status/Health/Health.tsx`, `Store/Selectors/createHealthCheckSelector.js` | A wiki button only when a health item has a link; none to Prowlarr's wiki. |
+| `Settings/General/HostSettings.js`, `SecuritySettings.js`, `UpdateSettings.js`, `FirstRun/AuthenticationRequiredModalContent.tsx`, `Settings/Notifications/Notifications/NotificationEventItems.js`, `Components/FileBrowser/FileBrowserModalContent.js` | No help links to Prowlarr's wiki. |
+| `System/Updates/UpdateChanges.tsx` | Issue numbers in change lists stay text, with no links to Prowlarr's GitHub. |
+| `Settings/General/GeneralSettings.js` | No Analytics section. |
+| `Store/Middleware/createSentryMiddleware.js` | Errors never go to Servarr's Sentry; Lantern keeps its own crash logs. |
+| `Utilities/String/translate.ts` | `{appName}` in Prowlarr's texts is Lantern. |
+| `frontend/src/index.ejs`, `frontend/src/Content/manifest.json` | Title, description and browser colours are Lantern's (the kit's Encore background); no Prowlarr icons. |
+
+Prowlarr's images (`Content/Images`) and its `login.html` stay in the tree but are not used: Lantern signs people in
+on its own page.

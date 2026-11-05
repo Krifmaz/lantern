@@ -21,13 +21,8 @@ function UpdateChanges(props: UpdateChangesProps) {
       <div className={styles.title}>{title}</div>
       <ul>
         {uniqueChanges.map((change, index) => {
-          const checkChange = change.replace(
-            /#\d{3,5}\b/g,
-            (match) =>
-              `[${match}](https://github.com/Prowlarr/Prowlarr/issues/${match.substring(
-                1
-              )})`
-          );
+          // LANTERN: issue numbers stay text, with no links to Prowlarr's GitHub
+          const checkChange = change;
 
           return (
             <li key={index}>

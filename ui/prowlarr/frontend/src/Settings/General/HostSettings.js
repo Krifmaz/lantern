@@ -82,7 +82,6 @@ function HostSettings(props) {
           name="allowedHosts"
           helpText={translate('AllowedHostsHelpText')}
           helpTextWarning={translate('RestartRequiredHelpTextWarning')}
-          helpLink="https://wiki.servarr.com/prowlarr/settings#host"
           onChange={onInputChange}
           {...allowedHosts}
         />

@@ -7,6 +7,9 @@
   built-ins that are Newznab or Torznab underneath (Headphones VIP) come over as such, other addresses are asked for
   Newznab/Torznab capabilities, and the rest are added turned off under Needs your help, with a Create definition
   editor. The plan shows which way each indexer came over. Newznab indexers can sign in with a user name and password.
+- Prowlarr's web frontend says Lantern: the header shows Lantern's name instead of Prowlarr's logo, and the donate,
+  translate, Discord, Reddit, wiki and GitHub links and the Analytics section are gone. It never sends errors to
+  Servarr's error reporting.
 - Prowlarr's web frontend (`ui/prowlarr/`) has the kit's Encore look: Prowlarr's theme colours come from the kit's
   colour tokens and its fonts are the kit's, with its own layouts kept. Its themes are Auto, Encore, Dark, OLED and
   Light, as in Lantern's other apps.

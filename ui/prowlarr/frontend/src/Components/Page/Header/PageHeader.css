@@ -22,6 +22,20 @@
   font-size: 30px;
 }
 
+/* LANTERN: the app's name in the header, as .brand in Lantern's own pages */
+.brand {
+  composes: link from '~Components/Link/Link.css';
+
+  color: var(--white);
+  font-weight: 800;
+  font-size: 18px;
+
+  &:hover {
+    color: var(--white);
+    text-decoration: none;
+  }
+}
+
 .logoFull,
 .logo {
   vertical-align: middle;

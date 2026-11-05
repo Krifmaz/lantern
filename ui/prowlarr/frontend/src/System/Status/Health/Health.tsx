@@ -132,11 +132,14 @@ function Health() {
                     <TableRowCell>{item.message}</TableRowCell>
 
                     <TableRowCell>
-                      <IconButton
-                        name={icons.WIKI}
-                        to={item.wikiUrl}
-                        title={translate('ReadTheWikiForMoreInformation')}
-                      />
+                      {/* LANTERN: a wiki button only when the item has a link */}
+                      {item.wikiUrl ? (
+                        <IconButton
+                          name={icons.WIKI}
+                          to={item.wikiUrl}
+                          title={translate('ReadTheWikiForMoreInformation')}
+                        />
+                      ) : null}
 
                       <HealthItemLink source={source} />
 

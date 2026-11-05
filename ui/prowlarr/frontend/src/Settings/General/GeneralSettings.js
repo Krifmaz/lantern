@@ -10,7 +10,6 @@ import PageContentBody from 'Components/Page/PageContentBody';
 import { kinds } from 'Helpers/Props';
 import SettingsToolbarConnector from 'Settings/SettingsToolbarConnector';
 import translate from 'Utilities/String/translate';
-import AnalyticSettings from './AnalyticSettings';
 import BackupSettings from './BackupSettings';
 import HostSettings from './HostSettings';
 import LoggingSettings from './LoggingSettings';
@@ -163,10 +162,7 @@ class GeneralSettings extends Component {
                   onInputChange={onInputChange}
                 />
 
-                <AnalyticSettings
-                  settings={settings}
-                  onInputChange={onInputChange}
-                />
+                {/* LANTERN: no analytics section: Lantern sends nothing to Servarr */}
 
                 <UpdateSettings
                   advancedSettings={advancedSettings}

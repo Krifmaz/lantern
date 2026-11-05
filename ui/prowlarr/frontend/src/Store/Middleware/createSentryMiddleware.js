@@ -76,7 +76,10 @@ export default function createSentryMiddleware() {
     isProduction
   } = window.Prowlarr;
 
-  if (!analytics) {
+  // LANTERN: errors never go to Servarr's Sentry, whatever `analytics` says; Lantern keeps its own crash logs
+  const reportToServarr = false;
+
+  if (!analytics || !reportToServarr) {
     return;
   }
 

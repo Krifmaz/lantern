@@ -3,6 +3,7 @@
 interface CssExports {
   'actionMenu': string;
   'appTitle': string;
+  'brand': string;
   'donate': string;
   'header': string;
   'logo': string;

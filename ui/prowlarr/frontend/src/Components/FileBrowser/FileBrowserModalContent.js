@@ -3,7 +3,6 @@ import React, { Component } from 'react';
 import Alert from 'Components/Alert';
 import PathInput from 'Components/Form/PathInput';
 import Button from 'Components/Link/Button';
-import Link from 'Components/Link/Link';
 import LoadingIndicator from 'Components/Loading/LoadingIndicator';
 import ModalBody from 'Components/Modal/ModalBody';
 import ModalContent from 'Components/Modal/ModalContent';
@@ -117,9 +116,7 @@ class FileBrowserModalContent extends Component {
                 className={styles.mappedDrivesWarning}
                 kind={kinds.WARNING}
               >
-                <Link to="https://wiki.servarr.com/prowlarr/faq#why-cant-prowlarr-see-my-files-on-a-remote-server">
-                  {translate('MappedDrivesRunningAsService')}
-                </Link>
+                {translate('MappedDrivesRunningAsService')}
               </Alert>
           }
 

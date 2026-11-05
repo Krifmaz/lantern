@@ -54,7 +54,6 @@ function UpdateSettings(props) {
           type={inputTypes.TEXT}
           name="branch"
           helpText={usingExternalUpdateMechanism ? translate('BranchUpdateMechanism') : translate('BranchUpdate')}
-          helpLink="https://wiki.servarr.com/prowlarr/settings#updates"
           {...branch}
           onChange={onInputChange}
           readOnly={usingExternalUpdateMechanism}
@@ -89,7 +88,6 @@ function UpdateSettings(props) {
             name="updateMechanism"
             values={updateOptions}
             helpText={translate('UpdateMechanismHelpText')}
-            helpLink="https://wiki.servarr.com/prowlarr/settings#updates"
             onChange={onInputChange}
             {...updateMechanism}
           />

@@ -264,7 +264,6 @@ class SecuritySettings extends Component {
             name="trustedNetworks"
             helpText={translate('TrustedNetworksHelpText')}
             helpTextWarning={translate('RestartRequiredHelpTextWarning')}
-            helpLink="https://wiki.servarr.com/prowlarr/settings#security"
             onChange={onInputChange}
             {...trustedNetworks}
           />

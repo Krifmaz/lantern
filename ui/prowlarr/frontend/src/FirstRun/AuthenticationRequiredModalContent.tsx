@@ -107,7 +107,6 @@ export default function AuthenticationRequiredModalContent() {
                     ? translate('AuthenticationMethodHelpTextWarning')
                     : undefined
                 }
-                helpLink="https://wiki.servarr.com/prowlarr/faq#forced-authentication"
                 onChange={onInputChange}
                 {...authenticationMethod}
               />
@@ -184,7 +183,6 @@ export default function AuthenticationRequiredModalContent() {
                 name="allowedHosts"
                 helpText={translate('AllowedHostsHelpText')}
                 helpTextWarning={translate('RestartRequiredHelpTextWarning')}
-                helpLink="https://wiki.servarr.com/prowlarr/settings#host"
                 onChange={onInputChange}
                 {...allowedHosts}
               />

@@ -4,7 +4,6 @@ import keyboardShortcuts, { shortcuts } from 'Components/keyboardShortcuts';
 import IconButton from 'Components/Link/IconButton';
 import Link from 'Components/Link/Link';
 import { icons } from 'Helpers/Props';
-import translate from 'Utilities/String/translate';
 import IndexerSearchInputConnector from './IndexerSearchInputConnector';
 import KeyboardShortcutsModal from './KeyboardShortcutsModal';
 import PageHeaderActionsMenu from './PageHeaderActionsMenu';
@@ -52,12 +51,9 @@ class PageHeader extends Component {
     return (
       <div className={styles.header}>
         <div className={styles.logoContainer}>
-          <Link to={'/'}>
-            <img
-              className={styles.logo}
-              src={`${window.Prowlarr.urlBase}/Content/Images/logo.png`}
-              alt="Prowlarr Logo"
-            />
+          {/* LANTERN: the app's name, as Lantern's own pages show it, in place of Prowlarr's logo */}
+          <Link className={styles.brand} to={'/'}>
+            {window.Prowlarr.instanceName}
           </Link>
         </div>
 
@@ -72,22 +68,7 @@ class PageHeader extends Component {
         <IndexerSearchInputConnector />
 
         <div className={styles.right}>
-          <IconButton
-            className={styles.donate}
-            name={icons.HEART}
-            aria-label="Donate"
-            to="https://prowlarr.com/donate"
-            size={14}
-            title={translate('Donate')}
-          />
-          <IconButton
-            className={styles.translate}
-            title={translate('SuggestTranslationChange')}
-            name={icons.TRANSLATE}
-            to="https://translate.servarr.com/projects/servarr/prowlarr/"
-            size={24}
-          />
-
+          {/* LANTERN: no donate or translate links to Prowlarr's sites */}
           <PageHeaderActionsMenu
             onKeyboardShortcutsPress={this.onOpenKeyboardShortcutsModal}
           />

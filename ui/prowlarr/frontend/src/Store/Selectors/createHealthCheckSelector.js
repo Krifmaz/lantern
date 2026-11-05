@@ -12,8 +12,8 @@ function createHealthCheckSelector() {
         items.push({
           source: 'UI',
           type: 'warning',
-          message: translate('CouldNotConnectSignalR'),
-          wikiUrl: 'https://wiki.servarr.com/prowlarr/system#could-not-connect-to-signalr'
+          // LANTERN: no link to Prowlarr's wiki
+          message: translate('CouldNotConnectSignalR')
         });
       }
 
