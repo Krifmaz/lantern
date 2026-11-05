@@ -33,3 +33,8 @@ Non-obvious calls, one line each, newest last.
   answer) until the account vault lands, which moves them into it.
 - 2026-11-05 — Download hub: webhooks are signed with Lantern's API key (HMAC-SHA256), which the app already holds,
   rather than a second secret per app.
+- 2026-11-05 — Download hub clients without categories get the app's folder (Transmission, rTorrent) or category
+  (NZBGet) with each download; NZBGet's DestDir must be Lantern's downloads folder so `<DestDir>/<category>` is the
+  app's folder. rTorrent's XML-RPC can't delete files, so removing a grab there leaves its files on disk.
+- 2026-11-05 — rTorrent is reached over its XML-RPC address (ruTorrent's `/RPC2` or an SCGI bridge), with a small
+  XML-RPC reader of Lantern's own instead of another dependency.

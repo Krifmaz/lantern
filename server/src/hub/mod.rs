@@ -173,7 +173,8 @@ impl Hub {
     pub fn add_client(&self, body: &Value) -> Result<i64> {
         let kind = text(body, "kind").unwrap_or_else(|| "qbittorrent".into()).to_lowercase();
         let Some(&(_, _, label)) = clients::KINDS.iter().find(|(k, _, _)| *k == kind) else {
-            return Err(err(400, format!("Lantern doesn't know the download client {kind}. It knows qBittorrent and SABnzbd.")));
+            let known: Vec<&str> = clients::KINDS.iter().map(|(_, _, n)| *n).collect();
+            return Err(err(400, format!("Lantern doesn't know the download client {kind}. It knows {}.", known.join(", "))));
         };
         let url = text(body, "url").unwrap_or_default();
         check_url(&url)?;

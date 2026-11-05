@@ -585,6 +585,14 @@ fn title_of(link: &str) -> String {
     url::Url::parse(link)
         .ok()
         .and_then(|u| u.path_segments().and_then(|mut s| s.next_back().map(str::to_string)))
+        .map(|s| {
+            let lower = s.to_lowercase();
+            if lower.ends_with(".nzb") || lower.ends_with(".torrent") {
+                s.rsplit_once('.').map(|(a, _)| a.to_string()).unwrap_or(s)
+            } else {
+                s
+            }
+        })
         .filter(|s| !s.is_empty())
         .unwrap_or_else(|| "Release".into())
 }
@@ -596,7 +604,8 @@ mod tests {
     #[test]
     fn names_grabs_from_their_link() {
         assert_eq!(title_of("magnet:?xt=urn:btih:abc&dn=Some+Show+S01"), "Some Show S01");
-        assert_eq!(title_of("https://x.test/get/Thing.nzb?k=1"), "Thing.nzb");
+        assert_eq!(title_of("https://x.test/get/Thing.nzb?k=1"), "Thing");
+        assert_eq!(title_of("https://x.test/get/12345"), "12345");
         assert_eq!(title_of("https://x.test/"), "Release");
     }
 
