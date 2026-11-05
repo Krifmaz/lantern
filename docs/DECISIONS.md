@@ -181,6 +181,32 @@ Non-obvious calls, one line each, newest last.
   (localization, UI and host settings, app profiles, …) in the browser, with Prowlarr's shapes and defaults
   (`docs/parity/p-ui/shots.js`), so the look can be proven before the API is ported. They prove the theme, the
   branding and the mobile layout only; the page rows stay `todo` until their API exists.
+- 2026-11-05 — cross-seed's daemon API runs on its own port, `cross_seed_port` (2468, cross-seed's default; 0 turns
+  it off), not on Lantern's main port: autobrr's own `/api/webhook` would clash there, and tools already pointed at
+  cross-seed keep their address. Its answers stay cross-seed's plain text with no content type (not `{"detail"}`),
+  because scripts and autobrr read them as they are.
+- 2026-11-05 — cross-seed's JavaScript regexes are translated for fancy-regex (`server/src/crossseed/jsre.rs`):
+  `\d`, `\w` and `\b` stay ASCII as in JavaScript, and the one lookbehind of varying length (`S\d+[_\s-]{1,3}` in
+  the episode pattern) becomes every fixed length it can have (up to 4 digits). A regex that gives up on a very long
+  name counts as no match.
+- 2026-11-05 — Until linking is ported, only a `MATCH` is added to the client (at the source's own save path, the
+  files being the same). `MATCH_SIZE_ONLY` and `MATCH_PARTIAL` need linked files, so their torrents are saved as
+  cross-seed's `outputDir` does (`<data>/cross-seeds/[type][tracker]name[hash].torrent`) and recorded as a
+  `FAILURE` to inject, ready for the inject job. cross-seed's check that flexible and partial need `linkDirs` is
+  shown as a problem on the Cross-seed page but doesn't stop searching.
+- 2026-11-05 — Problems in the cross-seed settings (cross-seed's own messages) are shown and logged, not fatal:
+  cross-seed refuses to start, but Lantern has more than cross-seed in it.
+- 2026-11-05 — The `cross_seeds` table keeps its `decision` column with Lantern's words (`injected`,
+  `files_differ`, ...), which the hub's cleanup reads; cross-seed's decision and injection result are new columns
+  (`match_decision`, `result`). Search times move to cross-seed's per-indexer `timestamp` table, and
+  `cross_seed_again_days` gives way to `excludeOlder` and `excludeRecentSearch`.
+- 2026-11-05 — A torrent searched by the webhook that isn't one of Lantern's grabs goes under the category
+  `cross-seed`, since the clients don't tell Lantern a torrent's category (a grab's copies keep `<category>.cross-seed`).
+- 2026-11-05 — Announces pick the client torrents to compare by cross-seed's keys (title with season, episode,
+  year) and its title comparison, without cross-seed's torrent cache and data folders (a later slice).
+- 2026-11-05 — File paths are sorted by an approximation of JavaScript's `localeCompare` (punctuation, then digits,
+  then letters, case ignored first); full ICU collation differs only for accented names and changes only the order
+  files are listed in, not a decision.
 - 2026-11-05 — Prowlarr's v1 API (track P-api) lives in `server/src/prowlarr/`. Its answers keep Prowlarr's field
   names and camelCase enums. A failed check answers Prowlarr's 400 array of failures (`propertyName`, `errorMessage`,
   …), because Prowlarr's web app reads it; every other error carries Prowlarr's `message` and the kit's `detail`.
