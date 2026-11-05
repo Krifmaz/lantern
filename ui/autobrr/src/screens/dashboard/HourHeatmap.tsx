@@ -14,6 +14,7 @@ import { scaleBand, scaleQuantize } from "d3-scale";
 import { ReleasesHeatmapQueryOptions } from "@api/queries";
 import { ChartCard, ChartError, ChartSkeleton } from "./charts";
 import { chartTheme, sequentialRamp, useIsDark } from "./chartTheme";
+import { chartColors } from "@app/lantern/chartColors";
 
 interface HeatmapDatum {
   hour: number;
@@ -58,7 +59,8 @@ export const HourHeatmap = () => {
   const { isLoading, isError, data } = useQuery(ReleasesHeatmapQueryOptions());
 
   const ramp = sequentialRamp(isDark);
-  const zeroFill = isDark ? "#303034" : "#f4f4f5";
+  // LANTERN: the empty cell's colour from the kit's tokens
+  const zeroFill = chartColors(isDark).zeroFill;
 
   const definition = useMemo(() => {
     const cells = toLocalCells(data?.heatmap ?? []);

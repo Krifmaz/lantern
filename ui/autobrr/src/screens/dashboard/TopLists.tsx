@@ -11,6 +11,7 @@ import { ReleasesTopFiltersQueryOptions, ReleasesTopIndexersQueryOptions } from 
 import { SettingsContext } from "@utils/Context";
 import { ChartCard, ChartError, ChartSkeleton } from "./charts";
 import { seriesColors, useIsDark } from "./chartTheme";
+import { chartColors } from "@app/lantern/chartColors";
 
 interface BreakdownRow {
   name: string;
@@ -32,7 +33,8 @@ const BreakdownTable = ({ title, nameHeader, rows, isLoading, isError }: Breakdo
 
   const maxApproved = Math.max(...rows.map((row) => row.approved), 1);
   const barColor = seriesColors(isDark).matches;
-  const trackColor = isDark ? "#1e3a8a66" : "#dbeafe";
+  // LANTERN: the track's colour from the kit's tokens
+  const trackColor = chartColors(isDark).track;
 
   return (
     <ChartCard title={title}>

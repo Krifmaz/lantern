@@ -5,6 +5,8 @@
 
 import { SettingsContext } from "@utils/Context";
 import { useMedia } from "@hooks/hooks";
+// LANTERN: the charts' colours come from the kit's tokens (src/lantern/chartColors.ts)
+import { chartColors } from "@app/lantern/chartColors";
 
 export const useIsDark = (): boolean => {
   const theme = SettingsContext.useSelector((s) => s.theme);
@@ -18,22 +20,19 @@ export const useIsDark = (): boolean => {
 // context next to the series that matter, and a warm hue beside the green
 // fails colorblind separation. Keep the series order approved, matches,
 // rejected, errored when they share a chart.
-export const seriesColors = (dark: boolean) => ({
-  approved: "#16a34a",
-  matches: "#3b82f6",
-  rejected: dark ? "#71717a" : "#a1a1aa",
-  errored: dark ? "#ef4444" : "#dc2626"
-});
+// LANTERN: the series, the ramp and the chart's own colours are the kit's tokens, in place of Tailwind's hues
+// (approved --ok, matches the second accent, rejected --faint, errored --err); the series order stays.
+export const seriesColors = (dark: boolean) => chartColors(dark).series;
 
-export const sequentialRamp = (dark: boolean): string[] =>
-  dark
-    ? ["#1e3a8a", "#1d4ed8", "#3b82f6", "#60a5fa", "#bfdbfe"]
-    : ["#bfdbfe", "#93c5fd", "#60a5fa", "#2563eb", "#1e40af"];
+export const sequentialRamp = (dark: boolean): string[] => chartColors(dark).ramp;
 
-export const chartTheme = (dark: boolean) => ({
-  foreground: dark ? "#d4d4d8" : "#3f3f46",
-  muted: dark ? "#a1a1aa" : "#71717a",
-  grid: dark ? "#3f3f46" : "#e4e4e7",
-  background: dark ? "#27272a" : "#ffffff",
-  palette: Object.values(seriesColors(dark))
-});
+export const chartTheme = (dark: boolean) => {
+  const c = chartColors(dark);
+  return {
+    foreground: c.foreground,
+    muted: c.muted,
+    grid: c.grid,
+    background: c.background,
+    palette: Object.values(c.series)
+  };
+};

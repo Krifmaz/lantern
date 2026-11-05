@@ -5,6 +5,9 @@
 
 @import 'tailwindcss';
 @config '../tailwind.config.ts';
+/* LANTERN: the kit's generated tokens, then the Encore look's colour ends, greys and fonts (src/lantern/) */
+@import './lantern/kit-tokens.css';
+@import './lantern/encore.css';
 
 :root {
   color-scheme: light;

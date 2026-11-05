@@ -11,6 +11,8 @@ import "./i18n";
 
 import { App } from "./App";
 import { InitializeGlobalContext } from "./utils/Context";
+// LANTERN: see followKitTheme() below
+import { followKitTheme } from "./lantern/theme";
 
 declare global {
     interface Window {
@@ -19,6 +21,9 @@ declare global {
 }
 
 window.APP = window.APP || {};
+
+// LANTERN: the kit's themes follow autobrr's dark and light modes (src/lantern/theme.ts)
+followKitTheme();
 
 // Initializes auth and theme contexts
 InitializeGlobalContext();
