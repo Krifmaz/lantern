@@ -110,3 +110,6 @@ Non-obvious calls, one line each, newest last.
   slskd per Lantern), not as a download client, because it is a source and a client at once. Each search result is
   one user folder; finished files are hardlinked (copied across file systems) into the app's folder so the app gets
   one folder with exact paths, like every other download. Only music searches ask Soulseek (`soulseek=1` forces it).
+- 2026-11-05 — The emulated SABnzbd and NZBGet offer the categories Sonarr, Radarr, Lidarr and Readarr use out of the
+  box (in small letters and with a capital, as Radarr's NZBGet `Movies` and Readarr's `Readarr`), besides each app's
+  own, because the apps refuse to save a client whose category they don't see; Lantern takes any category anyway.

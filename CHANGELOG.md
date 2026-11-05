@@ -59,6 +59,7 @@
   downloads (live, with Try again and Stop), and the download clients with Add, Edit, Test, on/off and Remove.
 - Download hub: Soulseek as a music source through slskd: music searches also search Soulseek, and a grab
   downloads the user's folder and puts it into the app's folder (Settings → Downloads → Soulseek).
+- Contract test: real Sonarr, Radarr, Lidarr and Readarr also add Lantern as their qBittorrent, SABnzbd and NZBGet.
 - Lantern can be added as a qBittorrent download client by any app (user name: the app's name, password: Lantern's
   API key). The app is registered on sight, its torrents go to the real client through the hub with Lantern's
   categories and folders, and it sees them by their info hash with paths in its own view.

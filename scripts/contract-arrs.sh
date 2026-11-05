@@ -2,6 +2,9 @@
 # Contract run: real Sonarr, Radarr, Lidarr and Readarr add Lantern as a Torznab indexer, unchanged. Each app tests
 # the indexer before it saves it (Torznab caps, then a search that must return releases in its categories), so a
 # saved indexer means the app can use Lantern. Lantern's history must then show each app's queries.
+# Then each app adds Lantern as its qBittorrent, SABnzbd and NZBGet download client; each app tests a client before
+# it saves it (signing in, the version, the settings, the categories, the list of downloads), and every app must
+# then be on Lantern's Apps list.
 #
 # Needs: docker, curl, jq, and `cargo build --release --example mock_tracker && cargo build --release` in server/.
 set -euo pipefail
@@ -68,8 +71,37 @@ while read -r app port ver tag cats; do
   else
     echo "$app refused Lantern ($code):"; cat "$WORK/$app.json"; echo; failed=1
   fi
+  for impl in QBittorrent Sabnzbd Nzbget; do
+    schema=$(curl -fsS -H "X-Api-Key: $key" "http://127.0.0.1:$port/api/$ver/downloadclient/schema" | jq --arg i "$impl" '.[] | select(.implementation==$i)')
+    [ -n "$schema" ] || { echo "$app has no $impl download client"; failed=1; continue; }
+    body=$(jq --arg key "$KEY" --arg user "${app^}" --arg impl "$impl" '
+        .name = "Lantern \(.implementation)" | .enable = true | .priority = 1
+        | .fields |= map(if .name == "host" then .value = "127.0.0.1"
+                         elif .name == "port" then .value = 9696
+                         elif .name == "useSsl" then .value = false
+                         elif .name == "urlBase" then .value = ""
+                         elif .name == "apiKey" then .value = (if $impl == "Sabnzbd" then $key else "" end)
+                         elif .name == "username" then .value = (if $impl == "Sabnzbd" then "" else $user end)
+                         elif .name == "password" then .value = (if $impl == "Sabnzbd" then "" else $key end)
+                         else . end)' <<< "$schema")
+    code=$(curl -sS -o "$WORK/$app-$impl.json" -w '%{http_code}' -H "X-Api-Key: $key" -H 'content-type: application/json' \
+      "http://127.0.0.1:$port/api/$ver/downloadclient" -d "$body")
+    if [ "$code" = 201 ] || [ "$code" = 200 ]; then
+      echo "$app added Lantern as its $impl ($code)"
+    else
+      echo "$app refused Lantern as its $impl ($code):"; cat "$WORK/$app-$impl.json"; echo; failed=1
+    fi
+  done
   echo "::endgroup::"
 done <<< "$APPS"
+
+echo "::group::Lantern's apps"
+curl -fsS -H "x-api-key: $KEY" "$LANTERN/api/hub/apps" | jq -r '.apps[] | "\(.name)\t\(.source)\t\(.category)\t\(.folder)"'
+echo "::endgroup::"
+for src in Sonarr Radarr Lidarr Readarr; do
+  curl -fsS -H "x-api-key: $KEY" "$LANTERN/api/hub/apps" | jq -e --arg s "$src" '[.apps[] | select(.name == $s)] | length > 0' >/dev/null \
+    || { echo "$src never reached Lantern as a download client"; failed=1; }
+done
 
 echo "::group::Lantern's history"
 curl -fsS -H "x-api-key: $KEY" "$LANTERN/api/indexers/history?limit=50" | jq -r '.history[] | "\(.source)\t\(.kind)\t\(.ok)\t\(.results)\t\(.error)"'
