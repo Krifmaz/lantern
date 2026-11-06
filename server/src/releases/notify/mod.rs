@@ -9,6 +9,8 @@
 //! messages rows of `autobrr_notification_inbox`.
 
 pub mod senders;
+#[cfg(test)]
+mod sender_tests;
 
 use super::release::Release;
 use super::store::{ApiError, ApiResult};
