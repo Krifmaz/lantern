@@ -8,9 +8,9 @@
 //! The notifications are rows of `autobrr_notifications` (the record as JSON in `body`), the built-in inbox's
 //! messages rows of `autobrr_notification_inbox`.
 
-pub mod senders;
 #[cfg(test)]
 mod sender_tests;
+pub mod senders;
 
 use super::release::Release;
 use super::store::{ApiError, ApiResult};
@@ -172,7 +172,8 @@ impl Notification {
                 if blank(&self.api_key) {
                     return bad("missing notifiarr api key");
                 }
-                let ok = self.api_key.len() == 36 && self.api_key.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
+                let ok =
+                    self.api_key.len() == 36 && self.api_key.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
                 if !ok {
                     return bad("notifiarr api key must be 36 characters of a-z, 0-9 and dashes");
                 }
@@ -448,8 +449,11 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
     if has.is_none() {
         let now = now_text();
         let body = json!({ "events": ["PUSH_ERROR", "IRC_DISCONNECTED", "APP_UPDATE_AVAILABLE"], "created_at": now, "updated_at": now });
-        db.execute("INSERT INTO autobrr_notifications (name, kind, enabled, body) VALUES ('Built-in', 'BUILTIN', 1, ?)", p![body.to_string()])
-            .map_err(|e| anyhow::anyhow!(e.detail))?;
+        db.execute(
+            "INSERT INTO autobrr_notifications (name, kind, enabled, body) VALUES ('Built-in', 'BUILTIN', 1, ?)",
+            p![body.to_string()],
+        )
+        .map_err(|e| anyhow::anyhow!(e.detail))?;
     }
     Ok(())
 }
@@ -547,7 +551,10 @@ impl Releases {
         let now = now_text();
         n.created_at.clone_from(&now);
         n.updated_at = now;
-        n.id = self.db.execute("INSERT INTO autobrr_notifications (name, kind, enabled, body) VALUES (?,?,?,?)", p![n.name, n.kind, n.enabled, body_of(&n)])?;
+        n.id = self.db.execute(
+            "INSERT INTO autobrr_notifications (name, kind, enabled, body) VALUES (?,?,?,?)",
+            p![n.name, n.kind, n.enabled, body_of(&n)],
+        )?;
         Ok(n)
     }
 
@@ -592,7 +599,10 @@ impl Releases {
         };
         let senders = |ids: &dyn Fn(&Notification) -> bool| all.iter().filter(|n| n.is_enabled() && ids(n)).cloned().collect::<Vec<_>>();
         if filter_id > 0 {
-            let routes = self.db.query("SELECT notification_id, events FROM autobrr_filter_notifications WHERE filter_id=?", p![filter_id]).unwrap_or_default();
+            let routes = self
+                .db
+                .query("SELECT notification_id, events FROM autobrr_filter_notifications WHERE filter_id=?", p![filter_id])
+                .unwrap_or_default();
             if !routes.is_empty() {
                 let wanted: Vec<i64> = routes
                     .iter()
@@ -675,7 +685,7 @@ impl Releases {
             url: p.url.clone(),
             read_at: None,
             created_at: now_text(),
-        ..InboxMessage::default()
+            ..InboxMessage::default()
         };
         if m.message == m.release_name {
             m.message.clear();
@@ -698,10 +708,10 @@ impl Releases {
                 m.created_at
             ],
         )?;
-        let _ = self.notifier.inbox_events.send(super::irc::Event {
-            event: "NOTIFICATION".into(),
-            data: serde_json::to_string(&m).unwrap_or_default(),
-        });
+        let _ = self
+            .notifier
+            .inbox_events
+            .send(super::irc::Event { event: "NOTIFICATION".into(), data: serde_json::to_string(&m).unwrap_or_default() });
         Ok(m)
     }
 
@@ -721,9 +731,10 @@ impl Releases {
         let read_sql = if unread { "read_at IS NULL" } else { "1=1" };
         args.push(json!(limit));
         args.push(json!(offset));
-        let rows = self
-            .db
-            .query(&format!("SELECT * FROM autobrr_notification_inbox WHERE {read_sql} AND {ev_sql} ORDER BY id DESC LIMIT ? OFFSET ?"), args)?;
+        let rows = self.db.query(
+            &format!("SELECT * FROM autobrr_notification_inbox WHERE {read_sql} AND {ev_sql} ORDER BY id DESC LIMIT ? OFFSET ?"),
+            args,
+        )?;
         let data: Vec<InboxMessage> = rows
             .iter()
             .map(|r| InboxMessage {
@@ -777,7 +788,8 @@ impl Releases {
 
     /// Removes messages older than 30 days and all but the newest 1000 (autobrr's `InboxCleanupJob`); how many.
     pub fn cleanup_inbox(&self) -> i64 {
-        let before = self.db.one("SELECT COUNT(*) AS n FROM autobrr_notification_inbox", p![]).ok().flatten().map(|r| r.i("n")).unwrap_or(0);
+        let before =
+            self.db.one("SELECT COUNT(*) AS n FROM autobrr_notification_inbox", p![]).ok().flatten().map(|r| r.i("n")).unwrap_or(0);
         let cutoff = (Utc::now() - chrono::Duration::days(INBOX_MAX_AGE_DAYS)).to_rfc3339_opts(SecondsFormat::AutoSi, true);
         let _ = self.db.execute(
             "DELETE FROM autobrr_notification_inbox WHERE created_at < ? OR id NOT IN (SELECT id FROM autobrr_notification_inbox ORDER BY id DESC LIMIT ?)",
@@ -1023,7 +1035,12 @@ pub fn test_events() -> Vec<Payload> {
             "P2P-Network: authentication failed: account does not exist",
         ),
         irc("IRC_HEALTHY", "IRC Healthy", "P2P-Network", ""),
-        Payload { list: "Sonarr TV".into(), list_id: 1, list_type: "SONARR".into(), ..simple("LIST_REFRESH_SUCCESS", "List Refresh Success", "List: Sonarr TV") },
+        Payload {
+            list: "Sonarr TV".into(),
+            list_id: 1,
+            list_type: "SONARR".into(),
+            ..simple("LIST_REFRESH_SUCCESS", "List Refresh Success", "List: Sonarr TV")
+        },
         Payload {
             list: "Sonarr TV".into(),
             list_id: 1,
@@ -1115,14 +1132,20 @@ mod tests {
         assert_eq!(n("GOTIFY").validate().unwrap_err(), "missing gotify url: invalid notification settings");
         assert_eq!(n("NOTIFIARR").validate().unwrap_err(), "missing notifiarr api key: invalid notification settings");
         let bad_key = Notification { api_key: "ABC".into(), ..n("NOTIFIARR") };
-        assert_eq!(bad_key.validate().unwrap_err(), "notifiarr api key must be 36 characters of a-z, 0-9 and dashes: invalid notification settings");
+        assert_eq!(
+            bad_key.validate().unwrap_err(),
+            "notifiarr api key must be 36 characters of a-z, 0-9 and dashes: invalid notification settings"
+        );
         let good_key = Notification { api_key: "0b6c2a3e-9f1d-4c8a-b7e2-5d4f3a2b1c0d".into(), ..n("NOTIFIARR") };
         assert!(good_key.validate().is_ok());
         assert_eq!(n("PUSHOVER").validate().unwrap_err(), "missing pushover api token: invalid notification settings");
         assert_eq!(n("TELEGRAM").validate().unwrap_err(), "missing telegram bot token: invalid notification settings");
         assert_eq!(n("NTFY").validate().unwrap_err(), "missing url: invalid notification settings");
         let bark = Notification { host: "https://api.day.app?x=1".into(), token: "k".into(), ..n("BARK") };
-        assert_eq!(bark.validate().unwrap_err(), "bark server url must be an http or https url without query parameters: invalid notification settings");
+        assert_eq!(
+            bark.validate().unwrap_err(),
+            "bark server url must be an http or https url without query parameters: invalid notification settings"
+        );
         assert!(n("BUILTIN").validate().is_ok());
         assert_eq!(n("SLACK").validate().unwrap_err(), "unsupported notification type: 'SLACK': invalid notification settings");
         assert!(!Notification { enabled: true, ..n("DISCORD") }.is_enabled());

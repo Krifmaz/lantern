@@ -115,7 +115,13 @@ async fn eventually(ok: impl Fn() -> bool) -> bool {
 
 /// A webhook notification saved through the routes; its id.
 async fn store_webhook(app: &Router, name: &str, url: &str, events: &[&str]) -> i64 {
-    let (s, v) = call(app, "POST", "/notification", Some(json!({ "name": name, "type": "WEBHOOK", "enabled": true, "webhook": url, "events": events }))).await;
+    let (s, v) = call(
+        app,
+        "POST",
+        "/notification",
+        Some(json!({ "name": name, "type": "WEBHOOK", "enabled": true, "webhook": url, "events": events })),
+    )
+    .await;
     assert_eq!(s, StatusCode::CREATED, "{v}");
     v["id"].as_i64().unwrap()
 }
@@ -149,7 +155,10 @@ async fn the_routes_save_change_and_remove_notifications() {
     assert_eq!(list.len(), 1, "the migrations seed the built-in one");
     let builtin = &list[0];
     assert_shape("Notification", builtin);
-    assert_eq!((builtin["name"].as_str(), builtin["type"].as_str(), builtin["enabled"].as_bool()), (Some("Built-in"), Some("BUILTIN"), Some(true)));
+    assert_eq!(
+        (builtin["name"].as_str(), builtin["type"].as_str(), builtin["enabled"].as_bool()),
+        (Some("Built-in"), Some("BUILTIN"), Some(true))
+    );
     assert_eq!(builtin["events"], json!(["PUSH_ERROR", "IRC_DISCONNECTED", "APP_UPDATE_AVAILABLE"]));
     let bid = builtin["id"].as_i64().unwrap();
 
@@ -202,7 +211,13 @@ async fn the_routes_save_change_and_remove_notifications() {
     assert_eq!((saved.name.as_str(), saved.api_key.as_str()), ("Notifiarr", "0b6c2a3e-9f1d-4c8a-b7e2-5d4f3a2b1c0d"));
 
     // a webhook can't become the built-in one
-    let (s, hook) = call(&app, "POST", "/notification", Some(json!({ "name": "webhook", "type": "WEBHOOK", "enabled": true, "webhook": "http://127.0.0.1:9/hook" }))).await;
+    let (s, hook) = call(
+        &app,
+        "POST",
+        "/notification",
+        Some(json!({ "name": "webhook", "type": "WEBHOOK", "enabled": true, "webhook": "http://127.0.0.1:9/hook" })),
+    )
+    .await;
     assert_eq!(s, StatusCode::CREATED, "{hook}");
     let mut retyped = hook.clone();
     retyped["type"] = json!("BUILTIN");
@@ -249,11 +264,22 @@ async fn a_filter_s_own_picks_replace_the_global_events() {
     let (app, st) = lantern("routing").await;
     let one = store_webhook(&app, "one", "http://127.0.0.1:9/one", &["PUSH_APPROVED"]).await;
     store_webhook(&app, "two", "http://127.0.0.1:9/two", &["PUSH_REJECTED"]).await;
-    let (s, off) = call(&app, "POST", "/notification", Some(json!({ "name": "three", "type": "WEBHOOK", "enabled": false, "events": ["PUSH_APPROVED"] }))).await;
+    let (s, off) = call(
+        &app,
+        "POST",
+        "/notification",
+        Some(json!({ "name": "three", "type": "WEBHOOK", "enabled": false, "events": ["PUSH_APPROVED"] })),
+    )
+    .await;
     assert_eq!(s, StatusCode::CREATED, "{off}");
     let three = off["id"].as_i64().unwrap();
 
-    let (f9, f10, f11, f12) = (test_filter(&app, "nine").await, test_filter(&app, "ten").await, test_filter(&app, "eleven").await, test_filter(&app, "twelve").await);
+    let (f9, f10, f11, f12) = (
+        test_filter(&app, "nine").await,
+        test_filter(&app, "ten").await,
+        test_filter(&app, "eleven").await,
+        test_filter(&app, "twelve").await,
+    );
     for (fid, routes) in [
         (f10, json!([{ "notification_id": one, "events": ["PUSH_REJECTED"] }])),
         (f11, json!([{ "notification_id": one, "events": [] }])),
@@ -297,11 +323,16 @@ async fn a_test_reaches_the_webhook() {
     assert_eq!(s, StatusCode::NO_CONTENT, "{v}");
     let got = got.lock().unwrap().clone();
     assert_eq!(got.len(), 1, "{got:?}");
-    assert_eq!((got[0].0.as_str(), got[0].1["event"].as_str()), ("action.approved", Some("action.approved")), "autobrr's webhook event names");
+    assert_eq!(
+        (got[0].0.as_str(), got[0].1["event"].as_str()),
+        ("action.approved", Some("action.approved")),
+        "autobrr's webhook event names"
+    );
     assert_eq!(got[0].1["data"]["release"]["name"], "Best.Show.Ever.S18E21.1080p.AMZN.WEB-DL.DDP2.0.H.264-GROUP", "{}", got[0].1);
 
     // a webhook that can't be reached is the test's error
-    let body = json!({ "name": "hook", "type": "WEBHOOK", "enabled": true, "webhook": "http://127.0.0.1:9/hook", "events": ["PUSH_APPROVED"] });
+    let body =
+        json!({ "name": "hook", "type": "WEBHOOK", "enabled": true, "webhook": "http://127.0.0.1:9/hook", "events": ["PUSH_APPROVED"] });
     let (s, v) = call(&app, "POST", "/notification/test", Some(body)).await;
     assert_eq!(s, StatusCode::INTERNAL_SERVER_ERROR, "{v}");
 }
@@ -340,7 +371,11 @@ async fn the_built_in_one_writes_to_the_inbox() {
     assert_eq!(live.try_recv().unwrap().event, "NOTIFICATION");
 
     // "inbox changes publish change event"
-    for (method, path, body) in [("POST", "/notification/inbox/read", Some(json!({ "ids": [1] }))), ("POST", "/notification/inbox/delete", Some(json!({ "ids": [1] }))), ("DELETE", "/notification/inbox", None)] {
+    for (method, path, body) in [
+        ("POST", "/notification/inbox/read", Some(json!({ "ids": [1] }))),
+        ("POST", "/notification/inbox/delete", Some(json!({ "ids": [1] }))),
+        ("DELETE", "/notification/inbox", None),
+    ] {
         let (s, v) = call(&app, method, path, body).await;
         assert_eq!(s, StatusCode::NO_CONTENT, "{path}: {v}");
         assert_eq!(live.try_recv().unwrap().event, "INBOX_CHANGED", "{path}");
@@ -361,7 +396,13 @@ async fn the_inbox_lifecycle() {
     let new = store(
         "PUSH_ERROR",
         "new",
-        Payload { release_name: name.into(), filter: "TV".into(), filter_id: 4, rejections: vec!["error pushing to client".into()], ..Payload::default() },
+        Payload {
+            release_name: name.into(),
+            filter: "TV".into(),
+            filter_id: 4,
+            rejections: vec!["error pushing to client".into()],
+            ..Payload::default()
+        },
     );
     assert!(old > 0 && middle > old && new > middle);
 
@@ -448,7 +489,9 @@ async fn lists_feeds_and_irc_tell_their_events() {
         .as_array()
         .unwrap()
         .iter()
-        .map(|m| (m["event"].as_str().unwrap().into(), m["title"].as_str().unwrap().into(), m["message"].as_str().unwrap_or_default().into()))
+        .map(|m| {
+            (m["event"].as_str().unwrap().into(), m["title"].as_str().unwrap().into(), m["message"].as_str().unwrap_or_default().into())
+        })
         .collect();
     got.sort();
     let want = |e: &str, t: &str, m: &str| (e.to_string(), t.to_string(), m.to_string());
@@ -491,8 +534,10 @@ async fn a_push_reaches_the_webhook() {
     assert_eq!(push["result"]["status"], "PUSH_APPROVED", "{push}");
 
     // the filter picks no events for the hook: its pushes are muted, the new release (no filter) still tells
-    let hook = call(&app, "GET", "/notification", None).await.1.as_array().unwrap().iter().find(|n| n["name"] == "hook").unwrap()["id"].clone();
-    let (s, _) = call(&app, "PUT", &format!("/filters/{fid}/notifications"), Some(json!([{ "notification_id": hook, "events": [] }]))).await;
+    let hook =
+        call(&app, "GET", "/notification", None).await.1.as_array().unwrap().iter().find(|n| n["name"] == "hook").unwrap()["id"].clone();
+    let (s, _) =
+        call(&app, "PUT", &format!("/filters/{fid}/notifications"), Some(json!([{ "notification_id": hook, "events": [] }]))).await;
     assert_eq!(s, StatusCode::NO_CONTENT);
     let body = json!({ "title": "Show.S01E02.1080p.WEB-DL.H.264-GRP", "download_url": "magnet:?xt=urn:btih:1123456789abcdef0123456789abcdef01234567" }).to_string();
     let (_, o) = raw(&app, "POST", "/api/releases/announce", Some(&body)).await;

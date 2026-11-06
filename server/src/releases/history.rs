@@ -649,7 +649,10 @@ impl Releases {
         page_args.push(json!(q.offset.max(0)));
         let ids: Vec<i64> = self
             .db
-            .query(&format!("SELECT DISTINCT r.id FROM autobrr_release r{join} WHERE {where_sql} ORDER BY r.id DESC LIMIT ? OFFSET ?"), page_args)?
+            .query(
+                &format!("SELECT DISTINCT r.id FROM autobrr_release r{join} WHERE {where_sql} ORDER BY r.id DESC LIMIT ? OFFSET ?"),
+                page_args,
+            )?
             .iter()
             .map(|r| r.i("id"))
             .collect();
@@ -657,8 +660,12 @@ impl Releases {
         let mut data = Vec::new();
         for id in &ids {
             let Some(row) = self.db.one("SELECT * FROM autobrr_release WHERE id=?", p![id])? else { continue };
-            let statuses: Vec<ActionStatus> =
-                self.db.query("SELECT * FROM autobrr_release_action_status WHERE release_id=? ORDER BY id", p![id])?.iter().map(status_of).collect();
+            let statuses: Vec<ActionStatus> = self
+                .db
+                .query("SELECT * FROM autobrr_release_action_status WHERE release_id=? ORDER BY id", p![id])?
+                .iter()
+                .map(status_of)
+                .collect();
             data.push(release_json(&row, &names, statuses, true));
         }
         let next = ids.last().copied().unwrap_or(0);
@@ -667,13 +674,19 @@ impl Releases {
 
     /// Release `id` without its action statuses, as autobrr's `Get` answers it.
     pub fn history_release(&self, id: i64) -> ApiResult<Value> {
-        let row = self.db.one("SELECT * FROM autobrr_release WHERE id=?", p![id])?.ok_or_else(|| ApiError::NotFound(format!("could not find release with id {id}")))?;
+        let row = self
+            .db
+            .one("SELECT * FROM autobrr_release WHERE id=?", p![id])?
+            .ok_or_else(|| ApiError::NotFound(format!("could not find release with id {id}")))?;
         Ok(release_json(&row, &BTreeMap::new(), Vec::new(), false))
     }
 
     /// Release `id` as a release to run an action on again (autobrr's `Get`, read into its `Release`).
     pub fn history_release_for_retry(&self, id: i64) -> ApiResult<Release> {
-        let r = self.db.one("SELECT * FROM autobrr_release WHERE id=?", p![id])?.ok_or_else(|| ApiError::NotFound("sql: no rows in result set".into()))?;
+        let r = self
+            .db
+            .one("SELECT * FROM autobrr_release WHERE id=?", p![id])?
+            .ok_or_else(|| ApiError::NotFound("sql: no rows in result set".into()))?;
         let mut rel = Release::new(super::release::IndexerMinimal { identifier: r.s("indexer"), ..Default::default() });
         rel.id = r.i("id");
         rel.filter_status = r.s("filter_status");
@@ -776,13 +789,19 @@ impl Releases {
     pub fn stats_activity(&self, days: i64) -> ApiResult<Value> {
         let w = Window::new(days);
         let mut daily: BTreeMap<String, [i64; 4]> = BTreeMap::new();
-        for r in self.db.query(&format!("SELECT substr(timestamp, 1, 10) AS day, COUNT(*) AS n FROM autobrr_release WHERE {} GROUP BY 1", w.sql("timestamp")), w.args())? {
+        for r in self.db.query(
+            &format!("SELECT substr(timestamp, 1, 10) AS day, COUNT(*) AS n FROM autobrr_release WHERE {} GROUP BY 1", w.sql("timestamp")),
+            w.args(),
+        )? {
             if !r.s("day").is_empty() {
                 daily.entry(r.s("day")).or_default()[0] = r.i("n");
             }
         }
         for r in self.db.query(
-            &format!("SELECT substr(timestamp, 1, 10) AS day, status, COUNT(*) AS n FROM autobrr_release_action_status WHERE {} GROUP BY 1, 2", w.sql("timestamp")),
+            &format!(
+                "SELECT substr(timestamp, 1, 10) AS day, status, COUNT(*) AS n FROM autobrr_release_action_status WHERE {} GROUP BY 1, 2",
+                w.sql("timestamp")
+            ),
             w.args(),
         )? {
             if r.s("day").is_empty() {
@@ -858,7 +877,10 @@ impl Releases {
         let w = Window::new(days);
         let mut m: BTreeMap<String, (i64, i64)> = BTreeMap::new();
         for r in self.db.query(
-            &format!("SELECT indexer, COUNT(*) AS n FROM autobrr_release WHERE indexer IS NOT NULL AND indexer != '' AND {} GROUP BY 1", w.sql("timestamp")),
+            &format!(
+                "SELECT indexer, COUNT(*) AS n FROM autobrr_release WHERE indexer IS NOT NULL AND indexer != '' AND {} GROUP BY 1",
+                w.sql("timestamp")
+            ),
             w.args(),
         )? {
             m.entry(r.s("indexer")).or_default().0 = r.i("n");
@@ -877,7 +899,8 @@ impl Releases {
         let mut top: Vec<(String, i64, i64)> = m.into_iter().map(|(k, (a, b))| (k, a, b)).collect();
         top.sort_by(|a, b| b.2.cmp(&a.2).then(b.1.cmp(&a.1)).then(a.0.cmp(&b.0)));
         top.truncate(10);
-        let list: Vec<Value> = top.into_iter().map(|(k, a, b)| json!({ "indexer": k, "matched_count": a, "push_approved_count": b })).collect();
+        let list: Vec<Value> =
+            top.into_iter().map(|(k, a, b)| json!({ "indexer": k, "matched_count": a, "push_approved_count": b })).collect();
         Ok(json!({ "days": days, "top": list }))
     }
 
@@ -886,7 +909,10 @@ impl Releases {
         let w = Window::new(days);
         let mut m: BTreeMap<String, (i64, i64)> = BTreeMap::new();
         for r in self.db.query(
-            &format!("SELECT filter, COUNT(*) AS n FROM autobrr_release WHERE filter IS NOT NULL AND filter != '' AND {} GROUP BY 1", w.sql("timestamp")),
+            &format!(
+                "SELECT filter, COUNT(*) AS n FROM autobrr_release WHERE filter IS NOT NULL AND filter != '' AND {} GROUP BY 1",
+                w.sql("timestamp")
+            ),
             w.args(),
         )? {
             m.entry(r.s("filter")).or_default().0 = r.i("n");
@@ -905,7 +931,8 @@ impl Releases {
         let mut top: Vec<(String, i64, i64)> = m.into_iter().map(|(k, (a, b))| (k, a, b)).collect();
         top.sort_by(|a, b| b.1.cmp(&a.1).then(b.2.cmp(&a.2)).then(a.0.cmp(&b.0)));
         top.truncate(10);
-        let list: Vec<Value> = top.into_iter().map(|(k, a, b)| json!({ "filter": k, "matched_count": a, "push_approved_count": b })).collect();
+        let list: Vec<Value> =
+            top.into_iter().map(|(k, a, b)| json!({ "filter": k, "matched_count": a, "push_approved_count": b })).collect();
         Ok(json!({ "days": days, "top": list }))
     }
 
@@ -1095,7 +1122,10 @@ impl Releases {
         }
         args.extend(a);
         let found = self.db.query(
-            &format!("SELECT r.id FROM autobrr_release r LEFT JOIN autobrr_release_action_status ras ON r.id = ras.release_id WHERE {}", parts.join(" AND ")),
+            &format!(
+                "SELECT r.id FROM autobrr_release r LEFT JOIN autobrr_release_action_status ras ON r.id = ras.release_id WHERE {}",
+                parts.join(" AND ")
+            ),
             args,
         )?;
         Ok(!found.is_empty())
@@ -1142,7 +1172,9 @@ impl Releases {
         ];
         const COLS: &str = "name, protocol, release_name, hash, title, sub_title, season, episode, year, month, day, resolution, source, codec, container, dynamic_range, audio, release_group, website, proper, repack, hybrid";
         if p.id == 0 {
-            p.id = self.db.execute(&format!("INSERT INTO autobrr_release_profile_duplicate ({COLS}) VALUES ({})", vec!["?"; 22].join(",")), vals)?;
+            p.id = self
+                .db
+                .execute(&format!("INSERT INTO autobrr_release_profile_duplicate ({COLS}) VALUES ({})", vec!["?"; 22].join(",")), vals)?;
         } else {
             let sets: Vec<String> = COLS.split(", ").map(|c| format!("{c}=?")).collect();
             let mut vals = vals;
@@ -1162,7 +1194,8 @@ impl Releases {
 
     /// Every cleanup job by name, with when the enabled ones run next (autobrr's `ListCleanupJobs`).
     pub fn cleanup_jobs(&self) -> ApiResult<Vec<CleanupJob>> {
-        let mut list: Vec<CleanupJob> = self.db.query("SELECT * FROM autobrr_release_cleanup_job ORDER BY name ASC", p![])?.iter().map(job_of).collect();
+        let mut list: Vec<CleanupJob> =
+            self.db.query("SELECT * FROM autobrr_release_cleanup_job ORDER BY name ASC", p![])?.iter().map(job_of).collect();
         for j in &mut list {
             if j.enabled {
                 if let Some(t) = self.scheduler.next_run(&cleanup_key(j.id)) {
@@ -1366,11 +1399,10 @@ impl Releases {
             .history_release_for_retry(release_id)
             .map_err(|e| wrap_err(e, &format!("retry error: could not find release by id: {release_id}")))?;
         let ident = r.indexer.identifier.clone();
-        let indexer = self
-            .autobrr_indexers()?
-            .into_iter()
-            .find(|i| i.identifier == ident)
-            .ok_or_else(|| ApiError::NotFound(format!("retry error: could not get indexer by identifier: {ident}: record not found")))?;
+        let indexer =
+            self.autobrr_indexers()?.into_iter().find(|i| i.identifier == ident).ok_or_else(|| {
+                ApiError::NotFound(format!("retry error: could not get indexer by identifier: {ident}: record not found"))
+            })?;
         r.indexer = super::release::IndexerMinimal {
             id: indexer.id,
             name: indexer.name.clone(),
@@ -1473,7 +1505,11 @@ impl Window {
 fn release_json(r: &Row, names: &BTreeMap<String, (i64, String, String)>, statuses: Vec<ActionStatus>, found: bool) -> Value {
     let ident = r.s("indexer");
     let (iid, iname, iext) = if found {
-        names.get(&ident).cloned().map(|(a, b, c)| (a, if b.is_empty() { ident.clone() } else { b }, c)).unwrap_or((0, ident.clone(), String::new()))
+        names.get(&ident).cloned().map(|(a, b, c)| (a, if b.is_empty() { ident.clone() } else { b }, c)).unwrap_or((
+            0,
+            ident.clone(),
+            String::new(),
+        ))
     } else {
         (0, String::new(), String::new())
     };

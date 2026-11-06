@@ -45,11 +45,7 @@ const MONTHS: Bounds = Bounds {
     ],
 };
 /// Days of the week, 0 (Sunday) to 6 or their names.
-const DOW: Bounds = Bounds {
-    min: 0,
-    max: 6,
-    names: &[("sun", 0), ("mon", 1), ("tue", 2), ("wed", 3), ("thu", 4), ("fri", 5), ("sat", 6)],
-};
+const DOW: Bounds = Bounds { min: 0, max: 6, names: &[("sun", 0), ("mon", 1), ("tue", 2), ("wed", 3), ("thu", 4), ("fri", 5), ("sat", 6)] };
 
 /// A parsed cron line: one bit per allowed value of each field (robfig's `SpecSchedule`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -285,7 +281,8 @@ mod tests {
 
     #[test]
     fn runs_next() {
-        let next = |spec: &str, from: &str| CronSpec::parse(spec).unwrap().next_local(at(from)).map(|t| t.format("%Y-%m-%d %H:%M %a").to_string());
+        let next =
+            |spec: &str, from: &str| CronSpec::parse(spec).unwrap().next_local(at(from)).map(|t| t.format("%Y-%m-%d %H:%M %a").to_string());
         // simple cases
         assert_eq!(next("* * * * *", "2012-07-09 14:45").as_deref(), Some("2012-07-09 14:46 Mon"));
         assert_eq!(next("0 * * * *", "2012-07-09 14:45").as_deref(), Some("2012-07-09 15:00 Mon"));

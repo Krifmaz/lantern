@@ -90,7 +90,8 @@ pub(crate) fn query_int(q: &[(String, String)], key: &str, default: i64) -> ApiR
 
 async fn find(State(st): State<AppState>, _: SignedIn, RawQuery(q): RawQuery) -> Answer {
     let q = pairs(q.as_deref());
-    let limit = query_int(&q, "limit", 20).ok().filter(|l| *l != 0).ok_or_else(|| ApiError::BadRequest("limit parameter is invalid".into()))?;
+    let limit =
+        query_int(&q, "limit", 20).ok().filter(|l| *l != 0).ok_or_else(|| ApiError::BadRequest("limit parameter is invalid".into()))?;
     let offset = query_int(&q, "offset", 0)?;
     let cursor = query_int(&q, "cursor", 0)?;
     let push_status = first(&q, "push_status").to_string();
@@ -129,7 +130,8 @@ async fn stats_of(State(st): State<AppState>, _: SignedIn, Path(kind): Path<Stri
         "filters" => super::Releases::stats_top_filters,
         _ => return Ok((StatusCode::NOT_FOUND, "404 page not found\n").into_response()),
     };
-    let days = query_int(&q, "days", 30).ok().filter(|d| *d <= 3650).ok_or_else(|| ApiError::BadRequest("days parameter is invalid".into()))?;
+    let days =
+        query_int(&q, "days", 30).ok().filter(|d| *d <= 3650).ok_or_else(|| ApiError::BadRequest("days parameter is invalid".into()))?;
     send(StatusCode::OK, fetch(rel, days)?)
 }
 

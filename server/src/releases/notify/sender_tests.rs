@@ -133,7 +133,10 @@ async fn discord_sends() {
     let (url, hits) = stand_in(|_, _| ok(204, "")).await;
     senders(&url).discord(&url, &json!({ "content": RELEASE })).await.unwrap();
     let h = hits.lock().unwrap()[0].clone();
-    assert_eq!((h.method.as_str(), h.header("content-type").as_str(), h.header("user-agent").as_str()), ("POST", "application/json", "autobrr"));
+    assert_eq!(
+        (h.method.as_str(), h.header("content-type").as_str(), h.header("user-agent").as_str()),
+        ("POST", "application/json", "autobrr")
+    );
     assert_eq!(h.json()["content"], RELEASE);
 }
 
@@ -202,7 +205,12 @@ async fn discord_errors() {
 async fn discord_sender_sends_an_embed() {
     let (url, hits) = stand_in(|_, _| ok(204, "")).await;
     let n = Notification { kind: "DISCORD".into(), webhook: url.clone(), enabled: true, ..Notification::default() };
-    let p = Payload { event: "PUSH_APPROVED".into(), release_name: "Some.Release".into(), status: "PUSH_APPROVED".into(), ..Payload::default() };
+    let p = Payload {
+        event: "PUSH_APPROVED".into(),
+        release_name: "Some.Release".into(),
+        status: "PUSH_APPROVED".into(),
+        ..Payload::default()
+    };
     senders(&url).send(&n, &p).await.unwrap();
     let body = hits.lock().unwrap()[0].json();
     assert_eq!(body["embeds"].as_array().unwrap().len(), 1, "{body}");
@@ -275,19 +283,22 @@ async fn notifiarr_sends() {
 #[tokio::test]
 async fn notifiarr_rate_limits() {
     let limited = r#"{"result":"error","details":{"response":"rate limited"}}"#;
-    let (url, hits) = stand_in(move |n, _| if n == 1 { (429, vec![("retry-after", "1".into())], limited.into()) } else { ok(200, "{}") }).await;
+    let (url, hits) =
+        stand_in(move |n, _| if n == 1 { (429, vec![("retry-after", "1".into())], limited.into()) } else { ok(200, "{}") }).await;
     let start = Instant::now();
     senders(&url).notifiarr("k", &json!({ "event": "TEST" })).await.unwrap();
     assert!(start.elapsed() >= Duration::from_millis(900));
     assert_eq!(count(&hits), 2);
-    let (url, hits) = stand_in(move |n, _| if n == 1 { (429, vec![("retry-after", "0".into())], limited.into()) } else { ok(200, "{}") }).await;
+    let (url, hits) =
+        stand_in(move |n, _| if n == 1 { (429, vec![("retry-after", "0".into())], limited.into()) } else { ok(200, "{}") }).await;
     senders(&url).notifiarr("k", &json!({})).await.unwrap();
     assert_eq!(count(&hits), 2, "fallback delay");
     let (url, hits) = stand_in(|_, _| (429, vec![("retry-after", "60".into())], String::new())).await;
     let e = senders(&url).notifiarr("k", &json!({})).await.unwrap_err();
     assert!(e.contains("unexpected status: 429") && e.contains("exceeds the retry budget"), "{e}");
     assert_eq!(count(&hits), 1);
-    let (url, hits) = stand_in(move |n, _| if n == 1 { (429, vec![("retry-after", http_date(2))], limited.into()) } else { ok(200, "{}") }).await;
+    let (url, hits) =
+        stand_in(move |n, _| if n == 1 { (429, vec![("retry-after", http_date(2))], limited.into()) } else { ok(200, "{}") }).await;
     let start = Instant::now();
     senders(&url).notifiarr("k", &json!({})).await.unwrap();
     assert!(start.elapsed() >= Duration::from_millis(900));
@@ -373,7 +384,8 @@ async fn ntfy_retries() {
     let e = senders(&url).ntfy(&ntfy(&url), "Test", "x").await.unwrap_err();
     assert!(e.contains("unexpected status: 429") && e.contains("exceeds the retry budget"), "{e}");
     assert_eq!(count(&hits), 1);
-    let (url, hits) = stand_in(move |n, _| if n == 1 { (429, vec![("retry-after", http_date(2))], limited.into()) } else { ok(200, "") }).await;
+    let (url, hits) =
+        stand_in(move |n, _| if n == 1 { (429, vec![("retry-after", http_date(2))], limited.into()) } else { ok(200, "") }).await;
     let start = Instant::now();
     senders(&url).ntfy(&ntfy(&url), "Test", "x").await.unwrap();
     assert!(start.elapsed() >= Duration::from_millis(900));
@@ -428,7 +440,10 @@ async fn pushover_errors() {
     })
     .await;
     let e = senders(&url).pushover("t", "u", "Test", "x", 0, "", None).await.unwrap_err();
-    assert!(e.contains("unexpected status: 400") && e.contains("user identifier is not a valid user, group, or subscribed user key"), "{e}");
+    assert!(
+        e.contains("unexpected status: 400") && e.contains("user identifier is not a valid user, group, or subscribed user key"),
+        "{e}"
+    );
     assert_eq!(count(&hits), 1);
     let (url, hits) = stand_in(|_, h| {
         assert_eq!(h.form("message").as_deref(), Some("autobrr goes brr!!"));
@@ -456,7 +471,7 @@ async fn pushover_sounds() {
 #[tokio::test]
 async fn telegram_sends() {
     let (url, hits) = stand_in(|_, _| ok(200, "")).await;
-    let text = format!("<b>New release:</b> Best.Show.Ever.S18E21.1080p.AMZN.WEB-DL.DDP2.0.H.264-GROUP\n");
+    let text = "<b>New release:</b> Best.Show.Ever.S18E21.1080p.AMZN.WEB-DL.DDP2.0.H.264-GROUP\n".to_string();
     senders(&url).telegram(&url, "mock-token", "-100123456789", 21, &text).await.unwrap();
     let h = hits.lock().unwrap()[0].clone();
     assert_eq!((h.method.as_str(), h.path.as_str()), ("POST", "/botmock-token/sendMessage"));
@@ -482,7 +497,11 @@ async fn telegram_rate_limits() {
     assert_eq!(hits.lock().unwrap()[1].json()["text"], "autobrr goes brr!!");
     let (url, hits) = stand_in(|n, _| {
         if n == 1 {
-            (429, vec![("retry-after", "0".into())], r#"{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 0"}"#.into())
+            (
+                429,
+                vec![("retry-after", "0".into())],
+                r#"{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 0"}"#.into(),
+            )
         } else {
             ok(200, "")
         }
@@ -490,8 +509,10 @@ async fn telegram_rate_limits() {
     .await;
     senders(&url).telegram(&url, "t", "c", 0, "x").await.unwrap();
     assert_eq!(count(&hits), 2, "fallback delay");
-    let (url, hits) =
-        stand_in(|_, _| ok(429, r#"{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 30","parameters":{"retry_after":30}}"#)).await;
+    let (url, hits) = stand_in(|_, _| {
+        ok(429, r#"{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 30","parameters":{"retry_after":30}}"#)
+    })
+    .await;
     let e = senders(&url).telegram(&url, "t", "c", 0, "x").await.unwrap_err();
     assert!(e.contains("unexpected status: 429") && e.contains("exceeds the retry budget"), "{e}");
     assert_eq!(count(&hits), 1);
@@ -557,7 +578,11 @@ async fn bark_errors() {
             &["check bark device key", "unexpected status: 400", "failed to get device token"],
         ),
         (418, "I'm a teapot", &["check bark server basic auth credentials", "unexpected status: 418", "I'm a teapot"]),
-        (500, r#"{"code":500,"message":"push failed: BadDeviceToken","timestamp":1700000000}"#, &["unexpected status: 500", "push failed: BadDeviceToken"]),
+        (
+            500,
+            r#"{"code":500,"message":"push failed: BadDeviceToken","timestamp":1700000000}"#,
+            &["unexpected status: 500", "push failed: BadDeviceToken"],
+        ),
         (404, "", &["unexpected status: 404"]),
     ];
     for (status, body, wants) in cases {
@@ -617,7 +642,12 @@ async fn bark_sender_levels() {
 async fn webhook() {
     let (url, hits) = stand_in(|_, _| ok(200, "")).await;
     let n = Notification { kind: "WEBHOOK".into(), webhook: url.clone(), enabled: true, ..Notification::default() };
-    let p = Payload { event: "PUSH_APPROVED".into(), release_name: "Some.Release".into(), status: "PUSH_APPROVED".into(), ..Payload::default() };
+    let p = Payload {
+        event: "PUSH_APPROVED".into(),
+        release_name: "Some.Release".into(),
+        status: "PUSH_APPROVED".into(),
+        ..Payload::default()
+    };
     let s = senders(&url);
     s.send(&n, &p).await.unwrap();
     let h = hits.lock().unwrap()[0].clone();

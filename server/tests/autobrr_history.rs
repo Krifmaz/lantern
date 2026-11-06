@@ -219,11 +219,17 @@ async fn the_pipeline_keeps_each_push_and_the_routes_read_it() {
     assert_eq!(page["count"], 1, "only releases a filter sends are kept");
     let r = &page["data"][0];
     assert_shape("Release", r);
-    assert_eq!((r["name"].as_str(), r["filter"].as_str(), r["filter_status"].as_str()), (Some("Show.S01E01.1080p.WEB-DL.H.264-GRP"), Some("TV"), Some("FILTER_APPROVED")));
+    assert_eq!(
+        (r["name"].as_str(), r["filter"].as_str(), r["filter_status"].as_str()),
+        (Some("Show.S01E01.1080p.WEB-DL.H.264-GRP"), Some("TV"), Some("FILTER_APPROVED"))
+    );
     assert_eq!(r["resolution"], "1080p");
     let status = &r["action_status"][0];
     assert_shape("ReleaseActionStatus", status);
-    assert_eq!((status["status"].as_str(), status["action"].as_str(), status["type"].as_str()), (Some("PUSH_APPROVED"), Some("test it"), Some("TEST")));
+    assert_eq!(
+        (status["status"].as_str(), status["action"].as_str(), status["type"].as_str()),
+        (Some("PUSH_APPROVED"), Some("test it"), Some("TEST"))
+    );
     assert_eq!(status["filter_id"], fid);
     assert_eq!(page["next_cursor"], r["id"]);
     let id = r["id"].as_i64().unwrap();
@@ -250,7 +256,10 @@ async fn the_pipeline_keeps_each_push_and_the_routes_read_it() {
     assert_eq!(recent["data"][0]["id"], id);
     let (_, stats) = call(&app, "GET", "/release/stats", None).await;
     assert_shape("ReleaseStats", &stats);
-    assert_eq!((stats["total_count"].as_i64(), stats["filtered_count"].as_i64(), stats["push_approved_count"].as_i64()), (Some(1), Some(1), Some(1)));
+    assert_eq!(
+        (stats["total_count"].as_i64(), stats["filtered_count"].as_i64(), stats["push_approved_count"].as_i64()),
+        (Some(1), Some(1), Some(1))
+    );
     for (path, field, shape) in [
         ("activity", "daily", "ReleaseActivityStats"),
         ("volume", "daily", "ReleaseVolumeStats"),
@@ -412,7 +421,14 @@ async fn cleanup_job_routes() {
     assert_eq!(s, StatusCode::CREATED, "{created}");
     assert_shape("ReleaseCleanupJob", &created);
     assert_eq!(created["id"], 1);
-    for (k, v) in [("name", json!("New Job")), ("enabled", json!(false)), ("schedule", json!("0 2 * * *")), ("older_than", json!(168)), ("indexers", json!("btn,ptp")), ("statuses", json!("PUSH_REJECTED"))] {
+    for (k, v) in [
+        ("name", json!("New Job")),
+        ("enabled", json!(false)),
+        ("schedule", json!("0 2 * * *")),
+        ("older_than", json!(168)),
+        ("indexers", json!("btn,ptp")),
+        ("statuses", json!("PUSH_REJECTED")),
+    ] {
         assert_eq!(created[k], v, "{k}");
     }
     assert_eq!(created["next_run"], "0001-01-01T00:00:00Z");
@@ -434,7 +450,10 @@ async fn cleanup_job_routes() {
     let update = json!({ "id": 1, "name": "Updated Name", "enabled": true, "schedule": "0 4 * * *", "older_than": 168, "indexers": "btn,ptp", "statuses": "PUSH_ERROR" });
     let (s, updated) = call(&app, "PUT", "/release/cleanup-jobs/1", Some(update)).await;
     assert_eq!(s, StatusCode::OK, "{updated}");
-    assert_eq!((updated["name"].as_str(), updated["enabled"].as_bool(), updated["statuses"].as_str()), (Some("Updated Name"), Some(true), Some("PUSH_ERROR")));
+    assert_eq!(
+        (updated["name"].as_str(), updated["enabled"].as_bool(), updated["statuses"].as_str()),
+        (Some("Updated Name"), Some(true), Some("PUSH_ERROR"))
+    );
     let (_, list) = call(&app, "GET", "/release/cleanup-jobs", None).await;
     assert_ne!(list[0]["next_run"], "0001-01-01T00:00:00Z", "an enabled job is scheduled: {list}");
     let missing = json!({ "id": 999, "name": "Does Not Exist", "schedule": "0 4 * * *", "older_than": 1 });
@@ -454,7 +473,10 @@ async fn cleanup_job_routes() {
     assert!(!j.last_run.is_empty());
     assert_eq!(j.last_run_status, "SUCCESS");
     let data: Value = serde_json::from_str(&j.last_run_data).unwrap();
-    assert_eq!((data["older_than_hours"].as_i64(), data["indexers"].clone(), data["statuses"].clone()), (Some(168), json!(["btn", "ptp"]), json!(["PUSH_ERROR"])));
+    assert_eq!(
+        (data["older_than_hours"].as_i64(), data["indexers"].clone(), data["statuses"].clone()),
+        (Some(168), json!(["btn", "ptp"]), json!(["PUSH_ERROR"]))
+    );
     let (s, _) = call(&app, "POST", "/release/cleanup-jobs/999/run", None).await;
     assert_eq!(s, StatusCode::NOT_FOUND);
 
@@ -488,4 +510,3 @@ async fn cleanup_runs_check_their_statuses() {
     // the release is younger than a day, so every run kept it
     assert_eq!(st.releases.find_history(&Default::default()).unwrap()["count"], 1);
 }
-

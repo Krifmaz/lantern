@@ -142,4 +142,3 @@ async fn delete_inbox(State(st): State<AppState>, _: SignedIn) -> Answer {
     st.releases.delete_inbox()?;
     no_content()
 }
-

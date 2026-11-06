@@ -1107,9 +1107,8 @@ impl Handler {
                 st.have_disconnected = false;
                 st.network.name.clone()
             };
-            let msg = format!(
-                "Network: {name} stopped after repeated short-lived connections; restart it after resolving the connection issue"
-            );
+            let msg =
+                format!("Network: {name} stopped after repeated short-lived connections; restart it after resolving the connection issue");
             self.releases.notify(super::notify::irc_payload(super::notify::IrcEvent::Flapping, &name, &msg));
             return false;
         }
@@ -1290,7 +1289,11 @@ impl Handler {
                 };
                 // autobrr's onConnect: told outside the lock
                 if let Some(name) = reconnected {
-                    self.releases.notify(super::notify::irc_payload(super::notify::IrcEvent::Reconnected, &name, &format!("Network: {name}")));
+                    self.releases.notify(super::notify::irc_payload(
+                        super::notify::IrcEvent::Reconnected,
+                        &name,
+                        &format!("Network: {name}"),
+                    ));
                 }
             }
             "PING" => {}

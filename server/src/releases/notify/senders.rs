@@ -276,7 +276,13 @@ impl Senders {
                     m.insert("title".into(), json!(t));
                 }
                 m.insert("body".into(), json!(plain_body(p)));
-                for (k, v) in [("sound", n.sound.as_str()), ("group", n.topic.as_str()), ("level", level), ("icon", DEFAULT_IMAGE_URL), ("url", &p.url)] {
+                for (k, v) in [
+                    ("sound", n.sound.as_str()),
+                    ("group", n.topic.as_str()),
+                    ("level", level),
+                    ("icon", DEFAULT_IMAGE_URL),
+                    ("url", &p.url),
+                ] {
                     if !v.is_empty() {
                         m.insert(k.into(), json!(v));
                     }
@@ -311,7 +317,10 @@ impl Senders {
                         _ => retry_after_header(ra.as_deref(), self.short_retry_after, true),
                     };
                     if delay > MAX_RETRY_AFTER {
-                        return Err(Step::Stop(format!("server demanded {} wait which exceeds the retry budget: {err}", go_duration(delay))));
+                        return Err(Step::Stop(format!(
+                            "server demanded {} wait which exceeds the retry budget: {err}",
+                            go_duration(delay)
+                        )));
                     }
                     Err(Step::Again(err, Some(delay)))
                 }
@@ -329,7 +338,8 @@ impl Senders {
     /// Gotify's message API (services/gotify).
     pub async fn gotify(&self, host: &str, token: &str, title: &str, message: &str) -> Result<(), String> {
         let endpoint = join_path(host, &["message"]).map_err(|e| format!("could not build url from host: '{host}': {e}"))?;
-        let form = url::form_urlencoded::Serializer::new(String::new()).append_pair("message", message).append_pair("title", title).finish();
+        let form =
+            url::form_urlencoded::Serializer::new(String::new()).append_pair("message", message).append_pair("title", title).finish();
         let res = self
             .http
             .post(endpoint)
@@ -405,7 +415,11 @@ impl Senders {
             let s = status.as_u16();
             let err = || {
                 let v: Value = serde_json::from_str(&body).unwrap_or_default();
-                let detail = v["details"]["response"].as_str().filter(|d| !d.is_empty()).map(str::to_string).unwrap_or_else(|| body.trim().to_string());
+                let detail = v["details"]["response"]
+                    .as_str()
+                    .filter(|d| !d.is_empty())
+                    .map(str::to_string)
+                    .unwrap_or_else(|| body.trim().to_string());
                 if detail.is_empty() {
                     format!("unexpected status: {s}")
                 } else {
@@ -417,7 +431,11 @@ impl Senders {
                 429 => {
                     let delay = retry_after_header(ra.as_deref(), self.long_retry_after, false);
                     if delay > MAX_RETRY_AFTER {
-                        return Err(Step::Stop(format!("server demanded {} wait which exceeds the retry budget: {}", go_duration(delay), err())));
+                        return Err(Step::Stop(format!(
+                            "server demanded {} wait which exceeds the retry budget: {}",
+                            go_duration(delay),
+                            err()
+                        )));
                     }
                     Err(Step::Again(err(), Some(delay)))
                 }
@@ -463,7 +481,9 @@ impl Senders {
             };
             match s {
                 200 => Ok(()),
-                401 | 403 => Err(Step::Stop(format!("could not authenticate with ntfy: check access token or username/password: {}", err()))),
+                401 | 403 => {
+                    Err(Step::Stop(format!("could not authenticate with ntfy: check access token or username/password: {}", err())))
+                }
                 413 => Err(Step::Stop(format!("message too large for ntfy: {}", err()))),
                 429 => {
                     let e = format!("rate limited by ntfy: {}", err());
@@ -548,7 +568,11 @@ impl Senders {
         if token.is_empty() {
             return Err("api token is required".into());
         }
-        let url = format!("{}?token={}", self.pushover_sounds_endpoint, url::form_urlencoded::byte_serialize(token.as_bytes()).collect::<String>());
+        let url = format!(
+            "{}?token={}",
+            self.pushover_sounds_endpoint,
+            url::form_urlencoded::byte_serialize(token.as_bytes()).collect::<String>()
+        );
         let res = self.http.get(url).header("User-Agent", "autobrr").send().await.map_err(request_error)?;
         let (status, _, body) = read(res).await;
         if status != StatusCode::OK {
@@ -588,7 +612,8 @@ impl Senders {
             let s = status.as_u16();
             let v: Value = serde_json::from_str(&body).unwrap_or_default();
             let err = {
-                let detail = v["description"].as_str().filter(|d| !d.is_empty()).map(str::to_string).unwrap_or_else(|| body.trim().to_string());
+                let detail =
+                    v["description"].as_str().filter(|d| !d.is_empty()).map(str::to_string).unwrap_or_else(|| body.trim().to_string());
                 if detail.is_empty() {
                     format!("unexpected status: {s}")
                 } else {
@@ -603,7 +628,10 @@ impl Senders {
                         _ => retry_after_header(ra.as_deref(), self.short_retry_after, false),
                     };
                     if delay > MAX_RETRY_AFTER {
-                        return Err(Step::Stop(format!("server demanded {} wait which exceeds the retry budget: {err}", go_duration(delay))));
+                        return Err(Step::Stop(format!(
+                            "server demanded {} wait which exceeds the retry budget: {err}",
+                            go_duration(delay)
+                        )));
                     }
                     Err(Step::Again(err, Some(delay)))
                 }
@@ -696,7 +724,8 @@ impl Senders {
                 Ok(())
             }
             "gotify" => {
-                let (base, token) = path.rsplit_once('/').map(|(a, b)| (format!("/{a}"), b.to_string())).unwrap_or((String::new(), path.clone()));
+                let (base, token) =
+                    path.rsplit_once('/').map(|(a, b)| (format!("/{a}"), b.to_string())).unwrap_or((String::new(), path.clone()));
                 let scheme = if q("disabletls") == "yes" { "http" } else { "https" };
                 self.gotify(&format!("{scheme}://{host}{port}{base}"), &token, &q("title"), message).await.map_err(wrap)
             }
@@ -781,10 +810,7 @@ pub fn rewrite_lunasea_url(url: &str) -> String {
 
 /// `KEY=value,KEY2=value2` as headers, skipping anything without `=` (autobrr's `parseHeaders`).
 pub fn parse_headers(headers: &str) -> Vec<(String, String)> {
-    headers
-        .split(',')
-        .filter_map(|h| h.trim().split_once('=').map(|(k, v)| (k.trim().to_string(), v.trim().to_string())))
-        .collect()
+    headers.split(',').filter_map(|h| h.trim().split_once('=').map(|(k, v)| (k.trim().to_string(), v.trim().to_string()))).collect()
 }
 
 /// A Discord embed field when `value` has text.
@@ -1262,7 +1288,14 @@ mod tests {
         assert_eq!(v["data"], json!({ "irc": { "network": "Net" } }));
         let nil = Payload { event: "RELEASE_NEW".into(), release_name: "Only.Name".into(), size: 10, ..Payload::default() };
         assert_eq!(webhook_event(&nil, "x")["data"]["release"]["name"], "Only.Name");
-        let list = Payload { event: "LIST_REFRESH_ERROR".into(), list: "L".into(), list_id: 2, list_type: "SONARR".into(), list_error: "boom".into(), ..Payload::default() };
+        let list = Payload {
+            event: "LIST_REFRESH_ERROR".into(),
+            list: "L".into(),
+            list_id: 2,
+            list_type: "SONARR".into(),
+            list_error: "boom".into(),
+            ..Payload::default()
+        };
         assert_eq!(webhook_event(&list, "x")["data"]["list"], json!({ "id": 2, "name": "L", "type": "SONARR", "error": "boom" }));
         assert_eq!(webhook_event_type("NOPE"), "test");
     }
