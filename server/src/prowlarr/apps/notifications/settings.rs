@@ -907,7 +907,7 @@ pub fn pushover(s: &Map<String, Value>) -> Vec<ProviderFailure> {
     if s.get("priority").and_then(Value::as_i64) == Some(2) {
         let retry = s.get("retry").and_then(Value::as_i64).unwrap_or(0);
         if retry < 30 {
-            r.out.push(ProviderFailure::new("Retry", format!("'Retry' must be greater than or equal to '30'.")).with_value(json!(retry)));
+            r.out.push(ProviderFailure::new("Retry", "'Retry' must be greater than or equal to '30'.").with_value(json!(retry)));
         }
         if retry > 86400 {
             r.out.push(ProviderFailure::new("Retry", "'Retry' must be less than or equal to '86400'.").with_value(json!(retry)));
