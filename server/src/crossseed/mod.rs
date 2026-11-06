@@ -258,11 +258,14 @@ pub struct CrossSeed {
     overlay: Arc<Mutex<Option<Arc<Overlay>>>>,
 }
 
+/// Lays a command line's options over the settings read from Lantern's, adding the problems found in them.
+pub type ApplyOptions = Box<dyn Fn(&mut RuntimeConfig, &mut Vec<String>) + Send + Sync>;
+
 /// What a command line changes ([`cli`]): its options laid over Lantern's settings each time they are read, and
 /// whether the jobs run on schedule whatever the `cross_seed` setting says (`cross-seed daemon`).
 pub struct Overlay {
     /// Lays the options over the settings read from Lantern's; adds the problems found in them.
-    pub apply: Box<dyn Fn(&mut RuntimeConfig, &mut Vec<String>) + Send + Sync>,
+    pub apply: ApplyOptions,
     /// The jobs run on schedule even while the `cross_seed` setting is off.
     pub scheduled: bool,
 }
