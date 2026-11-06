@@ -114,6 +114,8 @@ pub fn router() -> Router<AppState> {
         .route("/indexer/{id}/enabled", patch(toggle_indexer))
         .merge(super::feed_api::router())
         .merge(super::list_api::router())
+        .merge(super::history_api::router())
+        .merge(super::notify_api::router())
 }
 
 /// An answer: autobrr's error shape for a failure.
@@ -465,28 +467,31 @@ fn irc_error_text(e: &IrcError) -> String {
     }
 }
 
-/// The live stream (r3labs/sse as autobrr serves it): `?stream=irc` gets every PRIVMSG, STATE and HEALTH
-/// event from now on; no stream, or another one, is refused as r3labs refuses it.
-async fn irc_events(State(st): State<AppState>, _: SignedIn, RawQuery(q): RawQuery) -> Response {
+/// A live stream of `rx`'s events, as r3labs/sse sends them.
+fn sse_of(rx: tokio::sync::broadcast::Receiver<super::irc::Event>) -> Response {
     use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
+    let events = futures_util::stream::unfold(rx, |mut rx| async move {
+        loop {
+            match rx.recv().await {
+                Ok(e) => return Some((Ok::<_, std::convert::Infallible>(SseEvent::default().event(e.event).data(e.data)), rx)),
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => return None,
+            }
+        }
+    });
+    let mut r = Sse::new(events).keep_alive(KeepAlive::default()).into_response();
+    r.headers_mut().insert("x-accel-buffering", axum::http::HeaderValue::from_static("no"));
+    r
+}
+
+/// The live stream (r3labs/sse as autobrr serves it): `?stream=irc` gets every PRIVMSG, STATE and HEALTH
+/// event from now on, `?stream=notifications` the inbox's NOTIFICATION and INBOX_CHANGED events; no stream, or another one, is refused as r3labs refuses it.
+async fn irc_events(State(st): State<AppState>, _: SignedIn, RawQuery(q): RawQuery) -> Response {
     let stream = url::form_urlencoded::parse(q.unwrap_or_default().as_bytes()).find(|(k, _)| k == "stream").map(|(_, v)| v.into_owned());
     match stream.as_deref() {
         None | Some("") => (StatusCode::INTERNAL_SERVER_ERROR, "Please specify a stream!\n").into_response(),
-        Some("irc") => {
-            let rx = st.releases.irc.subscribe();
-            let events = futures_util::stream::unfold(rx, |mut rx| async move {
-                loop {
-                    match rx.recv().await {
-                        Ok(e) => return Some((Ok::<_, std::convert::Infallible>(SseEvent::default().event(e.event).data(e.data)), rx)),
-                        Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
-                        Err(tokio::sync::broadcast::error::RecvError::Closed) => return None,
-                    }
-                }
-            });
-            let mut r = Sse::new(events).keep_alive(KeepAlive::default()).into_response();
-            r.headers_mut().insert("x-accel-buffering", axum::http::HeaderValue::from_static("no"));
-            r
-        }
+        Some("irc") => sse_of(st.releases.irc.subscribe()),
+        Some("notifications") => sse_of(st.releases.notifier.inbox_events.subscribe()),
         Some(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Stream not found!\n").into_response(),
     }
 }

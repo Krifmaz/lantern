@@ -545,6 +545,9 @@ impl Releases {
             }
             Ok(()) => l.last_refresh_status = STATUS_SUCCESS.into(),
         }
+        // autobrr's ListRefreshEvent, for the notifications
+        let error = outcome.as_ref().err().map(String::as_str).unwrap_or_default();
+        self.notify(super::notify::list_payload(&l.name, l.id, &l.kind, error, l.last_refresh_time));
         self.update_last_refresh(l)?;
         outcome.map_err(ApiError::Internal)
     }

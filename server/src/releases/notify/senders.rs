@@ -492,7 +492,6 @@ impl Senders {
         sound: &str,
         at: Option<DateTime<Utc>>,
     ) -> Result<(), String> {
-        let mut form = url::form_urlencoded::Serializer::new(String::new());
         let mut pairs: Vec<(&str, String)> = vec![
             ("token", token.into()),
             ("user", user.into()),
@@ -513,10 +512,13 @@ impl Senders {
         }
         // Go's url.Values.Encode sorts by key
         pairs.sort_by(|a, b| a.0.cmp(b.0));
-        for (k, v) in &pairs {
-            form.append_pair(k, v);
-        }
-        let encoded = form.finish();
+        let encoded = {
+            let mut form = url::form_urlencoded::Serializer::new(String::new());
+            for (k, v) in &pairs {
+                form.append_pair(k, v);
+            }
+            form.finish()
+        };
         retry(self.pushover_retry, Delay::Fixed, || async {
             let res = self
                 .http
@@ -1176,6 +1178,7 @@ pub fn webhook_event(p: &Payload, id: &str) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::releases::release::Release;
 
     /// autobrr's services/lunasea/lunasea_test.go (`Test_rewriteWebhookURL`).
     #[test]

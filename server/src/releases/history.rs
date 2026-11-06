@@ -173,6 +173,7 @@ impl ActionStatus {
     /// A pending status for `action` on `r` (autobrr's `NewReleaseActionStatus`).
     pub fn new(action: &super::action::Action, r: &Release) -> ActionStatus {
         ActionStatus {
+            id: 0,
             status: PUSH_PENDING.into(),
             action: action.name.clone(),
             action_id: action.id,
@@ -1328,6 +1329,80 @@ impl Releases {
             p![j.last_run, j.last_run_status, j.last_run_data, j.id],
         );
     }
+
+    // ---- running actions (autobrr's release service) ----
+
+    /// Runs `action` on `r`, settling `status` and telling the notifications (autobrr's `runAction`): an error
+    /// is `PUSH_ERROR` with the error as its rejection, a client's no is `PUSH_REJECTED`, else `PUSH_APPROVED`.
+    pub async fn run_history_action(&self, action: &super::action::Action, r: &mut Release, mut status: ActionStatus) -> ActionStatus {
+        let runner = self.runner();
+        let res = runner.run_action(action, r).await;
+        let event = match res {
+            Err(e) => {
+                tracing::warn!("release {}: filter {}: error running actions: {e}", r.torrent_name, r.filter_name);
+                status.status = PUSH_ERROR.into();
+                status.rejections = vec![e];
+                PUSH_ERROR
+            }
+            Ok(rej) if !rej.is_empty() => {
+                status.status = PUSH_REJECTED.into();
+                status.rejections = rej;
+                PUSH_REJECTED
+            }
+            Ok(_) => {
+                status.status = PUSH_APPROVED.into();
+                PUSH_APPROVED
+            }
+        };
+        status.timestamp = now_text();
+        self.notify(super::notify::push_payload(event, r, action, &status));
+        status
+    }
+
+    /// Runs an action of a stored release again (autobrr's `Retry` and `retryAction`): a new status, pending,
+    /// then settled. A missing release, indexer, status or action answers not found.
+    pub async fn retry_action(&self, release_id: i64, status_id: i64) -> ApiResult<()> {
+        let mut r = self
+            .history_release_for_retry(release_id)
+            .map_err(|e| wrap_err(e, &format!("retry error: could not find release by id: {release_id}")))?;
+        let ident = r.indexer.identifier.clone();
+        let indexer = self
+            .autobrr_indexers()?
+            .into_iter()
+            .find(|i| i.identifier == ident)
+            .ok_or_else(|| ApiError::NotFound(format!("retry error: could not get indexer by identifier: {ident}: record not found")))?;
+        r.indexer = super::release::IndexerMinimal {
+            id: indexer.id,
+            name: indexer.name.clone(),
+            identifier: indexer.identifier.clone(),
+            identifier_external: indexer.identifier_external.clone(),
+        };
+        let status = self.action_status(status_id).map_err(|e| wrap_err(e, "retry error: could not get release action"))?;
+        let mut action = self.action(status.action_id).map_err(|e| wrap_err(e, "retry error: could not get filter action for release"))?;
+        if action.client_id > 0 {
+            action.client = self.downloader(action.client_id).ok();
+        }
+        let mut pending = ActionStatus::new(&action, &r);
+        if let Err(e) = self.store_action_status(&mut pending) {
+            tracing::warn!("release.retryAction: error storing action status: {}", e.message());
+        }
+        let mut done = self.run_history_action(&action, &mut r, pending).await;
+        super::run::cleanup_temporary_files(&mut r);
+        self.store_action_status(&mut done)?;
+        if done.status == PUSH_ERROR {
+            return Err(ApiError::Internal(done.rejections.first().cloned().unwrap_or_default()));
+        }
+        Ok(())
+    }
+}
+
+/// `e` with `context` in front, as Go's `errors.Wrap` words it; a missing record stays a not-found.
+fn wrap_err(e: ApiError, context: &str) -> ApiError {
+    match e {
+        ApiError::NotFound(m) => ApiError::NotFound(format!("{context}: {m}")),
+        ApiError::BadRequest(m) => ApiError::BadRequest(format!("{context}: {m}")),
+        ApiError::Internal(m) => ApiError::Internal(format!("{context}: {m}")),
+    }
 }
 
 /// A cleanup job's name in the scheduler (autobrr's `cleanupJobKey.ToString`).
@@ -1404,7 +1479,7 @@ fn release_json(r: &Row, names: &BTreeMap<String, (i64, String, String)>, status
     };
     let lists = |k: &str| if found { json!(go_split(&r.s(k))) } else { json!(split_or_none(&r.s(k))) };
     let nullable = |k: &str| if found || !r.s(k).is_empty() { lists(k) } else { Value::Null };
-    json!({
+    let mut head = json!({
         "id": r.i("id"),
         "filter_status": r.s("filter_status"),
         "rejections": list_of(&r.s("rejections")),
@@ -1420,6 +1495,8 @@ fn release_json(r: &Row, names: &BTreeMap<String, (i64, String, String)>, status
         "group_id": if found { String::new() } else { r.s("group_id") },
         "torrent_id": if found { String::new() } else { r.s("torrent_id") },
         "name": r.s("torrent_name"),
+    });
+    let rest = json!({
         "normalized_hash": r.s("normalized_hash"),
         "size": r.i("size"),
         "title": r.s("title"),
@@ -1448,7 +1525,11 @@ fn release_json(r: &Row, names: &BTreeMap<String, (i64, String, String)>, status
         "record_label": "",
         "pre_time": if found { String::new() } else { r.s("pre_time") },
         "action_status": statuses,
-    })
+    });
+    if let (Some(o), Value::Object(more)) = (head.as_object_mut(), rest) {
+        o.extend(more);
+    }
+    head
 }
 
 #[cfg(test)]

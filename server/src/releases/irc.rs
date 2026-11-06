@@ -853,6 +853,9 @@ struct State {
     session: Session,
     identify_form_learned_account: bool,
     short_sessions: Vec<Instant>,
+    /// The last registered connection dropped unasked, so the next one is a reconnect (autobrr's
+    /// `haveDisconnected`).
+    have_disconnected: bool,
 }
 
 /// One network's connection (autobrr's `Handler`).
@@ -897,6 +900,7 @@ impl Handler {
                 session: Session::default(),
                 identify_form_learned_account: false,
                 short_sessions: Vec::new(),
+                have_disconnected: false,
             }),
             out: Mutex::new(None),
             task: Mutex::new(None),
@@ -997,6 +1001,7 @@ impl Handler {
             let mut st = self.lock();
             st.connected_since = None;
             st.short_sessions.clear();
+            st.have_disconnected = false;
             reset_session(&mut st);
             st.current_nick.clear();
             let had = st.live;
@@ -1095,12 +1100,27 @@ impl Handler {
             self.reset_channel_state();
             self.conn_error();
             self.gen.fetch_add(1, Ordering::SeqCst);
-            let mut st = self.lock();
-            st.live = false;
-            st.stopped = true;
+            let name = {
+                let mut st = self.lock();
+                st.live = false;
+                st.stopped = true;
+                st.have_disconnected = false;
+                st.network.name.clone()
+            };
+            let msg = format!(
+                "Network: {name} stopped after repeated short-lived connections; restart it after resolving the connection issue"
+            );
+            self.releases.notify(super::notify::irc_payload(super::notify::IrcEvent::Flapping, &name, &msg));
             return false;
         }
+        let name = {
+            let mut st = self.lock();
+            st.have_disconnected = true;
+            st.network.name.clone()
+        };
         self.reset_channel_state();
+        // only a drop Lantern didn't ask for gets here (a stop ends the run first)
+        self.releases.notify(super::notify::irc_payload(super::notify::IrcEvent::Disconnected, &name, &format!("Network: {name}")));
         self.conn_go(ConnState::Disconnected);
         true
     }
@@ -1256,11 +1276,22 @@ impl Handler {
                 let _ = self.send("NICK", &[nick]);
             }
             "376" | "422" => {
-                let mut st = self.lock();
-                st.session.registered = true;
-                st.session.connected_at = Some(Instant::now());
-                st.connected_since = Some(Utc::now());
-                st.session.on_connected_at = Some(Instant::now() + self.timing.after_connect);
+                let reconnected = {
+                    let mut st = self.lock();
+                    st.session.registered = true;
+                    st.session.connected_at = Some(Instant::now());
+                    st.connected_since = Some(Utc::now());
+                    st.session.on_connected_at = Some(Instant::now() + self.timing.after_connect);
+                    let again = st.have_disconnected && st.live;
+                    if again {
+                        st.have_disconnected = false;
+                    }
+                    again.then(|| st.network.name.clone())
+                };
+                // autobrr's onConnect: told outside the lock
+                if let Some(name) = reconnected {
+                    self.releases.notify(super::notify::irc_payload(super::notify::IrcEvent::Reconnected, &name, &format!("Network: {name}")));
+                }
             }
             "PING" => {}
             _ => {}

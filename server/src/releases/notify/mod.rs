@@ -626,7 +626,7 @@ impl Releases {
     /// Sends `p` through `n` now (the built-in one writes to the inbox).
     pub async fn send_notification(&self, n: &Notification, p: &Payload) -> Result<(), String> {
         if n.kind == "BUILTIN" {
-            return self.store_inbox_message(p).map_err(|e| e.message().to_string());
+            return self.store_inbox_message(p).map(|_| ()).map_err(|e| e.message().to_string());
         }
         self.notifier.senders.send(n, p).await
     }
@@ -832,6 +832,121 @@ fn keep_secrets(n: &mut Notification, cur: &Notification) {
     }
     if is_redacted(&n.api_key) {
         n.api_key.clone_from(&cur.api_key);
+    }
+}
+
+/// What an action's push of `r` tells (autobrr's `OnReleasePush` listener): `event` is `PUSH_APPROVED`,
+/// `PUSH_REJECTED` or `PUSH_ERROR`; only the last two carry the status's rejections.
+pub fn push_payload(event: &str, r: &Release, action: &super::action::Action, status: &super::history::ActionStatus) -> Payload {
+    Payload {
+        event: event.into(),
+        release_name: r.torrent_name.clone(),
+        filter: r.filter_name.clone(),
+        filter_id: r.filter_id,
+        indexer: r.indexer.name.clone(),
+        info_hash: r.torrent_hash.clone(),
+        size: r.size,
+        status: event.into(),
+        action: action.name.clone(),
+        action_type: action.kind.clone(),
+        action_client: action.client.as_ref().map(|c| c.name.clone()).unwrap_or_default(),
+        rejections: if event == "PUSH_APPROVED" { Vec::new() } else { status.rejections.clone() },
+        protocol: r.protocol.clone(),
+        implementation: r.implementation.clone(),
+        timestamp: Some(Utc::now()),
+        release: Some(Box::new(r.clone())),
+        ..Payload::default()
+    }
+}
+
+/// What a new release tells (autobrr's `OnReleaseNew` listener).
+pub fn release_new_payload(r: &Release) -> Payload {
+    Payload {
+        event: "RELEASE_NEW".into(),
+        release_name: r.torrent_name.clone(),
+        indexer: r.indexer.name.clone(),
+        info_hash: r.torrent_hash.clone(),
+        size: r.size,
+        protocol: r.protocol.clone(),
+        implementation: r.implementation.clone(),
+        timestamp: Some(Utc::now()),
+        release: Some(Box::new(r.clone())),
+        ..Payload::default()
+    }
+}
+
+/// The IRC events autobrr sends (its `events.IRCEvent` types).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IrcEvent {
+    /// The network dropped without being asked to.
+    Disconnected,
+    /// The network came back after dropping.
+    Reconnected,
+    /// The network was stopped after too many short connections.
+    Flapping,
+    /// The health check found problems.
+    Unhealthy,
+    /// The health check found the network well again.
+    Healthy,
+}
+
+/// What an IRC event tells (autobrr's `OnIRC` listener): `network` is the network's name (or names), `message`
+/// the event's own words.
+pub fn irc_payload(kind: IrcEvent, network: &str, message: &str) -> Payload {
+    let (event, subject, msg, irc_message) = match kind {
+        IrcEvent::Reconnected => ("IRC_RECONNECTED", "IRC Reconnected", network, ""),
+        IrcEvent::Disconnected => ("IRC_DISCONNECTED", "IRC Disconnected", network, ""),
+        IrcEvent::Flapping => ("IRC_DISCONNECTED", "IRC Stopped", message, message),
+        IrcEvent::Unhealthy => ("IRC_UNHEALTHY", "IRC Unhealthy", message, message),
+        IrcEvent::Healthy => ("IRC_HEALTHY", "IRC Healthy", network, ""),
+    };
+    Payload {
+        event: event.into(),
+        subject: subject.into(),
+        message: msg.into(),
+        irc_network: network.into(),
+        irc_message: irc_message.into(),
+        timestamp: Some(Utc::now()),
+        ..Payload::default()
+    }
+}
+
+/// What a feed's refresh tells (autobrr's `OnFeedRefresh` listener): `error` is empty when it went well.
+pub fn feed_payload(name: &str, id: i64, kind: &str, indexer: &str, error: &str) -> Payload {
+    let base = Payload {
+        feed: name.into(),
+        feed_id: id,
+        feed_type: kind.into(),
+        indexer: indexer.into(),
+        timestamp: Some(Utc::now()),
+        ..Payload::default()
+    };
+    if error.is_empty() {
+        Payload { event: "FEED_REFRESH_SUCCESS".into(), subject: "Feed Refresh Success".into(), message: format!("Feed: {name}"), ..base }
+    } else {
+        Payload {
+            event: "FEED_REFRESH_ERROR".into(),
+            subject: "Feed Refresh Error".into(),
+            message: format!("Feed: {name}\nError: {error}"),
+            feed_error: error.into(),
+            ..base
+        }
+    }
+}
+
+/// What a list's refresh tells (autobrr's `OnListRefresh` listener): `error` is empty when it went well.
+pub fn list_payload(name: &str, id: i64, kind: &str, error: &str, at: Option<DateTime<Utc>>) -> Payload {
+    let base = Payload { list: name.into(), list_id: id, list_type: kind.into(), timestamp: at, ..Payload::default() };
+    if error.is_empty() {
+        Payload { event: "LIST_REFRESH_SUCCESS".into(), subject: "List Refresh Success".into(), message: format!("List: {name}"), ..base }
+    } else {
+        Payload {
+            event: "LIST_REFRESH_ERROR".into(),
+            subject: "List Refresh Error".into(),
+            message: format!("List: {name}\nError: {error}"),
+            list_error: error.into(),
+            ..base
+        }
     }
 }
 
