@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Added
+- Cross-seed's command line: `lantern cross-seed <command>` runs cross-seed v6.13.9's commands on the data folder,
+  with its options and output: `daemon`, `rss`, `search`, `inject`, `restore`, `test-notification`, `gen-config`,
+  `update-torrent-cache-trackers`, `diff`, `tree`, `clear-indexer-failures`, `clear-cache`, `clear-client-cache`,
+  `api-key` and `reset-api-key`. Options change the settings for that run only, and are checked as cross-seed
+  checks them before anything runs.
+
 ### Changed
 - Cross-seed now searches and runs its jobs as cross-seed v6.13.9 does. Besides your client torrents, it can search
   the `.torrent` files of a folder (Torrent folder) and the files in your data folders (Data folders, looked into

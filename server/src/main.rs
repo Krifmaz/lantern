@@ -1,5 +1,6 @@
 //! The server binary: reads the environment, opens the data folder and serves the API and the web app.
-//! `healthcheck` instead asks a running server's `/api/health` (the Docker image has no curl).
+//! `healthcheck` instead asks a running server's `/api/health` (the Docker image has no curl); `cross-seed
+//! <command>` runs cross-seed's command line on the data folder ([`server::crossseed::cli`]).
 
 use std::net::SocketAddr;
 
@@ -14,6 +15,15 @@ async fn main() -> anyhow::Result<()> {
         }
         // `<app> healthcheck`: exit 0 when the server on APP_PORT answers /api/health, 1 otherwise
         Some("healthcheck") => std::process::exit(if server::healthcheck(server::port()).await { 0 } else { 1 }),
+        // `<app> cross-seed <command>`: cross-seed's command line on the data folder
+        Some("cross-seed") => {
+            let args: Vec<String> = std::env::args().skip(2).collect();
+            let level = if server::crossseed::cli::wants_verbose(&args) { "debug" } else { "info" };
+            tracing_subscriber::fmt()
+                .with_env_filter(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| level.into()))
+                .init();
+            std::process::exit(server::crossseed::cli::main(args).await)
+        }
         _ => {}
     }
     tracing_subscriber::fmt()
