@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+- Prowlarr's download clients and notifications. Settings → Download Clients now has all of Prowlarr's
+  download clients, with their settings, checks and tests. The download hub uses the same list. A grab from
+  Lantern's search goes to them the way Prowlarr picks: the indexer's own client first, then the best priority,
+  taking turns. Settings → Connect sends grabs, health issues and fixed health issues to Apprise, Discord, email,
+  Gotify, Join, Mailgun, Notifiarr, ntfy, Prowl, Pushbullet, Pushcut, Pushover, SendGrid, Signal, Simplepush,
+  Slack, Telegram, a webhook or a script of your own. A few are not finished yet, and their test says so:
+  NZBVortex, Download Station, Freebox and Twitter.
+
 ### Changed
 - Cross-seed now adds its matches as cross-seed v6.13.9 does. It talks to qBittorrent, rTorrent, Transmission and
   Deluge itself, several at once (your torrent download clients, or the ones you list in Torrent clients). It can

@@ -126,6 +126,12 @@ pub struct Store {
 /// The application statuses.
 pub const APPLICATION_STATUS: Store = Store { table: "prowlarr_application_status", rules: APPLICATIONS };
 
+/// The download clients' failures (`DownloadClientStatusService`: the same rules as applications).
+pub const DOWNLOAD_CLIENT_STATUS: Store = Store { table: "prowlarr_download_client_status", rules: APPLICATIONS };
+
+/// The notifications' failures (`NotificationStatusService`: the same rules as applications).
+pub const NOTIFICATION_STATUS: Store = Store { table: "prowlarr_notification_status", rules: APPLICATIONS };
+
 impl Store {
     /// The table's definition.
     pub fn schema(&self) -> String {

@@ -2,7 +2,8 @@
 // src/NzbDrone.Core/HealthCheck/HealthCheck.cs, Checks/ApiKeyValidationCheck.cs, Checks/AllowedHostsCheck.cs,
 // Checks/IndexerCheck.cs, Checks/IndexerStatusCheck.cs, Checks/IndexerLongTermStatusCheck.cs,
 // Checks/IndexerNoDefinitionCheck.cs, Checks/IndexerVIPCheck.cs, Checks/IndexerVIPExpiredCheck.cs,
-// Checks/IndexerDownloadClientCheck.cs, Checks/IndexerProxyStatusCheck.cs), GPL-3.0.
+// Checks/IndexerDownloadClientCheck.cs, Checks/IndexerProxyStatusCheck.cs, Checks/DownloadClientStatusCheck.cs,
+// Checks/NotificationStatusCheck.cs), GPL-3.0.
 
 //! What needs attention (`GET /api/v1/health`): each of Prowlarr's health checks that applies to what Lantern
 //! has, with Prowlarr's texts in the UI language. Only checks that found something are listed, as in Prowlarr.
@@ -142,7 +143,11 @@ pub async fn results(st: &AppState) -> kit_server_core::Result<Vec<Finding>> {
     }
 
     // IndexerDownloadClientCheck: enabled indexers sent to a download client that is gone or off
-    let clients: Vec<i64> = st.hub.clients()?.iter().filter(|c| c.enabled).map(|c| c.id).collect();
+    let clients: Vec<i64> = super::apps::provider::all::<super::apps::downloads::DownloadClients>(&st.db)?
+        .iter()
+        .filter(|c| super::apps::downloads::enable(c))
+        .map(|c| c.id)
+        .collect();
     let bad_client: Vec<String> =
         enabled.iter().filter(|i| i.download_client_id > 0 && !clients.contains(&i.download_client_id)).map(|i| i.name.clone()).collect();
     if !bad_client.is_empty() {
@@ -178,6 +183,11 @@ pub async fn results(st: &AppState) -> kit_server_core::Result<Vec<Finding>> {
 
     // ApplicationStatusCheck, ApplicationLongTermStatusCheck
     out.extend(super::apps::health(st, &lang)?);
+    // DownloadClientStatusCheck, NotificationStatusCheck
+    out.extend(super::apps::downloads::health(st, &lang)?);
+    out.extend(super::apps::notifications::health(st, &lang)?);
+    // what changed since the last run goes to the notifications on for health issues
+    super::apps::notifications::health_checked(st, &out);
     Ok(out)
 }
 
