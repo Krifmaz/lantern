@@ -8,6 +8,8 @@
 //! | [`indexer`] | autobrr's indexers (the release sources, with their definitions' settings) |
 //! | [`irc`] | autobrr's IRC networks, one connection per enabled network |
 //! | [`rss`] | the RSS feeds and Lantern's own indexers, polled |
+//! | [`feed`], [`feed_api`], [`scheduler`] | autobrr's Torznab, Newznab and RSS feeds, on their own schedules |
+//! | [`list`], [`list_api`] | autobrr's lists, which keep filters' titles up to date |
 //! | [`rls`], [`release`], [`releasetags`], [`humanize`] | reading a release (autobrr's release parsing, on a port of rls) |
 //! | [`filter`], [`rejections`], [`wildcard`], [`sanitize`], [`torrent`] | deciding whether to take it (autobrr's filters) |
 //! | [`macros`] | autobrr's `{{ .TorrentName }}` macros |
@@ -25,11 +27,15 @@ pub mod clients;
 pub mod definition;
 pub mod downloader;
 pub mod external;
+pub mod feed;
+pub mod feed_api;
 pub mod filter;
 pub mod gotemplate;
 pub mod humanize;
 pub mod indexer;
 pub mod irc;
+pub mod list;
+pub mod list_api;
 pub mod macros;
 pub mod push;
 pub mod rejections;
@@ -39,6 +45,7 @@ pub mod rls;
 pub mod rss;
 pub mod run;
 pub mod sanitize;
+pub mod scheduler;
 pub mod shellquote;
 pub mod store;
 pub mod torrent;
@@ -109,6 +116,8 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
     .map_err(|e| anyhow::anyhow!("The release tables can't be made: {}", e.detail))?;
     store::migrate(db)?;
     indexer::migrate(db)?;
+    feed::migrate(db)?;
+    list::migrate(db)?;
     irc::migrate(db)
 }
 
@@ -297,6 +306,10 @@ pub struct Releases {
     downloads: Arc<dyn run::ReleaseDownloader>,
     /// The IRC connections.
     pub irc: irc::Irc,
+    /// autobrr's scheduled jobs: the feeds, the feed cache cleanup and the list refresh.
+    pub scheduler: scheduler::Scheduler,
+    /// Each feed's locks.
+    pub feed_guards: feed::FeedGuards,
 }
 
 impl Releases {
@@ -323,6 +336,8 @@ impl Releases {
             http,
             downloads: Arc::new(run::HttpDownloader::new()),
             irc: irc::Irc::default(),
+            scheduler: scheduler::Scheduler::default(),
+            feed_guards: feed::FeedGuards::default(),
         }
     }
 
@@ -489,6 +504,7 @@ impl Releases {
     /// Removes source `id` and what was seen from it.
     pub fn remove_source(&self, id: i64) -> Result<()> {
         self.source(id)?;
+        self.feed_indexer_deleted(id);
         let _ = self.db.execute("DELETE FROM autobrr_indexer_meta WHERE source_id=?", p![id]);
         self.db.execute("DELETE FROM release_sources WHERE id=?", p![id])?;
         self.db.execute("DELETE FROM release_seen WHERE source_id=?", p![id])?;
@@ -891,6 +907,8 @@ impl Releases {
             }
         }
         self.start_irc();
+        self.start_feeds();
+        self.start_lists();
         rss::spawn(self.clone());
     }
 

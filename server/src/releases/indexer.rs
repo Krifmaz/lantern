@@ -318,6 +318,9 @@ impl Releases {
         if self.map_indexer(&i).is_none() {
             return Err(ApiError::Internal("indexer not found".into()));
         }
+        if cur.is_feed() {
+            self.feed_indexer_toggled(i.id);
+        }
         Ok(i)
     }
 
@@ -339,6 +342,9 @@ impl Releases {
             return Err(ApiError::BadRequest("indexer is archived".into()));
         }
         self.db.execute("UPDATE release_sources SET enabled=? WHERE id=?", p![enabled, id])?;
+        if i.is_feed() {
+            self.feed_indexer_toggled(id);
+        }
         Ok(())
     }
 
