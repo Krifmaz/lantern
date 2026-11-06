@@ -170,6 +170,14 @@ impl Client {
         Ok(version)
     }
 
+    /// GETs `endpoint` read as `T` (autobrr's `getJSON`): the status isn't looked at, so an answer that isn't a
+    /// `T` (a sign-in error too) is "could not unmarshal data". The lists read movies, series, albums, artists,
+    /// books and leagues this way.
+    pub async fn get_json<T: serde::de::DeserializeOwned>(&self, endpoint: &str) -> Result<T, String> {
+        let (_, body) = self.get(endpoint).await?;
+        serde_json::from_str(&body).map_err(|e| format!("could not unmarshal data: {e}"))
+    }
+
     /// The app's tags.
     pub async fn get_tags(&self) -> Result<Vec<(i64, String)>, String> {
         let (_, body) = self.get("tag").await?;

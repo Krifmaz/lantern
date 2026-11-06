@@ -685,18 +685,18 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `PUT /api/filters/{filterID}/enabled` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
 | `GET /api/filters/{filterID}/notifications` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
 | `PUT /api/filters/{filterID}/notifications` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
-| `GET /api/feeds` | A-api | todo | |  |
-| `POST /api/feeds` | A-api | todo | |  |
-| `POST /api/feeds/test` | A-api | todo | |  |
-| `POST /api/feeds/caps` | A-api | todo | |  |
-| `GET /api/feeds/{feedID}` | A-api | todo | |  |
-| `PUT /api/feeds/{feedID}` | A-api | todo | |  |
-| `DELETE /api/feeds/{feedID}` | A-api | todo | |  |
-| `DELETE /api/feeds/{feedID}/cache` | A-api | todo | |  |
-| `PATCH /api/feeds/{feedID}/enabled` | A-api | todo | |  |
-| `GET /api/feeds/{feedID}/latest` | A-api | todo | |  |
-| `POST /api/feeds/{feedID}/forcerun` | A-api | todo | |  |
-| `GET /api/feeds/{feedID}/caps` | A-api | todo | |  |
+| `GET /api/feeds` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `POST /api/feeds` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `POST /api/feeds/test` | A-api | done | server/tests/autobrr_feeds.rs::feed_tests_and_caps_go_through_the_feeds_own_client | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `POST /api/feeds/caps` | A-api | done | server/tests/autobrr_feeds.rs::feed_tests_and_caps_go_through_the_feeds_own_client | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `GET /api/feeds/{feedID}` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `PUT /api/feeds/{feedID}` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/feeds/{feedID}` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/feeds/{feedID}/cache` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `PATCH /api/feeds/{feedID}/enabled` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `GET /api/feeds/{feedID}/latest` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `POST /api/feeds/{feedID}/forcerun` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `GET /api/feeds/{feedID}/caps` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
 | `GET /api/irc` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
 | `POST /api/irc` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces, server/tests/autobrr_irc.rs::a_network_signs_in_with_sasl_and_joins_without_an_invite, server/tests/autobrr_irc.rs::a_ban_stops_the_network_with_the_reason | ported; served at `/autobrr/api` |
 | `GET /api/irc/network/{networkID}` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
@@ -718,12 +718,12 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `DELETE /api/indexer/{indexerID}` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
 | `POST /api/indexer/{indexerID}/api/test` | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api`; the per-site API clients aren't ported yet, so a site with an API answers autobrr's "could not init api client" |
 | `PATCH /api/indexer/{indexerID}/enabled` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
-| `GET /api/lists` | A-api | todo | |  |
-| `POST /api/lists` | A-api | todo | |  |
-| `POST /api/lists/refresh` | A-api | todo | |  |
-| `POST /api/lists/{listID}/refresh` | A-api | todo | |  |
-| `PUT /api/lists/{listID}` | A-api | todo | |  |
-| `DELETE /api/lists/{listID}` | A-api | todo | |  |
+| `GET /api/lists` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/lists` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/lists/refresh` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/lists/{listID}/refresh` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `PUT /api/lists/{listID}` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/lists/{listID}` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
 | `GET /api/keys` | A-api | todo | |  |
 | `POST /api/keys` | A-api | todo | |  |
 | `DELETE /api/keys/{apikey}` | A-api | todo | |  |
@@ -772,13 +772,13 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `POST /api/release/cleanup-jobs/{jobID}/run` | A-api | todo | |  |
 | `GET /api/updates/latest` | A-api | todo | |  |
 | `GET /api/updates/check` | A-api | todo | |  |
-| `POST /api/webhook/lists/trigger` | A-api | todo | |  |
-| `POST /api/webhook/lists/trigger/arr` | A-api | todo | |  |
-| `POST /api/webhook/lists/trigger/lists` | A-api | todo | |  |
-| `GET /api/webhook/lists/trigger` | A-api | todo | |  |
-| `GET /api/webhook/lists/trigger/arr` | A-api | todo | |  |
-| `GET /api/webhook/lists/trigger/lists` | A-api | todo | |  |
-| `POST /api/webhook/lists/trigger/{listID}` | A-api | todo | |  |
+| `POST /api/webhook/lists/trigger` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/webhook/lists/trigger/arr` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/webhook/lists/trigger/lists` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `GET /api/webhook/lists/trigger` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `GET /api/webhook/lists/trigger/arr` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `GET /api/webhook/lists/trigger/lists` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/webhook/lists/trigger/{listID}` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
 | `GET /api/auth/oidc/config` | A-api | todo | |  |
 | `GET /api/auth/oidc/callback` | A-api | todo | |  |
 | GET /api/events (server-sent events: IRC, logs) | A-api | partial | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | the `irc` stream (also at `/irc/events`); the `logs` stream comes with the logs slice |
@@ -902,7 +902,7 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `MaxSeeders` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
 | `MinLeechers` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
 | `MaxLeechers` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
-| `IsAutoUpdated` | A-api | partial | | stored; set by lists (lists slice) |
+| `IsAutoUpdated` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported; true while a list writes to the filter |
 | `ReleaseProfileDuplicateID` | A-api | partial | | stored; duplicate profiles come with the releases slice |
 | `DuplicateHandling` | A-api | todo | |  |
 | External filters (exec, webhook) with expected status | A-api | done | server/src/releases/external.rs::tests::exec_exit_code_decides, server/src/releases/external.rs::tests::webhook_status_and_retries, server/tests/autobrr_api.rs::a_passing_release_runs_the_filters_autobrr_actions | ported (exec with an argument list; webhook with retries) |
@@ -1028,29 +1028,29 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `TORZNAB` | A-api | todo | |  |
-| `NEWZNAB` | A-api | todo | |  |
-| `RSS` | A-api | partial | | fresh version |
-| caps, max age, timeout, cookie, user agent, proxy per feed | A-api | todo | |  |
-| first run only stores what is there | A-api | todo | |  |
+| `TORZNAB` | A-api | done | server/tests/autobrr_feeds.rs::znab_search_pages_with_the_caps_limit_and_keeps_host_params, server/tests/autobrr_feeds.rs::each_format_reads_a_page_as_releases, server/src/releases/feed/sources.rs::tests::test_torznab_source_to_release | ported (`releases/feed/`) |
+| `NEWZNAB` | A-api | done | server/tests/autobrr_feeds.rs::each_format_reads_a_page_as_releases, server/src/releases/feed/sources.rs::tests::test_newznab_source_to_release, server/src/releases/feed/znab.rs::tests::test_newznab_feed_item_unmarshal_xml | ported (`releases/feed/`) |
+| `RSS` | A-api | done | server/tests/autobrr_feeds.rs::each_format_reads_a_page_as_releases, server/src/releases/feed/sources.rs::tests::test_rss_source_to_release, server/src/releases/feed/gofeed.rs::tests::reads_rss_items_with_custom_elements_and_extensions | ported (`releases/feed/`, gofeed rewritten); Lantern's own RSS reader stays for its own sources |
+| caps, max age, timeout, cookie, user agent, proxy per feed | A-api | partial | server/tests/autobrr_feeds.rs::feed_tests_and_caps_go_through_the_feeds_own_client, server/tests/autobrr_feeds.rs::znab_caps_read_the_fixture_and_refuse_a_bad_key, server/src/releases/feed/refresh.rs::tests::test_is_max_age | caps, max age, timeout, cookie and user agent ported; proxies are not, so a feed on an indexer that uses one stops with an error |
+| first run only stores what is there | A-api | done | server/src/releases/feed/refresh.rs::tests::test_refresh_job_run_e, server/src/releases/feed/refresh.rs::tests::test_refresh_job_fetch_new_pagination | ported |
 
 ### Lists
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `RADARR` | A-api | todo | |  |
-| `SONARR` | A-api | todo | |  |
-| `LIDARR` | A-api | todo | |  |
-| `READARR` | A-api | todo | |  |
-| `WHISPARR` | A-api | todo | |  |
-| `WHISPARR_V3` | A-api | todo | |  |
-| `SPORTARR` | A-api | todo | |  |
-| `MDBLIST` | A-api | todo | |  |
-| `METACRITIC` | A-api | todo | |  |
-| `PLAINTEXT` | A-api | todo | |  |
-| `TRAKT` | A-api | todo | |  |
-| `STEAM` | A-api | todo | |  |
-| `ANILIST` | A-api | todo | |  |
+| `RADARR` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters, server/src/releases/list/process.rs::tests::radarr_fills_shows_or_match_releases | ported (`releases/list/`) |
+| `SONARR` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `LIDARR` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `READARR` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `WHISPARR` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `WHISPARR_V3` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `SPORTARR` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `MDBLIST` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `METACRITIC` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/process.rs::tests::test_metacritic_processor_process | ported (`releases/list/`) |
+| `PLAINTEXT` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters, server/src/releases/list/process.rs::tests::plaintext_keeps_lines_as_they_are_when_asked | ported (`releases/list/`); `file://` and http(s) |
+| `TRAKT` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/process.rs::tests::test_transform_trakt_url | ported (`releases/list/`) |
+| `STEAM` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `ANILIST` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
 
 ### IRC
 
@@ -1069,7 +1069,7 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Every indexer definition (IRC, torznab, newznab, RSS), settings, base URL override | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules, server/tests/autobrr_irc.rs::every_bundled_definition_reads_its_own_test_lines | IRC indexers ported; Torznab, Newznab and RSS come with the feeds slice |
+| Every indexer definition (IRC, torznab, newznab, RSS), settings, base URL override | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules, server/tests/autobrr_irc.rs::every_bundled_definition_reads_its_own_test_lines, server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | IRC indexers ported; Torznab, Newznab and RSS indexers are polled through their feed; base URL override not checked yet |
 | Custom definitions folder (`CustomDefinitions`) | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | definitions are read from `APP_ANNOUNCE_DIR` and `<data>/announce`; the `customDefinitions` config key isn't read |
 | Deprecated indexers list and prune | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules, server/tests/autobrr_irc.rs::deprecated_indexers_have_no_live_definition | ported |
 | Indexer API test (per-site APIs for size and freeleech: BTN, PTP, RED, OPS, MAM, GGn, ...) | A-api | todo | |  |
@@ -1236,9 +1236,9 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Feed refresh per feed (its interval, anchored to last run) | A-api | todo | |  |
-| Feed cache cleanup (daily 03:05) | A-api | todo | |  |
-| List refresh (every 6 h) | A-api | todo | |  |
+| Feed refresh per feed (its interval, anchored to last run) | A-api | done | server/src/releases/scheduler.rs::tests::test_anchored_schedule_next, server/src/releases/scheduler.rs::tests::test_anchored_schedule_spreads_feeds_sharing_an_interval, server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/scheduler.rs`) |
+| Feed cache cleanup (daily 03:05) | A-api | done | server/tests/autobrr_feeds.rs::the_cleanup_and_list_jobs_are_scheduled_and_the_cleanup_drops_old_items, server/src/releases/scheduler.rs::tests::cron_lines | ported |
+| List refresh (every 6 h) | A-api | done | server/tests/autobrr_feeds.rs::the_cleanup_and_list_jobs_are_scheduled_and_the_cleanup_drops_old_items, server/src/releases/scheduler.rs::tests::cron_lines | ported, with autobrr's random 1 to 35 second wait |
 | Release cleanup jobs (their cron) | A-api | todo | |  |
 | Update check (every 2 h) | A-api | todo | |  |
 | Temp folder cleanup (daily 04:00) | A-api | todo | |  |

@@ -452,6 +452,23 @@ Non-obvious calls, one line each, newest last.
 - 2026-11-05 — The A-api IRC slice ships IRC and indexers; autobrr's feeds (Torznab, Newznab, RSS jobs and
   `/feeds*`) are the next slice. RSS polling now only looks at Lantern's own `rss` and `indexer` sources, so feed
   indexers made through autobrr's API wait for that slice.
+- 2026-11-05 — autobrr's feeds and lists live in their own tables (`autobrr_feeds`, `autobrr_feed_cache`,
+  `autobrr_lists`, `autobrr_list_filters`); a feed points at its indexer in `release_sources`, a list at its filters
+  in `release_filters`. The cache's expiry is kept in unix milliseconds.
+- 2026-11-05 — gofeed (RSS and Atom) is rewritten in `releases/feed/gofeed.rs` with only what autobrr reads: items,
+  links, enclosures, custom elements and extensions. Lantern's own RSS reader stays for Lantern's own sources.
+- 2026-11-05 — Feed releases go through the filters one at a time, and only when a filter that is on uses the feed's
+  indexer, as autobrr does. A feed whose indexer uses a proxy stops with autobrr's "could not find proxy for indexer
+  feed: record not found" until proxies are ported.
+- 2026-11-05 — Where Go builds a list's titles from a map (random order), Lantern sorts each title's wildcards, so a
+  filter's text doesn't change between refreshes. Plain text lists keep their line order. Steam's answer is read by
+  its keys, as Go's map is.
+- 2026-11-05 — List and feed errors follow Go: a missing list says "sql: no rows in result set" inside, and the API
+  answers "could not find list"; changing a list saves it before the refresh, so a failing refresh answers 500 but
+  keeps the change. A list on the wrong kind of download client says "download client N (TYPE) has runtime type
+  *type.Client", close to Go's type check message.
+- 2026-11-05 — The A-api feeds slice ships feeds and lists; autobrr's releases API (`/release*`, duplicate profiles,
+  release cleanup jobs) is the next slice.
 - 2026-11-06 — cross-seed's command line is a subcommand of the one binary: `lantern cross-seed <command> …`,
   next to `--version` and `healthcheck` in `main.rs`, with the rest of the arguments handed to
   `crossseed::cli::run` (a small parser that reads them as commander 8 does; no clap). It works on `APP_DATA_DIR`
