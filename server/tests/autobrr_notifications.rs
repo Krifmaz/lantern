@@ -212,6 +212,15 @@ async fn the_routes_save_change_and_remove_notifications() {
     assert_eq!(s, StatusCode::BAD_REQUEST);
     assert_error(&v, "BAD_REQUEST_PARAMS", "missing webhook url: invalid notification settings");
 
+    // autobrr has no Slack sender: one that is on is refused, one that is off is kept as a draft
+    let (s, v) = call(&app, "POST", "/notification", Some(json!({ "name": "slack", "type": "SLACK", "enabled": true }))).await;
+    assert_eq!(s, StatusCode::BAD_REQUEST);
+    assert_error(&v, "BAD_REQUEST_PARAMS", "unsupported notification type: 'SLACK': invalid notification settings");
+    let (s, slack) = call(&app, "POST", "/notification", Some(json!({ "name": "slack", "type": "SLACK", "enabled": false }))).await;
+    assert_eq!(s, StatusCode::CREATED, "{slack}");
+    let (s, _) = call(&app, "DELETE", &format!("/notification/{}", slack["id"]), None).await;
+    assert_eq!(s, StatusCode::NO_CONTENT);
+
     // not found and bad ids
     let (s, v) = call(&app, "GET", "/notification/999", None).await;
     assert_eq!(s, StatusCode::NOT_FOUND, "{v}");

@@ -469,3 +469,18 @@ Non-obvious calls, one line each, newest last.
   *type.Client", close to Go's type check message.
 - 2026-11-05 — The A-api feeds slice ships feeds and lists; autobrr's releases API (`/release*`, duplicate profiles,
   release cleanup jobs) is the next slice.
+- 2026-11-06 — autobrr's release history keeps every release a filter sends, also from filters with only Lantern's
+  own hub actions; action statuses are kept only for autobrr's actions. A filter's delay still waits before the
+  actions run, where autobrr waits after the first pending status.
+- 2026-11-06 — RELEASE_NEW is sent for every release the pipeline handles, before the filters run, as autobrr's
+  listener does. IRC_UNHEALTHY and IRC_HEALTHY are never sent, because autobrr's IRC health monitor isn't ported;
+  a network that keeps dropping right after connecting sends IRC_DISCONNECTED with autobrr's "IRC Stopped" words.
+- 2026-11-06 — Changing a cleanup job with a body that can't be read answers 500 (autobrr's service checks the body
+  first), although autobrr's mock-based handler test expected 404.
+- 2026-11-06 — Shoutrrr is rewritten for its generic (webhook), gotify, ntfy, telegram and pushover schemes; any other
+  scheme answers an unsupported-service error. autobrr has no Slack sender either: an enabled Slack notification is
+  refused as unsupported, a disabled one is kept as a draft.
+- 2026-11-06 — The notification inbox is served on autobrr's `notifications` event stream (NOTIFICATION and
+  INBOX_CHANGED), next to `irc`; `logs` still answers "Stream not found!" until the logs slice.
+- 2026-11-06 — The A-api releases slice ships the releases API and the notifications; autobrr's config, updates,
+  logs, healthz, API keys, auth and proxies routes are the next slice.
