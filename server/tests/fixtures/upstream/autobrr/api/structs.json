@@ -496,6 +496,423 @@
     "name"
    ],
    "omitempty": []
+  },
+  "Release": {
+   "always": [
+    "id",
+    "filter_status",
+    "rejections",
+    "indexer",
+    "filter",
+    "protocol",
+    "implementation",
+    "timestamp",
+    "announce_type",
+    "type",
+    "info_url",
+    "download_url",
+    "group_id",
+    "torrent_id",
+    "name",
+    "normalized_hash",
+    "size",
+    "title",
+    "sub_title",
+    "category",
+    "season",
+    "episode",
+    "year",
+    "month",
+    "day",
+    "resolution",
+    "source",
+    "codec",
+    "container",
+    "hdr",
+    "group",
+    "proper",
+    "repack",
+    "website",
+    "hybrid",
+    "edition",
+    "cut",
+    "media_processing",
+    "origin",
+    "uploader",
+    "record_label",
+    "pre_time",
+    "action_status"
+   ],
+   "omitempty": [
+    "categories"
+   ]
+  },
+  "ReleaseActionStatus": {
+   "always": [
+    "id",
+    "status",
+    "action",
+    "action_id",
+    "type",
+    "client",
+    "filter",
+    "filter_id",
+    "rejections",
+    "release_id",
+    "timestamp"
+   ],
+   "omitempty": []
+  },
+  "ReleaseStats": {
+   "always": [
+    "total_count",
+    "filtered_count",
+    "filter_rejected_count",
+    "push_approved_count",
+    "push_rejected_count",
+    "push_error_count"
+   ],
+   "omitempty": []
+  },
+  "ReleaseActivityStats": {
+   "always": [
+    "days",
+    "daily"
+   ],
+   "omitempty": []
+  },
+  "ReleaseActivityDaily": {
+   "always": [
+    "date",
+    "matched_count",
+    "push_approved_count",
+    "push_rejected_count",
+    "push_error_count"
+   ],
+   "omitempty": []
+  },
+  "ReleaseVolumeStats": {
+   "always": [
+    "days",
+    "daily"
+   ],
+   "omitempty": []
+  },
+  "ReleaseVolumeDaily": {
+   "always": [
+    "date",
+    "downloaded_bytes"
+   ],
+   "omitempty": []
+  },
+  "ReleaseHeatmapStats": {
+   "always": [
+    "days",
+    "heatmap"
+   ],
+   "omitempty": []
+  },
+  "ReleaseTopIndexersStats": {
+   "always": [
+    "days",
+    "top"
+   ],
+   "omitempty": []
+  },
+  "ReleaseTopFiltersStats": {
+   "always": [
+    "days",
+    "top"
+   ],
+   "omitempty": []
+  },
+  "ReleaseIndexerStats": {
+   "always": [
+    "indexer",
+    "matched_count",
+    "push_approved_count"
+   ],
+   "omitempty": []
+  },
+  "ReleaseFilterStats": {
+   "always": [
+    "filter",
+    "matched_count",
+    "push_approved_count"
+   ],
+   "omitempty": []
+  },
+  "ReleaseCleanupJob": {
+   "always": [
+    "id",
+    "name",
+    "enabled",
+    "schedule",
+    "older_than",
+    "indexers",
+    "statuses",
+    "last_run",
+    "last_run_status",
+    "last_run_data",
+    "next_run",
+    "created_at",
+    "updated_at"
+   ],
+   "omitempty": []
+  },
+  "FindReleasesResponse": {
+   "always": [
+    "data",
+    "count",
+    "next_cursor"
+   ],
+   "omitempty": []
+  },
+  "DuplicateReleaseProfile": {
+   "always": [
+    "id",
+    "name",
+    "protocol",
+    "release_name",
+    "hash",
+    "title",
+    "sub_title",
+    "year",
+    "month",
+    "day",
+    "source",
+    "resolution",
+    "codec",
+    "container",
+    "dynamic_range",
+    "audio",
+    "group",
+    "season",
+    "episode",
+    "website",
+    "proper",
+    "repack",
+    "edition",
+    "hybrid",
+    "language"
+   ],
+   "omitempty": []
+  },
+  "Notification": {
+   "always": [
+    "id",
+    "name",
+    "type",
+    "enabled",
+    "events",
+    "token",
+    "api_key",
+    "webhook",
+    "title",
+    "icon",
+    "username",
+    "host",
+    "password",
+    "channel",
+    "rooms",
+    "targets",
+    "devices",
+    "priority",
+    "topic",
+    "sound",
+    "created_at",
+    "updated_at"
+   ],
+   "omitempty": [
+    "event_sounds",
+    "used_by_filters",
+    "method",
+    "headers"
+   ]
+  },
+  "InboxMessage": {
+   "always": [
+    "id",
+    "event",
+    "title",
+    "message",
+    "release_name",
+    "indexer",
+    "filter_name",
+    "filter_id",
+    "action",
+    "action_client",
+    "rejections",
+    "url",
+    "read_at",
+    "created_at"
+   ],
+   "omitempty": []
+  },
+  "FindInboxResponse": {
+   "always": [
+    "data",
+    "count",
+    "all_count",
+    "unread_count"
+   ],
+   "omitempty": []
+  },
+  "WebhookEvent": {
+   "always": [
+    "event",
+    "id",
+    "timestamp",
+    "version",
+    "data"
+   ],
+   "omitempty": []
+  },
+  "WebhookData": {
+   "always": [],
+   "omitempty": [
+    "release",
+    "indexer",
+    "filter",
+    "action",
+    "result",
+    "list",
+    "feed",
+    "irc"
+   ]
+  },
+  "WebhookRelease": {
+   "always": [
+    "timestamp",
+    "type",
+    "announce_type",
+    "name"
+   ],
+   "omitempty": [
+    "protocol",
+    "implementation",
+    "link",
+    "download_url",
+    "info_url",
+    "magnet_uri",
+    "category",
+    "categories",
+    "external_id",
+    "external_group_id",
+    "size",
+    "title",
+    "sub_title",
+    "season",
+    "episode",
+    "year",
+    "month",
+    "day",
+    "resolution",
+    "source",
+    "codec",
+    "container",
+    "dynamic_range",
+    "audio",
+    "audio_channels",
+    "audio_format",
+    "bitrate",
+    "media_processing",
+    "group",
+    "website",
+    "origin",
+    "uploader",
+    "pre_time",
+    "edition",
+    "cut",
+    "language",
+    "region",
+    "tags",
+    "proper",
+    "repack",
+    "hybrid",
+    "artists",
+    "record_label",
+    "has_cue",
+    "has_log",
+    "log_score",
+    "freeleech",
+    "freeleech_percent",
+    "seeders",
+    "leechers",
+    "meta_imdb",
+    "meta_tmdb",
+    "meta_tvdb",
+    "meta_igdb"
+   ]
+  },
+  "WebhookIndexer": {
+   "always": [
+    "name"
+   ],
+   "omitempty": [
+    "identifier",
+    "protocol",
+    "implementation"
+   ]
+  },
+  "WebhookFilter": {
+   "always": [
+    "id",
+    "name"
+   ],
+   "omitempty": []
+  },
+  "WebhookAction": {
+   "always": [],
+   "omitempty": [
+    "name",
+    "type",
+    "client"
+   ]
+  },
+  "WebhookResult": {
+   "always": [],
+   "omitempty": [
+    "status",
+    "rejections"
+   ]
+  },
+  "WebhookIRC": {
+   "always": [
+    "network"
+   ],
+   "omitempty": [
+    "message"
+   ]
+  },
+  "WebhookList": {
+   "always": [
+    "id",
+    "name",
+    "type"
+   ],
+   "omitempty": [
+    "error"
+   ]
+  },
+  "WebhookFeed": {
+   "always": [
+    "id",
+    "name",
+    "type"
+   ],
+   "omitempty": [
+    "error"
+   ]
+  },
+  "IndexerMinimal": {
+   "always": [
+    "id",
+    "name",
+    "identifier",
+    "identifier_external"
+   ],
+   "omitempty": []
   }
  }
 }

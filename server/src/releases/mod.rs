@@ -24,6 +24,7 @@ pub mod announce;
 pub mod api;
 pub mod autobrr_api;
 pub mod clients;
+pub mod cronspec;
 pub mod definition;
 pub mod downloader;
 pub mod external;
@@ -31,12 +32,16 @@ pub mod feed;
 pub mod feed_api;
 pub mod filter;
 pub mod gotemplate;
+pub mod history;
+pub mod history_api;
 pub mod humanize;
 pub mod indexer;
 pub mod irc;
 pub mod list;
 pub mod list_api;
 pub mod macros;
+pub mod notify;
+pub mod notify_api;
 pub mod push;
 pub mod rejections;
 pub mod release;
@@ -118,6 +123,8 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
     indexer::migrate(db)?;
     feed::migrate(db)?;
     list::migrate(db)?;
+    notify::migrate(db)?;
+    history::migrate(db)?;
     irc::migrate(db)
 }
 
@@ -288,6 +295,15 @@ pub struct Outcome {
     pub reasons: Vec<(String, Vec<String>)>,
 }
 
+/// What one release's run through the filters has sent so far (autobrr's `processFilters` locals).
+#[derive(Debug, Default)]
+pub struct Pushed {
+    /// The release's id in the history (0: not saved yet).
+    pub release_id: i64,
+    /// The action kinds and download clients that turned it down, so they aren't asked again.
+    pub tried: std::collections::HashSet<(String, i64)>,
+}
+
 /// Sources, filters, the release log, the running IRC connections and the download hub.
 #[derive(Clone)]
 pub struct Releases {
@@ -310,6 +326,8 @@ pub struct Releases {
     pub scheduler: scheduler::Scheduler,
     /// Each feed's locks.
     pub feed_guards: feed::FeedGuards,
+    /// The notification senders and the inbox's live events.
+    pub notifier: notify::Notifier,
 }
 
 impl Releases {
@@ -338,6 +356,7 @@ impl Releases {
             irc: irc::Irc::default(),
             scheduler: scheduler::Scheduler::default(),
             feed_guards: feed::FeedGuards::default(),
+            notifier: notify::Notifier::default(),
         }
     }
 
@@ -712,8 +731,11 @@ impl Releases {
             }
         };
         let base = f.release();
+        self.notify(notify::release_new_payload(&base));
         let mut reasons: Vec<(String, Vec<String>)> = Vec::new();
         let mut size_read = false;
+        let mut pushed = Pushed::default();
+        let mut last: Option<Outcome> = None;
         for flt in &filters {
             let r = match self.first_checks(flt, &f, &base) {
                 Ok(r) => r,
@@ -722,6 +744,18 @@ impl Releases {
                     continue;
                 }
             };
+            let mut r = r;
+            match self.history_checks(flt, &mut r) {
+                Ok(None) => {}
+                Ok(Some(why)) => {
+                    reasons.push((flt.name.clone(), why));
+                    continue;
+                }
+                Err(e) => {
+                    reasons.push((flt.name.clone(), vec![e]));
+                    continue;
+                }
+            }
             // autobrr's AdditionalSizeCheck: the announce gave no size, so the torrent is read
             if r.additional_size_check_required {
                 if !size_read {
@@ -758,12 +792,11 @@ impl Releases {
                 reasons.push((flt.name.clone(), vec!["it already took a release with this name".into()]));
                 continue;
             }
-            let autobrr_actions = self.actions_of(flt.id, true, false).unwrap_or_default();
+            let autobrr_actions = self.actions_of(flt.id, true, true).unwrap_or_default();
             if flt.actions.is_empty() && autobrr_actions.is_empty() {
                 reasons.push((flt.name.clone(), vec!["it passes, but the filter has nowhere to send it".into()]));
                 continue;
             }
-            let mut r = r;
             r.filter_id = flt.id;
             r.filter_name = flt.name.clone();
             if r.size == 0 {
@@ -789,10 +822,28 @@ impl Releases {
                     }
                 }
             }
+            // autobrr's processFilters: a duplicate is turned down once the external filters have run
+            if r.is_duplicate {
+                run::cleanup_temporary_files(&mut r);
+                let mut rr = RejectionReasons::new();
+                rr.add("duplicate", "duplicate", "not duplicate");
+                reasons.push((flt.name.clone(), rr.lines()));
+                continue;
+            }
             if flt.delay > 0 {
                 tokio::time::sleep(Duration::from_secs(flt.delay.clamp(0, 3600) as u64)).await;
             }
-            let o = self.send(flt, &f, r, autobrr_actions, reasons).await;
+            let (o, rejected) = self.send(flt, &f, r, autobrr_actions, reasons.clone(), &mut pushed).await;
+            // autobrr's processFilters: when the last action was turned down, the next filter gets a go
+            if rejected {
+                reasons.push((flt.name.clone(), vec![o.detail.clone()]));
+                last = Some(o);
+                continue;
+            }
+            self.write_log(&f, &o);
+            return o;
+        }
+        if let Some(o) = last {
             self.write_log(&f, &o);
             return o;
         }
@@ -812,7 +863,11 @@ impl Releases {
     }
 
     /// Sends `f` to every action of `flt`: Lantern's own at once, autobrr's one after another on the shared
-    /// release `rel` (so its torrent is fetched once), as autobrr's release service does.
+    /// release `rel` (so its torrent is fetched once), as autobrr's release service does (`processFilters`):
+    /// the release is saved to the history the first time a filter sends it, each action's push is noted as
+    /// pending then settled and told to the notifications, and an action client that already turned this
+    /// release down isn't asked again. Also whether the last action run turned it down (or failed), so the
+    /// next filter gets a go.
     async fn send(
         &self,
         flt: &Filter,
@@ -820,7 +875,8 @@ impl Releases {
         mut rel: Release,
         autobrr_actions: Vec<action::Action>,
         reasons: Vec<(String, Vec<String>)>,
-    ) -> Outcome {
+        pushed: &mut Pushed,
+    ) -> (Outcome, bool) {
         let grab = |a: &filter::Action| Grab {
             title: f.title.clone(),
             download_url: f.download_url.clone(),
@@ -844,21 +900,106 @@ impl Releases {
             }
         });
         let mut results = futures_util::future::join_all(tries).await;
-        let runner = self.runner();
+        // the history keeps the release once, from the first filter that sends it
+        rel.id = pushed.release_id;
+        if rel.id == 0 {
+            rel.filter_status = "FILTER_APPROVED".into();
+            if let Err(e) = self.store_history_release(&mut rel) {
+                tracing::warn!("release.processFilters: error writing release to database: {}", e.message());
+            }
+            pushed.release_id = rel.id;
+        }
+        let mut rejections: Vec<String> = Vec::new();
         for a in &autobrr_actions {
-            let r = match runner.run_action(a, &mut rel).await {
-                Ok(rej) if rej.is_empty() => Ok(format!("{}: sent", a.name)),
-                Ok(rej) => Err(format!("{}: rejected: {}", a.name, rej.join(", "))),
-                Err(e) => Err(format!("{}: {e}", a.name)),
+            let mut pending = history::ActionStatus::new(a, &rel);
+            if let Err(e) = self.store_action_status(&mut pending) {
+                tracing::warn!("release.processFilters: error storing action status for filter: {}", e.message());
+            }
+            if pushed.tried.contains(&(a.kind.clone(), a.client_id)) {
+                tracing::debug!("release.processFilters: action client already tried for this release, skipping..");
+                continue;
+            }
+            let mut done = self.run_history_action(a, &mut rel, pending).await;
+            if let Err(e) = self.store_action_status(&mut done) {
+                tracing::warn!("release.processFilters: error storing action status: {}", e.message());
+            }
+            rejections.clone_from(&done.rejections);
+            if !rejections.is_empty() {
+                pushed.tried.insert((a.kind.clone(), a.client_id));
+            }
+            let r = match done.status.as_str() {
+                history::PUSH_APPROVED => Ok(format!("{}: sent", a.name)),
+                history::PUSH_REJECTED => Err(format!("{}: rejected: {}", a.name, done.rejections.join(", "))),
+                _ => Err(format!("{}: {}", a.name, done.rejections.join(", "))),
             };
             results.push(r.map_err(|e| e.replace(&f.download_url, "(download link)")));
+        }
+        if rel.id > 0 {
+            if let Err(e) = self.update_history_release(&rel) {
+                tracing::warn!("release.processFilters: error updating release: {}", e.message());
+            }
         }
         run::cleanup_temporary_files(&mut rel);
         let ok: Vec<String> = results.iter().filter_map(|r| r.as_ref().ok().cloned()).collect();
         let bad: Vec<String> = results.iter().filter_map(|r| r.as_ref().err().cloned()).collect();
         let status = if ok.is_empty() { "failed" } else { "pushed" };
         let detail = ok.into_iter().chain(bad).collect::<Vec<_>>().join(". ");
-        Outcome { status: status.into(), filter: Some((flt.id, flt.name.clone())), detail, reasons }
+        (Outcome { status: status.into(), filter: Some((flt.id, flt.name.clone())), detail, reasons }, !rejections.is_empty())
+    }
+
+    /// autobrr's checks that read the history (in `CheckFilter`, after the filter's own): the newer-episode
+    /// check when the filter asks for it, then its duplicate profile. Why the release is turned down, if it is;
+    /// a duplicate is only marked (`is_duplicate`), so the external filters still run first.
+    pub fn history_checks(&self, flt: &Filter, r: &mut Release) -> std::result::Result<Option<Vec<String>>, String> {
+        r.is_duplicate = false;
+        r.skip_duplicate_profile_id = 0;
+        r.skip_duplicate_profile_name.clear();
+        if flt.smart_episode {
+            let p = history::SmartEpisodeParams {
+                title: r.title.clone(),
+                season: r.season,
+                episode: r.episode,
+                year: r.year,
+                month: r.month,
+                day: r.day,
+                repack: r.repack,
+                proper: r.proper,
+                group: r.group.clone(),
+            };
+            let ok = match self.smart_episode_can_download(&p) {
+                Ok(ok) => ok,
+                Err(_) => return Ok(Some(vec!["failed smart episode check".into()])),
+            };
+            if !ok {
+                let mut rr = RejectionReasons::new();
+                if p.is_daily_episode() {
+                    rr.add(
+                        "smart episode",
+                        format!("not new ({}) daily: {}-{}-{}", r.title, r.year, r.month, r.day),
+                        format!("expected newer than ({}) daily: {}-{}-{}", r.title, r.year, r.month, r.day),
+                    );
+                } else {
+                    rr.add(
+                        "smart episode",
+                        format!("not new ({}) season: {} ep: {}", r.title, r.season, r.episode),
+                        format!("expected newer than ({}) season: {} ep: {}", r.title, r.season, r.episode),
+                    );
+                }
+                return Ok(Some(rr.lines()));
+            }
+        }
+        if flt.release_profile_duplicate_id > 0 {
+            let profile = self.duplicate_profile(flt.release_profile_duplicate_id).map_err(|e| e.message().to_string())?;
+            if let Some(profile) = profile {
+                r.skip_duplicate_profile_id = profile.id;
+                r.skip_duplicate_profile_name.clone_from(&profile.name);
+                let dup = self.is_duplicate_release(&profile, r).map_err(|e| format!("error finding duplicate handle: {}", e.message()))?;
+                if dup {
+                    r.is_duplicate = true;
+                }
+            }
+        }
+        Ok(None)
     }
 
     /// The size of the torrent at `url`, read from the file; `None` when it can't be fetched or read.
@@ -909,6 +1050,8 @@ impl Releases {
         self.start_irc();
         self.start_feeds();
         self.start_lists();
+        self.start_notifications();
+        self.start_cleanup_jobs();
         rss::spawn(self.clone());
     }
 

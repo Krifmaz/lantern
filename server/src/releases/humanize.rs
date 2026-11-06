@@ -80,6 +80,22 @@ pub fn bytes(s: u64) -> String {
     }
 }
 
+/// Bytes in words with binary units (go-humanize's `IBytes`: `1.4 GiB`, `82 MiB`, `5 B`).
+pub fn ibytes(s: u64) -> String {
+    const UNITS: [&str; 7] = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"];
+    if s < 10 {
+        return format!("{s} B");
+    }
+    let e = ((s as f64).ln() / 1024f64.ln()).floor();
+    let suffix = UNITS[e as usize];
+    let val = ((s as f64) / 1024f64.powf(e) * 10.0 + 0.5).floor() / 10.0;
+    if val < 10.0 {
+        format!("{val:.1} {suffix}")
+    } else {
+        format!("{val:.0} {suffix}")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
