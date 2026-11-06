@@ -187,22 +187,15 @@ impl Hub {
 
     // ---- download clients ----
 
-    /// Every download client, by priority then name.
+    /// Every download client the hub can drive, by priority then name. They are Prowlarr's download clients
+    /// (one store, `prowlarr::apps::downloads::hub`).
     pub fn clients(&self) -> Result<Vec<ClientConfig>> {
-        Ok(self
-            .db
-            .query("SELECT * FROM download_clients ORDER BY priority, name COLLATE NOCASE", p![])?
-            .iter()
-            .map(ClientConfig::from_row)
-            .collect())
+        crate::prowlarr::apps::downloads::hub::list(&self.db)
     }
 
     /// Download client `id`; 404 when there is none.
     pub fn client(&self, id: i64) -> Result<ClientConfig> {
-        self.db
-            .one("SELECT * FROM download_clients WHERE id=?", p![id])?
-            .map(|r| ClientConfig::from_row(&r))
-            .ok_or_else(|| err(404, "There is no download client with that id"))
+        crate::prowlarr::apps::downloads::hub::get(&self.db, id)
     }
 
     /// The enabled client that takes `protocol` first, if any.
@@ -221,22 +214,19 @@ impl Hub {
         let url = text(body, "url").unwrap_or_default();
         check_url(&url)?;
         let name = text(body, "name").filter(|n| !n.is_empty()).unwrap_or_else(|| label.to_string());
-        let id = self.db.execute(
-            "INSERT INTO download_clients (kind, name, url, username, password, api_key, root, enabled, priority, added) VALUES (?,?,?,?,?,?,?,?,?,?)",
-            p![
-                kind,
-                name,
-                clients::trim_url(&url),
-                text(body, "username").unwrap_or_default(),
-                secret(body, "password", ""),
-                secret(body, "api_key", ""),
-                paths::clean(&text(body, "root").unwrap_or_default()),
-                body.get("enabled").and_then(Value::as_bool).unwrap_or(true),
-                body.get("priority").and_then(Value::as_i64).unwrap_or(25).clamp(1, 50),
-                crate::auth::now()
-            ],
-        )?;
-        Ok(id)
+        let fields = crate::prowlarr::apps::downloads::hub::HubFields {
+            kind,
+            name,
+            url: clients::trim_url(&url),
+            username: text(body, "username").unwrap_or_default(),
+            password: secret(body, "password", ""),
+            api_key: secret(body, "api_key", ""),
+            root: paths::clean(&text(body, "root").unwrap_or_default()),
+            enabled: body.get("enabled").and_then(Value::as_bool).unwrap_or(true),
+            priority: body.get("priority").and_then(Value::as_i64).unwrap_or(25).clamp(1, 50),
+            added: crate::auth::now(),
+        };
+        crate::prowlarr::apps::downloads::hub::save(&self.db, 0, &fields)
     }
 
     /// Changes client `id`: only the fields `body` has; a masked or empty secret keeps the saved one.
@@ -248,27 +238,26 @@ impl Hub {
         if name.is_empty() {
             return Err(err(400, "Enter a name for the download client"));
         }
-        self.db.execute(
-            "UPDATE download_clients SET name=?, url=?, username=?, password=?, api_key=?, root=?, enabled=?, priority=? WHERE id=?",
-            p![
-                name,
-                clients::trim_url(&url),
-                text(body, "username").unwrap_or(cur.username),
-                secret(body, "password", &cur.password),
-                secret(body, "api_key", &cur.api_key),
-                text(body, "root").map(|r| paths::clean(&r)).unwrap_or(cur.root),
-                body.get("enabled").and_then(Value::as_bool).unwrap_or(cur.enabled),
-                body.get("priority").and_then(Value::as_i64).unwrap_or(cur.priority).clamp(1, 50),
-                id
-            ],
-        )?;
+        let fields = crate::prowlarr::apps::downloads::hub::HubFields {
+            kind: cur.kind.clone(),
+            name,
+            url: clients::trim_url(&url),
+            username: text(body, "username").unwrap_or(cur.username),
+            password: secret(body, "password", &cur.password),
+            api_key: secret(body, "api_key", &cur.api_key),
+            root: text(body, "root").map(|r| paths::clean(&r)).unwrap_or(cur.root),
+            enabled: body.get("enabled").and_then(Value::as_bool).unwrap_or(cur.enabled),
+            priority: body.get("priority").and_then(Value::as_i64).unwrap_or(cur.priority).clamp(1, 50),
+            added: cur.added,
+        };
+        crate::prowlarr::apps::downloads::hub::save(&self.db, id, &fields)?;
         Ok(())
     }
 
     /// Removes client `id`. Grabs it holds stay, and are no longer followed.
     pub fn remove_client(&self, id: i64) -> Result<()> {
         self.client(id)?;
-        self.db.execute("DELETE FROM download_clients WHERE id=?", p![id])?;
+        crate::prowlarr::apps::downloads::hub::remove(&self.db, id)?;
         self.backends.lock().unwrap_or_else(|e| e.into_inner()).remove(&id);
         Ok(())
     }

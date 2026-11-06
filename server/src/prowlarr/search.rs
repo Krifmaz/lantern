@@ -11,15 +11,13 @@
 //! ```
 //!
 //! The releases a search found are kept for 30 minutes (by indexer and guid), as in Prowlarr, so a grab only
-//! names them. A grab goes to Lantern's download clients (the indexer's own one when it has one, else the first
-//! enabled one for the protocol).
+//! names them. A grab goes to Prowlarr's download clients (the indexer's own one when it has one, else the best
+//! enabled one for the protocol, taking turns), and the notifications on for grabs hear of it.
 
 use super::indexers::{category_json, normalize_title};
 use super::{body_json, check, fail, validation, ApiError, ApiResult, V1};
-use crate::hub::clients::{AddRequest, Content};
 use crate::indexers::api::{host_from, proxy_link, public_base, query_of, source_from};
 use crate::indexers::capabilities::Category;
-use crate::indexers::cardigann::Grabbed;
 use crate::indexers::release::{Protocol, Release};
 use crate::AppState;
 use axum::body::Bytes;
@@ -189,31 +187,52 @@ enum GrabFailure {
 }
 
 /// Sends a release to a download client (`DownloadService.SendReportToClient`): `client_id` when given, else the
-/// indexer's own client, else the first enabled one for the release's protocol.
+/// indexer's own client, else Prowlarr's choice among the enabled clients of the release's protocol. The
+/// notifications on for grabs hear of it, also when the indexer didn't give the release's file.
 async fn send(st: &AppState, r: &Release, source: &str, host: &str, client_id: Option<i64>) -> Result<(), GrabFailure> {
+    use super::apps::downloads::{self, DownloadClients};
+    use super::apps::notifications::{self, GrabMessage};
+    use super::apps::provider;
     let ix = st.indexers.get(r.indexer_id).map_err(|_| GrabFailure::Client(super::not_found("IndexerDefinition", r.indexer_id)))?;
     let protocol = if r.protocol == Protocol::Usenet { "Usenet" } else { "Torrent" };
     let client = match client_id {
-        Some(id) => Some(st.hub.client(id).map_err(|_| GrabFailure::Client(super::not_found("DownloadClientDefinition", id)))?),
-        None if ix.download_client_id > 0 => {
-            let c = st.hub.client(ix.download_client_id).ok().filter(|c| c.enabled && c.protocol() == r.protocol);
-            Some(c.ok_or_else(|| GrabFailure::Client(fail(500, "Indexer specified download client is not available")))?)
-        }
-        None => st.hub.client_for(r.protocol).map_err(|e| GrabFailure::Client(e.into()))?,
+        Some(id) => Some(
+            provider::find::<DownloadClients>(&st.db, id)
+                .map_err(|e| GrabFailure::Client(e.into()))?
+                .ok_or_else(|| GrabFailure::Client(super::not_found("DownloadClientDefinition", id)))?,
+        ),
+        None => downloads::pick(st, r.protocol, ix.download_client_id).map_err(GrabFailure::Client)?,
     };
     let Some(client) = client else {
         return Err(GrabFailure::Client(fail(500, format!("{protocol} Download client isn't configured yet"))));
     };
-    let link = if r.link.is_empty() { &r.magnet } else { &r.link };
-    let grabbed = st.indexers.download(&ix, link, &r.title, source, host).await.map_err(|_| GrabFailure::Indexer)?;
-    let content = match grabbed {
-        Grabbed::Magnet(m) => Content::Magnet(m),
-        Grabbed::File(b) if r.protocol == Protocol::Usenet => Content::Nzb(b),
-        Grabbed::File(b) => Content::Torrent(b),
+    let client_type = provider::implementation_of::<DownloadClients>(&client.implementation).map(|i| i.implementation_name).unwrap_or("");
+    let manual = source == "Prowlarr";
+    let message = |sent: &str, ok: bool| GrabMessage {
+        release: r.clone(),
+        source: source.to_string(),
+        host: host.to_string(),
+        successful: ok,
+        download_client_name: client.label(),
+        download_client_type: client_type.to_string(),
+        download_id: sent.to_string(),
+        redirect: false,
+        manual,
+        message: GrabMessage::message_for(r, manual, source, &client.label()),
     };
-    let backend = st.hub.backend(&client).map_err(|e| GrabFailure::Client(e.into()))?;
-    let req = AddRequest { content, title: r.title.clone(), category: String::new(), save_path: String::new(), tag: String::new() };
-    backend.add(&req).await.map_err(|e| GrabFailure::Client(fail(500, format!("{}: {e}", client.name))))?;
+    let tags = st.indexers.tag_ids(&ix.tags);
+    let link = if r.link.is_empty() { &r.magnet } else { &r.link };
+    let grabbed = match st.indexers.download(&ix, link, &r.title, source, host).await {
+        Ok(g) => g,
+        Err(_) => {
+            notifications::grabbed(st, &message("", false), &tags).await;
+            return Err(GrabFailure::Indexer);
+        }
+    };
+    let sent =
+        downloads::send(st, &client, r, grabbed).await.map_err(|e| GrabFailure::Client(fail(500, format!("{}: {e}", client.label()))))?;
+    tracing::info!("Report sent to {}. {}", client.label(), r.title);
+    notifications::grabbed(st, &message(&sent.download_id, true), &tags).await;
     Ok(())
 }
 

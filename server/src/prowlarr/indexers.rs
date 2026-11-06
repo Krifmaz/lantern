@@ -1052,7 +1052,7 @@ fn shared_checks(st: &AppState, body: &Map<String, Value>) -> Result<Vec<Option<
     }
     out.push(validation::between("Priority", int_prop(body, "priority", 0), 1, 50));
     let client = int_prop(body, "downloadClientId", 0);
-    if client != 0 && st.hub.client(client).is_err() {
+    if client != 0 && super::apps::provider::find::<super::apps::downloads::DownloadClients>(&st.db, client).ok().flatten().is_none() {
         out.push(Some(validation::Failure::new(
             "DownloadClientId",
             json!(client),
