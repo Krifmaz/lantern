@@ -112,10 +112,12 @@ pub fn router() -> Router<AppState> {
         .route("/indexer/{id}/", get(indexer).put(update_indexer).delete(delete_indexer))
         .route("/indexer/{id}/api/test", post(test_indexer_api))
         .route("/indexer/{id}/enabled", patch(toggle_indexer))
+        .merge(super::feed_api::router())
+        .merge(super::list_api::router())
 }
 
 /// An answer: autobrr's error shape for a failure.
-type Answer = std::result::Result<Response, Fail>;
+pub(crate) type Answer = std::result::Result<Response, Fail>;
 
 /// A failed call, answered as autobrr's encoder does.
 pub struct Fail(pub ApiError);
@@ -139,22 +141,22 @@ impl IntoResponse for Fail {
 }
 
 /// `v` as JSON with `status`.
-fn send(status: StatusCode, v: impl serde::Serialize) -> Answer {
+pub(crate) fn send(status: StatusCode, v: impl serde::Serialize) -> Answer {
     Ok((status, Json(serde_json::to_value(v).unwrap_or_default())).into_response())
 }
 
 /// 204.
-fn no_content() -> Answer {
+pub(crate) fn no_content() -> Answer {
     Ok(StatusCode::NO_CONTENT.into_response())
 }
 
 /// A path id, or autobrr's `<name> parameter is invalid`.
-fn id_of(raw: &str, name: &str) -> ApiResult<i64> {
+pub(crate) fn id_of(raw: &str, name: &str) -> ApiResult<i64> {
     raw.parse::<i64>().map_err(|_| ApiError::BadRequest(format!("{name} parameter is invalid")))
 }
 
 /// The body read as `T`; a bad body is a 500, as autobrr's `encoder.Error` answers a decode error.
-fn decode<T: DeserializeOwned>(body: &Bytes) -> ApiResult<T> {
+pub(crate) fn decode<T: DeserializeOwned>(body: &Bytes) -> ApiResult<T> {
     serde_json::from_slice(body).map_err(|e| ApiError::Internal(e.to_string()))
 }
 
@@ -345,12 +347,12 @@ async fn arr_tags(State(st): State<AppState>, _: SignedIn, Path(id): Path<String
 // ---- IRC ----
 
 /// A not-found answer in autobrr's words.
-fn not_found(m: String) -> Fail {
+pub(crate) fn not_found(m: String) -> Fail {
     Fail(ApiError::NotFound(m))
 }
 
 /// A record-not-found from the store, as `m`; other failures as they are.
-fn or_not_found(e: ApiError, m: impl FnOnce() -> String) -> Fail {
+pub(crate) fn or_not_found(e: ApiError, m: impl FnOnce() -> String) -> Fail {
     match e {
         ApiError::NotFound(_) => not_found(m()),
         e => Fail(e),

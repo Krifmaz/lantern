@@ -685,18 +685,18 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `PUT /api/filters/{filterID}/enabled` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
 | `GET /api/filters/{filterID}/notifications` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
 | `PUT /api/filters/{filterID}/notifications` | A-api | done | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | ported; served at `/autobrr/api` |
-| `GET /api/feeds` | A-api | todo | |  |
-| `POST /api/feeds` | A-api | todo | |  |
-| `POST /api/feeds/test` | A-api | todo | |  |
-| `POST /api/feeds/caps` | A-api | todo | |  |
-| `GET /api/feeds/{feedID}` | A-api | todo | |  |
-| `PUT /api/feeds/{feedID}` | A-api | todo | |  |
-| `DELETE /api/feeds/{feedID}` | A-api | todo | |  |
-| `DELETE /api/feeds/{feedID}/cache` | A-api | todo | |  |
-| `PATCH /api/feeds/{feedID}/enabled` | A-api | todo | |  |
-| `GET /api/feeds/{feedID}/latest` | A-api | todo | |  |
-| `POST /api/feeds/{feedID}/forcerun` | A-api | todo | |  |
-| `GET /api/feeds/{feedID}/caps` | A-api | todo | |  |
+| `GET /api/feeds` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `POST /api/feeds` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `POST /api/feeds/test` | A-api | done | server/tests/autobrr_feeds.rs::feed_tests_and_caps_go_through_the_feeds_own_client | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `POST /api/feeds/caps` | A-api | done | server/tests/autobrr_feeds.rs::feed_tests_and_caps_go_through_the_feeds_own_client | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `GET /api/feeds/{feedID}` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `PUT /api/feeds/{feedID}` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/feeds/{feedID}` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/feeds/{feedID}/cache` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `PATCH /api/feeds/{feedID}/enabled` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `GET /api/feeds/{feedID}/latest` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `POST /api/feeds/{feedID}/forcerun` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
+| `GET /api/feeds/{feedID}/caps` | A-api | done | server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/feed_api.rs`); served at `/autobrr/api` |
 | `GET /api/irc` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
 | `POST /api/irc` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces, server/tests/autobrr_irc.rs::a_network_signs_in_with_sasl_and_joins_without_an_invite, server/tests/autobrr_irc.rs::a_ban_stops_the_network_with_the_reason | ported; served at `/autobrr/api` |
 | `GET /api/irc/network/{networkID}` | A-api | done | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | ported; served at `/autobrr/api` |
@@ -718,12 +718,12 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `DELETE /api/indexer/{indexerID}` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
 | `POST /api/indexer/{indexerID}/api/test` | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api`; the per-site API clients aren't ported yet, so a site with an API answers autobrr's "could not init api client" |
 | `PATCH /api/indexer/{indexerID}/enabled` | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | ported; served at `/autobrr/api` |
-| `GET /api/lists` | A-api | todo | |  |
-| `POST /api/lists` | A-api | todo | |  |
-| `POST /api/lists/refresh` | A-api | todo | |  |
-| `POST /api/lists/{listID}/refresh` | A-api | todo | |  |
-| `PUT /api/lists/{listID}` | A-api | todo | |  |
-| `DELETE /api/lists/{listID}` | A-api | todo | |  |
+| `GET /api/lists` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/lists` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/lists/refresh` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/lists/{listID}/refresh` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `PUT /api/lists/{listID}` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/lists/{listID}` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
 | `GET /api/keys` | A-api | todo | |  |
 | `POST /api/keys` | A-api | todo | |  |
 | `DELETE /api/keys/{apikey}` | A-api | todo | |  |
@@ -772,13 +772,13 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `POST /api/release/cleanup-jobs/{jobID}/run` | A-api | todo | |  |
 | `GET /api/updates/latest` | A-api | todo | |  |
 | `GET /api/updates/check` | A-api | todo | |  |
-| `POST /api/webhook/lists/trigger` | A-api | todo | |  |
-| `POST /api/webhook/lists/trigger/arr` | A-api | todo | |  |
-| `POST /api/webhook/lists/trigger/lists` | A-api | todo | |  |
-| `GET /api/webhook/lists/trigger` | A-api | todo | |  |
-| `GET /api/webhook/lists/trigger/arr` | A-api | todo | |  |
-| `GET /api/webhook/lists/trigger/lists` | A-api | todo | |  |
-| `POST /api/webhook/lists/trigger/{listID}` | A-api | todo | |  |
+| `POST /api/webhook/lists/trigger` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/webhook/lists/trigger/arr` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/webhook/lists/trigger/lists` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `GET /api/webhook/lists/trigger` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `GET /api/webhook/lists/trigger/arr` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `GET /api/webhook/lists/trigger/lists` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
+| `POST /api/webhook/lists/trigger/{listID}` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
 | `GET /api/auth/oidc/config` | A-api | todo | |  |
 | `GET /api/auth/oidc/callback` | A-api | todo | |  |
 | GET /api/events (server-sent events: IRC, logs) | A-api | partial | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | the `irc` stream (also at `/irc/events`); the `logs` stream comes with the logs slice |
@@ -902,7 +902,7 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `MaxSeeders` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
 | `MinLeechers` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
 | `MaxLeechers` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
-| `IsAutoUpdated` | A-api | partial | | stored; set by lists (lists slice) |
+| `IsAutoUpdated` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported; true while a list writes to the filter |
 | `ReleaseProfileDuplicateID` | A-api | partial | | stored; duplicate profiles come with the releases slice |
 | `DuplicateHandling` | A-api | todo | |  |
 | External filters (exec, webhook) with expected status | A-api | done | server/src/releases/external.rs::tests::exec_exit_code_decides, server/src/releases/external.rs::tests::webhook_status_and_retries, server/tests/autobrr_api.rs::a_passing_release_runs_the_filters_autobrr_actions | ported (exec with an argument list; webhook with retries) |
@@ -1028,29 +1028,29 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `TORZNAB` | A-api | todo | |  |
-| `NEWZNAB` | A-api | todo | |  |
-| `RSS` | A-api | partial | | fresh version |
-| caps, max age, timeout, cookie, user agent, proxy per feed | A-api | todo | |  |
-| first run only stores what is there | A-api | todo | |  |
+| `TORZNAB` | A-api | done | server/tests/autobrr_feeds.rs::znab_search_pages_with_the_caps_limit_and_keeps_host_params, server/tests/autobrr_feeds.rs::each_format_reads_a_page_as_releases, server/src/releases/feed/sources.rs::tests::test_torznab_source_to_release | ported (`releases/feed/`) |
+| `NEWZNAB` | A-api | done | server/tests/autobrr_feeds.rs::each_format_reads_a_page_as_releases, server/src/releases/feed/sources.rs::tests::test_newznab_source_to_release, server/src/releases/feed/znab.rs::tests::test_newznab_feed_item_unmarshal_xml | ported (`releases/feed/`) |
+| `RSS` | A-api | done | server/tests/autobrr_feeds.rs::each_format_reads_a_page_as_releases, server/src/releases/feed/sources.rs::tests::test_rss_source_to_release, server/src/releases/feed/gofeed.rs::tests::reads_rss_items_with_custom_elements_and_extensions | ported (`releases/feed/`, gofeed rewritten); Lantern's own RSS reader stays for its own sources |
+| caps, max age, timeout, cookie, user agent, proxy per feed | A-api | partial | server/tests/autobrr_feeds.rs::feed_tests_and_caps_go_through_the_feeds_own_client, server/tests/autobrr_feeds.rs::znab_caps_read_the_fixture_and_refuse_a_bad_key, server/src/releases/feed/refresh.rs::tests::test_is_max_age | caps, max age, timeout, cookie and user agent ported; proxies are not, so a feed on an indexer that uses one stops with an error |
+| first run only stores what is there | A-api | done | server/src/releases/feed/refresh.rs::tests::test_refresh_job_run_e, server/src/releases/feed/refresh.rs::tests::test_refresh_job_fetch_new_pagination | ported |
 
 ### Lists
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `RADARR` | A-api | todo | |  |
-| `SONARR` | A-api | todo | |  |
-| `LIDARR` | A-api | todo | |  |
-| `READARR` | A-api | todo | |  |
-| `WHISPARR` | A-api | todo | |  |
-| `WHISPARR_V3` | A-api | todo | |  |
-| `SPORTARR` | A-api | todo | |  |
-| `MDBLIST` | A-api | todo | |  |
-| `METACRITIC` | A-api | todo | |  |
-| `PLAINTEXT` | A-api | todo | |  |
-| `TRAKT` | A-api | todo | |  |
-| `STEAM` | A-api | todo | |  |
-| `ANILIST` | A-api | todo | |  |
+| `RADARR` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters, server/src/releases/list/process.rs::tests::radarr_fills_shows_or_match_releases | ported (`releases/list/`) |
+| `SONARR` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `LIDARR` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `READARR` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `WHISPARR` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `WHISPARR_V3` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `SPORTARR` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `MDBLIST` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `METACRITIC` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/process.rs::tests::test_metacritic_processor_process | ported (`releases/list/`) |
+| `PLAINTEXT` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters, server/src/releases/list/process.rs::tests::plaintext_keeps_lines_as_they_are_when_asked | ported (`releases/list/`); `file://` and http(s) |
+| `TRAKT` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/process.rs::tests::test_transform_trakt_url | ported (`releases/list/`) |
+| `STEAM` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
+| `ANILIST` | A-api | done | server/tests/autobrr_feeds.rs::every_list_type_fills_its_fields, server/src/releases/list/title.rs::tests::test_process_title | ported (`releases/list/`) |
 
 ### IRC
 
@@ -1069,7 +1069,7 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Every indexer definition (IRC, torznab, newznab, RSS), settings, base URL override | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules, server/tests/autobrr_irc.rs::every_bundled_definition_reads_its_own_test_lines | IRC indexers ported; Torznab, Newznab and RSS come with the feeds slice |
+| Every indexer definition (IRC, torznab, newznab, RSS), settings, base URL override | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules, server/tests/autobrr_irc.rs::every_bundled_definition_reads_its_own_test_lines, server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | IRC indexers ported; Torznab, Newznab and RSS indexers are polled through their feed; base URL override not checked yet |
 | Custom definitions folder (`CustomDefinitions`) | A-api | partial | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules | definitions are read from `APP_ANNOUNCE_DIR` and `<data>/announce`; the `customDefinitions` config key isn't read |
 | Deprecated indexers list and prune | A-api | done | server/tests/autobrr_irc.rs::indexers_keep_their_secrets_and_follow_autobrrs_rules, server/tests/autobrr_irc.rs::deprecated_indexers_have_no_live_definition | ported |
 | Indexer API test (per-site APIs for size and freeleech: BTN, PTP, RED, OPS, MAM, GGn, ...) | A-api | todo | |  |
@@ -1236,9 +1236,9 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Feed refresh per feed (its interval, anchored to last run) | A-api | todo | |  |
-| Feed cache cleanup (daily 03:05) | A-api | todo | |  |
-| List refresh (every 6 h) | A-api | todo | |  |
+| Feed refresh per feed (its interval, anchored to last run) | A-api | done | server/src/releases/scheduler.rs::tests::test_anchored_schedule_next, server/src/releases/scheduler.rs::tests::test_anchored_schedule_spreads_feeds_sharing_an_interval, server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/scheduler.rs`) |
+| Feed cache cleanup (daily 03:05) | A-api | done | server/tests/autobrr_feeds.rs::the_cleanup_and_list_jobs_are_scheduled_and_the_cleanup_drops_old_items, server/src/releases/scheduler.rs::tests::cron_lines | ported |
+| List refresh (every 6 h) | A-api | done | server/tests/autobrr_feeds.rs::the_cleanup_and_list_jobs_are_scheduled_and_the_cleanup_drops_old_items, server/src/releases/scheduler.rs::tests::cron_lines | ported, with autobrr's random 1 to 35 second wait |
 | Release cleanup jobs (their cron) | A-api | todo | |  |
 | Update check (every 2 h) | A-api | todo | |  |
 | Temp folder cleanup (daily 04:00) | A-api | todo | |  |
@@ -1266,9 +1266,9 @@ cross-seed has no web UI in v6; its daemon, API and CLI are ported. Its settings
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `POST /api/webhook` (search one torrent by infoHash or path) | X | partial | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does`, `server/src/crossseed/daemon.rs`::webhook_schema_like_zod | answers, statuses and messages as cross-seed; an infoHash searches that client torrent; a path is searched as data and its matches are linked and added by cross-seed's `performAction` (data-based search over `dataDirs` is a later slice) |
-| `POST /api/announce` (match an announce, e.g. from autobrr) | X | partial | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does`, `server/src/crossseed/daemon.rs`::announce_schema_like_zod, `server/src/crossseed/daemon.rs`::announce_statuses | statuses 200/202/204/400 and zod messages as cross-seed; client torrents like it are picked by cross-seed's keys and title comparison, not its full `getSimilarByName` with the torrent cache and data dirs |
-| `POST /api/job` (run a job now) | X | partial | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does`, `server/src/crossseed/daemon.rs`::job_schema_like_zod | the messages and 404/409/200 as cross-seed; only `search` runs here (rss, inject, cleanup and updateIndexerCaps answer "disabled in config" until their jobs are ported) |
+| `POST /api/webhook` (search one torrent by infoHash or path) | X | done | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does`, `server/src/crossseed/daemon.rs`::webhook_schema_like_zod | answers, statuses and messages as cross-seed; it marks the inject job to run ahead, looks over the torrents and data again, then `searchForLocalTorrentByCriteria`: the client torrents (or `torrentDir` files) with the infoHash, or the data roots under the path (`maxDataDepth`) |
+| `POST /api/announce` (match an announce, e.g. from autobrr) | X | done | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does`, `server/tests/crossseed_jobs.rs::rss_reads_each_site_once_and_a_job_run_ahead_waits_a_cadence_more`, `server/src/crossseed/daemon.rs`::announce_schema_like_zod, `server/src/crossseed/daemon.rs`::announce_statuses, `server/src/crossseed/index.rs`::keys_from_names | statuses 200/202/204/400/500 and messages as cross-seed; cross-seed's `getSimilarByName` over the client torrents (or `torrentDir`), the data of `dataDirs` and the seasons made of episodes (`ensemble`) |
+| `POST /api/job` (run a job now) | X | done | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does`, `server/tests/crossseed_jobs.rs::rss_reads_each_site_once_and_a_job_run_ahead_waits_a_cadence_more`, `server/src/crossseed/daemon.rs`::job_schema_like_zod | every job; 404 for one the settings don't ask for, 409 while it runs or before its delayed next run; `search` and `rss` run ahead put the next run a cadence later (`delayNextRun`) |
 | `GET /api/ping` | X | done | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does` | own port, 2468 (`cross_seed_port`) |
 | `GET /api/status` | X | done | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does` | |
 | API key in `X-Api-Key` header or `apikey` query | X | done | `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does` | Lantern's API key (`api_key`); 405 before 401 before 404, as cross-seed |
@@ -1290,7 +1290,7 @@ cross-seed has no web UI in v6; its daemon, API and CLI are ported. Its settings
 | `port` (2468) | X | done | `server/src/crossseed/config.rs`::defaults_are_cross_seeds_template | `cross_seed_port` (0 = off) |
 | `apiKey` | X | done | `server/src/crossseed/config.rs`::defaults_are_cross_seeds_template | Lantern's `api_key` |
 | `action`, `linkDirs`, `linkType`, `flatLinking`, `linkCategory`, `duplicateCategories`, `skipRecheck`, `autoResumeMaxDownload`, `ignoreNonRelevantFilesToResume`, `torrentClients` | X | done | `server/src/crossseed/config.rs`::torrent_client_checks, `server/src/crossseed/config.rs`::the_default_needs_link_dirs_as_in_cross_seed, `server/src/crossseed/config.rs`::settings_ranges_in_cross_seeds_words | `cross_seed_action`, `cross_seed_link_dirs` (one per line), `cross_seed_link_type`, `cross_seed_flat_linking`, `cross_seed_link_category`, `cross_seed_duplicate_categories`, `cross_seed_skip_recheck`, `cross_seed_auto_resume_max_download`, `cross_seed_ignore_non_relevant_files_to_resume`, `cross_seed_torrent_clients` (one per line; empty: Lantern's torrent download clients) |
-| Other options (`dataDirs`, `rssCadence`, `searchCadence`, `snatchTimeout`, `searchTimeout`, `searchLimit`, `notificationWebhookUrls`, `sonarr`, `radarr`, `outputDir`, `torrentDir`, `maxDataDepth`, `useClientTorrents`) | X | partial | `server/src/crossseed/config.rs`::defaults_are_cross_seeds_template | cross-seed's defaults and checks in the config; no Lantern setting yet (their features are later slices); `outputDir` is `cross-seeds/` in the data folder |
+| Other options (`dataDirs`, `rssCadence`, `searchCadence`, `snatchTimeout`, `searchTimeout`, `searchLimit`, `notificationWebhookUrls`, `sonarr`, `radarr`, `outputDir`, `torrentDir`, `maxDataDepth`, `useClientTorrents`) | X | done | `server/src/crossseed/config.rs`::defaults_are_cross_seeds_template, `server/tests/crossseed_jobs.rs::data_is_searched_with_sonarrs_ids_saved_notified_then_injected`, `server/tests/crossseed_jobs.rs::torrent_dir_files_are_searched` | `cross_seed_data_dirs`, `cross_seed_rss_cadence`, `cross_seed_search_cadence`, `cross_seed_snatch_timeout`, `cross_seed_search_timeout`, `cross_seed_search_limit`, `cross_seed_notification_webhook_urls`, `cross_seed_sonarr`, `cross_seed_radarr`, `cross_seed_torrent_dir`, `cross_seed_max_data_depth`, `cross_seed_use_client_torrents`, with cross-seed's checks (folders inside other folders, URLs, apikey); `outputDir` is `cross-seeds/` in the data folder |
 
 ### Matching and injection
 
@@ -1302,22 +1302,22 @@ cross-seed has no web UI in v6; its daemon, API and CLI are ported. Its settings
 | Link types `symlink`, `hardlink`, `reflink`, `reflinkOrCopy`; `flatLinking` | X | done | `server/src/crossseed/action.rs`::link_types_as_cross_seed_makes_them, `server/src/crossseed/action.rs`::links_every_file_of_a_match, `server/src/crossseed/action.rs`::the_link_folder_on_the_same_drive, `server/tests/crossseed_clients.rs::a_match_from_a_data_folder_is_linked_then_injected` | `linkFile`, `linkAllFilesInMetafile`, `getLinkDir` (same drive first, then a test link) and `unlinkMetafile`; reflinks through Linux's `FICLONE` |
 | Block list types (name, regex, folder, category, tag, tracker, infoHash, size) | X | done | `server/src/crossseed/prefilter.rs`::every_block_list_type, `server/src/crossseed/config.rs`::block_list_checks | |
 | Clients: qBittorrent, rTorrent, Transmission, Deluge (several at once) | X | done | `server/tests/crossseed_clients.rs::qbittorrent_as_cross_seed_talks_to_it`, `server/tests/crossseed_clients.rs::rtorrent_as_cross_seed_talks_to_it`, `server/tests/crossseed_clients.rs::transmission_as_cross_seed_talks_to_it`, `server/tests/crossseed_clients.rs::deluge_as_cross_seed_talks_to_it`, `server/src/crossseed/clients/mod.rs`::client_entries_as_cross_seed_reads_them | `server/src/crossseed/clients/`: each stand-in answers as the client does and the requests are compared with cross-seed's, in order (`fixtures/upstream/cross-seed/clients.json`); several clients by `clientHost` and priority, `readonly:` entries are searched but never added to |
-| Data-based searching (`dataDirs`), season packs from episodes | X | todo | |  |
+| Data-based searching (`dataDirs`), season packs from episodes | X | done | `server/tests/crossseed_jobs.rs::data_is_searched_with_sonarrs_ids_saved_notified_then_injected`, `server/src/crossseed/data.rs`::nested_roots_as_cross_seed_finds_them, `server/src/crossseed/data.rs`::ensemble_pieces_of_an_episode, `server/src/crossseed/ensemble.rs`::a_season_from_its_episodes | `server/src/crossseed/data.rs` (`dataFiles.ts`), `ensemble.rs` (`createEnsembleSearchees`); folders are looked at again at most once a minute, by their files' sizes and times, instead of a file watcher |
 | Pre-filter rules (age, recent search, ignored titles, non-video, single episodes) | X | done | `server/src/crossseed/prefilter.rs`::content_rules, `server/src/crossseed/prefilter.rs`::timestamps, `server/src/crossseed/prefilter.rs`::season_pack_episodes_and_specials_from_data | |
-| Arr lookups (Sonarr/Radarr ids for better searching) | X | todo | |  |
+| Arr lookups (Sonarr/Radarr ids for better searching) | X | done | `server/tests/crossseed_jobs.rs::data_is_searched_with_sonarrs_ids_saved_notified_then_injected`, `server/src/crossseed/arr.rs`::parse_answers_as_cross_seed_reads_them, `server/src/crossseed/arr.rs`::lookups_go_to_the_right_apps, `server/src/crossseed/search.rs`::queries_follow_what_the_indexer_can_do | `server/src/crossseed/arr.rs` (`arr.ts`): `/api/v3/parse` with the `apikey` as `X-Api-Key`; the ids go into the indexers' TV and movie searches when their caps take them |
 | Recheck and auto-resume rules | X | done | `server/src/crossseed/clients/mod.rs`::recheck_and_resume_rules, `server/tests/crossseed_clients.rs::qbittorrent_as_cross_seed_talks_to_it` | `shouldRecheck`, `getMaxRemainingBytes`, `shouldResumeFromNonRelevantFiles`, `estimatePausedStatus` and each client's `resumeInjection` (checks every 15 s for up to 5 minutes, an hour when only more pieces are missing) |
-| Notification webhooks | X | todo | |  |
-| Torrent cache and client torrent cache | X | partial | `server/src/crossseed/clients/mod.rs`::a_kept_torrent_changes_when_its_name_folder_category_or_tags_do, `server/tests/crossseed_clients.rs::qbittorrent_as_cross_seed_talks_to_it` | the client torrent cache (`client_searchee`, `cross_seed_client_searchees`) as cross-seed; the `.torrent` cache of `torrentDir` is a later slice |
+| Notification webhooks | X | done | `server/tests/crossseed_jobs.rs::data_is_searched_with_sonarrs_ids_saved_notified_then_injected`, `server/src/crossseed/notify.rs`::messages_as_cross_seed_sends_them | `cross_seed_notification_webhook_urls`; cross-seed's JSON (`title`, `body`, `extra`) for searches, RSS, announces, webhooks and the inject job |
+| Torrent cache and client torrent cache | X | partial | `server/src/crossseed/clients/mod.rs`::a_kept_torrent_changes_when_its_name_folder_category_or_tags_do, `server/tests/crossseed_clients.rs::qbittorrent_as_cross_seed_talks_to_it`, `server/tests/crossseed_jobs.rs::torrent_dir_files_are_searched` | the client torrent cache (`client_searchee`) and `torrentDir`'s `.torrent` index (`torrent`) as cross-seed; cross-seed's own cache of fetched `.torrent` files and decisions (`torrent_cache`, `decision`) is not kept: Lantern keeps each candidate's decision in `cross_seeds` |
 
 ### Background jobs
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `rss` (its cadence) | X | todo | |  |
-| `search` (its cadence) | X | todo | |  |
-| `updateIndexerCaps` (daily) | X | todo | |  |
-| `inject` saved torrents (hourly) | X | todo | |  |
-| `cleanup` database (daily) | X | todo | |  |
+| `rss` (its cadence) | X | done | `server/tests/crossseed_jobs.rs::rss_reads_each_site_once_and_a_job_run_ahead_waits_a_cadence_more`, `server/src/crossseed/search.rs`::rss_paging_stops_at_the_last_seen_guid_or_the_last_run, `server/src/crossseed/jobs.rs`::when_a_job_is_due | `cross_seed_rss_cadence`; up to 10 pages per indexer until the guid seen last time or the last run |
+| `search` (its cadence) | X | done | `server/tests/crossseed_jobs.rs::data_is_searched_with_sonarrs_ids_saved_notified_then_injected`, `server/tests/crossseed.rs::the_cross_seed_api_answers_as_cross_seed_does`, `server/src/crossseed/jobs.rs`::when_a_job_is_due | `cross_seed_search_cadence`, with `excludeOlder`, `excludeRecentSearch`, `searchLimit` and `delay` per indexer |
+| `updateIndexerCaps` (daily) | X | done | `server/src/crossseed/jobs.rs`::jobs_as_cross_seed_makes_them | reads each torrent indexer's caps again and logs the media types it suits |
+| `inject` saved torrents (hourly) | X | done | `server/tests/crossseed_jobs.rs::data_is_searched_with_sonarrs_ids_saved_notified_then_injected`, `server/src/crossseed/inject.rs`::matches_in_cross_seeds_order, `server/src/crossseed/inject.rs`::only_files_cross_seed_saved_are_deleted | `server/src/crossseed/inject.rs` (`injectSavedTorrents`): only when the action is `inject`; a file is deleted once its torrent is complete |
+| `cleanup` database (daily) | X | done | `server/tests/crossseed_jobs.rs::data_is_searched_with_sonarrs_ids_saved_notified_then_injected` | client torrents read again, gone `dataDirs` entries and episodes forgotten (no `torrent_cache` or `decision` tables to prune) |
 
 ### CLI
 

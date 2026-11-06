@@ -424,9 +424,13 @@ impl Releases {
             }),
             None => list.sort_by(|a, b| b.0.priority.cmp(&a.0.priority).then(a.0.name.to_lowercase().cmp(&b.0.name.to_lowercase()))),
         }
+        // a filter a list keeps up to date (autobrr's `is_auto_updated`, only in this list)
+        let auto: std::collections::HashSet<i64> =
+            self.db.query("SELECT DISTINCT filter_id FROM autobrr_list_filters", p![])?.iter().map(|r| r.i("filter_id")).collect();
         let mut out = Vec::new();
         for (f, added) in &list {
-            let v = self.autobrr_filter_json(f, *added, false)?;
+            let mut v = self.autobrr_filter_json(f, *added, false)?;
+            v["is_auto_updated"] = json!(auto.contains(&f.id));
             if !indexers.is_empty() {
                 let ids: Vec<String> =
                     v["indexers"].as_array().into_iter().flatten().filter_map(|i| i["identifier"].as_str().map(str::to_string)).collect();
@@ -584,6 +588,7 @@ impl Releases {
         self.db.execute("DELETE FROM autobrr_actions WHERE filter_id=?", p![id])?;
         self.db.execute("DELETE FROM release_filters WHERE id=?", p![id])?;
         self.db.execute("DELETE FROM autobrr_filter_notifications WHERE filter_id=?", p![id])?;
+        self.db.execute("DELETE FROM autobrr_list_filters WHERE filter_id=?", p![id])?;
         Ok(())
     }
 

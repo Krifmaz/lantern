@@ -27,21 +27,52 @@ impl Meta {
 
 /// A bencoded value.
 #[derive(Debug, Clone, PartialEq)]
-enum B {
+pub enum B {
+    /// An integer.
     Int(i64),
+    /// A byte string.
     Bytes(Vec<u8>),
+    /// A list.
     List(Vec<B>),
+    /// A dictionary, keys in the order they came.
     Dict(Vec<(Vec<u8>, B)>),
 }
 
+/// The bencoded value at the start of `d` (a `.fastresume` file, for one), or `None` when it isn't one.
+pub fn decode_value(d: &[u8]) -> Option<B> {
+    let mut at = 0;
+    value(d, &mut at, 0)
+}
+
 impl B {
-    fn get(&self, key: &str) -> Option<&B> {
+    /// The list's items, when it is a list.
+    pub fn list(&self) -> Option<&[B]> {
+        match self {
+            B::List(l) => Some(l),
+            _ => None,
+        }
+    }
+
+    /// JavaScript's `toString()` of the value as cross-seed's bencode reader gives it: a byte string as text, a
+    /// list as its items joined with commas, a number as digits.
+    pub fn js_string(&self) -> String {
+        match self {
+            B::Int(i) => i.to_string(),
+            B::Bytes(b) => String::from_utf8_lossy(b).into_owned(),
+            B::List(l) => l.iter().map(B::js_string).collect::<Vec<_>>().join(","),
+            B::Dict(_) => "[object Object]".into(),
+        }
+    }
+
+    /// The value under `key`, when it is a dictionary that has it.
+    pub fn get(&self, key: &str) -> Option<&B> {
         match self {
             B::Dict(d) => d.iter().find(|(k, _)| k == key.as_bytes()).map(|(_, v)| v),
             _ => None,
         }
     }
-    fn text(&self) -> Option<String> {
+    /// A byte string as text.
+    pub fn text(&self) -> Option<String> {
         match self {
             B::Bytes(b) => Some(String::from_utf8_lossy(b).into_owned()),
             _ => None,
