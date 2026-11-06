@@ -356,7 +356,7 @@ pub fn app(st: AppState) -> Router {
         .merge(crossseed::api::router())
         .merge(prowlarr_ui::router(&st))
         // autobrr's frontend, with its API (server/src/releases/autobrr_api.rs) at /autobrr/api
-        .merge(autobrr_ui::router(&st, releases::autobrr_api::router()))
+        .merge(autobrr_ui::router(&st, releases::autobrr_api::router(&st)))
         .with_state(st)
         .fallback_service(spa)
         .layer(axum::middleware::from_fn(security_headers))

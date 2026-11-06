@@ -284,6 +284,10 @@ pub struct Feed {
     /// Its indexer's proxy (never sent).
     #[serde(skip)]
     pub proxy_id: i64,
+    /// The proxy its requests go through, when its indexer uses an enabled one (never sent; set by
+    /// [`Releases::feed_source`]).
+    #[serde(skip)]
+    pub proxy: Option<crate::releases::proxy::Proxy>,
 }
 
 /// A time as Go's JSON writes it; Go's zero time for none.
@@ -623,18 +627,37 @@ impl AnySource {
     }
 }
 
-/// The source of feed `f`, the only way a feed is reached (autobrr's `newSource`). autobrr's proxies aren't
-/// part of Lantern, so a feed whose indexer asks for one is refused.
+/// The source of feed `f` as it is (with the proxy already on it, if any); [`Releases::feed_source`] is the way a
+/// feed is reached.
 pub fn new_source(f: &Feed) -> ApiResult<AnySource> {
-    if f.use_proxy {
-        return Err(ApiError::Internal("could not find proxy for indexer feed: record not found".into()));
-    }
     let f = Arc::new(f.clone());
     match f.kind.as_str() {
         FEED_TYPE_TORZNAB => Ok(AnySource::Znab(Box::new(sources::ZnabSource::new(f, znab::Kind::Torznab)))),
         FEED_TYPE_NEWZNAB => Ok(AnySource::Znab(Box::new(sources::ZnabSource::new(f, znab::Kind::Newznab)))),
         FEED_TYPE_RSS => Ok(AnySource::Rss(sources::RssSource::new(f))),
         t => Err(ApiError::Internal(format!("unsupported feed type: {t}"))),
+    }
+}
+
+impl Releases {
+    /// The source of feed `f`, the only way a feed is reached (autobrr's `newSource`): a feed whose indexer is
+    /// set to use a proxy goes through it when it is on (autobrr's `loadProxy`); a proxy that can't be found
+    /// stops it.
+    pub fn feed_source(&self, f: &Feed) -> ApiResult<AnySource> {
+        let mut f = f.clone();
+        f.proxy = None;
+        if f.use_proxy {
+            f.proxy = self.proxy_for(true, f.proxy_id).map_err(|e| ApiError::Internal(format!("could not find proxy for indexer feed: {}", proxy_lookup_text(&e))))?;
+        }
+        new_source(&f)
+    }
+}
+
+/// A failed proxy lookup in the words feeds use.
+fn proxy_lookup_text(e: &ApiError) -> String {
+    match e {
+        ApiError::NotFound(_) => "record not found".into(),
+        e => e.message().to_string(),
     }
 }
 
@@ -812,7 +835,7 @@ impl Releases {
         }
         f.use_proxy = cur.use_proxy;
         f.proxy_id = cur.proxy_id;
-        let mut src = new_source(&f)?.boxed();
+        let mut src = self.feed_source(&f)?.boxed();
         let res = src.fetch(0).await.map_err(ApiError::Internal)?;
         tracing::info!("feed {}: test read {} items", f.name, res.entries.len());
         Ok(())
@@ -824,7 +847,7 @@ impl Releases {
         if f.url.is_empty() {
             return Err(ApiError::Internal("feed URL is required".into()));
         }
-        match new_source(&f)? {
+        match self.feed_source(&f)? {
             AnySource::Znab(s) => s.caps().await.map_err(ApiError::Internal),
             AnySource::Rss(_) => Err(ApiError::Internal(format!("feed type {} has no capabilities", f.kind))),
         }
@@ -848,7 +871,7 @@ impl Releases {
 
     /// The refresh job of feed `f` (autobrr's `newRefreshJob`).
     fn new_refresh_job(&self, f: &Feed) -> ApiResult<RefreshJob> {
-        let src = new_source(f).map_err(|e| wrap(e, &format!("could not create source for feed: {}", f.name)))?;
+        let src = self.feed_source(f).map_err(|e| wrap(e, &format!("could not create source for feed: {}", f.name)))?;
         let repo = Arc::new(DbRepo(self.db.clone()));
         let rel = self.clone();
         let indexer = f.indexer.clone();

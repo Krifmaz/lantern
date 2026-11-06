@@ -1,0 +1,23 @@
+{
+  "source": "autobrr v1.90.0: internal/domain/api.go APIKey, internal/domain/proxy.go Proxy, ProxyUsage, ProxyUsageItem, internal/http/config.go configJson, pkg/version/version.go Release, internal/http/auth.go validate's map, internal/http/encoder.go errorResponse and statusResponse; JSON keys read from the Go struct tags (always: no omitempty; omitempty: may be left out)",
+  "structs": {
+    "APIKey": { "always": ["name", "key", "scopes", "created_at"], "omitempty": [] },
+    "Proxy": { "always": ["id", "name", "enabled", "type", "addr", "user", "pass", "timeout"], "omitempty": [] },
+    "ProxyUsage": { "always": ["indexers", "irc_networks", "feeds"], "omitempty": [] },
+    "ProxyUsageItem": { "always": ["id", "name"], "omitempty": [] },
+    "configJson": {
+      "always": ["application", "config_dir", "database", "host", "port", "log_level", "log_path", "log_max_size", "log_max_backups", "base_url", "check_for_updates", "version", "commit", "date"],
+      "omitempty": []
+    },
+    "Release": {
+      "always": ["created_at", "published_at", "author", "assets"],
+      "omitempty": ["id", "node_id", "url", "html_url", "tag_name", "target_commitish", "name", "body", "draft", "prerelease"]
+    },
+    "validate": { "always": ["username", "auth_method"], "omitempty": ["profile_picture"] },
+    "statusResponse": { "always": ["message"], "omitempty": ["status"] },
+    "errorResponse": { "always": ["message"], "omitempty": ["code", "status"] },
+    "LogfilesResponse": { "always": ["files", "count"], "omitempty": [] },
+    "LogFile": { "always": ["filename", "size_bytes", "size", "updated_at"], "omitempty": [] },
+    "Alert": { "always": ["kind", "severity", "subject"], "omitempty": ["subject_id", "message", "url", "since"] }
+  }
+}

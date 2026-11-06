@@ -134,7 +134,7 @@ pub struct IrcNetwork {
     pub use_proxy: bool,
     /// The proxy's id.
     pub proxy_id: i64,
-    /// The proxy (autobrr's proxies aren't ported: always `null`).
+    /// The proxy as autobrr's API sends it (`null`: Lantern looks it up when the network connects).
     pub proxy: Option<Value>,
     /// Ask the server for IRCv3 bot mode.
     pub bot_mode: bool,
@@ -1127,14 +1127,25 @@ impl Handler {
     /// One connection: connect, register, then read until it drops. Whether it registered, and the problem.
     async fn session(self: &Arc<Self>, g: u64) -> (bool, Option<String>) {
         let net = self.network();
+        // a network set to use a proxy never quietly connects directly (autobrr's `Run`)
+        let mut proxy = None;
         if net.use_proxy && net.proxy_id != 0 {
-            // autobrr's proxies aren't ported, so the proxy can't be loaded: autobrr refuses to connect then
-            self.refuse_connect("configured proxy could not be loaded");
-            return (false, None);
+            let Ok(p) = self.releases.proxy(net.proxy_id) else {
+                self.refuse_connect("configured proxy could not be loaded");
+                return (false, None);
+            };
+            if !p.enabled {
+                self.refuse_connect(&format!("proxy {} is disabled", p.name));
+                return (false, None);
+            }
+            if p.addr.is_empty() {
+                return (false, Some("proxy addr missing".into()));
+            }
+            proxy = Some(p);
         }
         let addr =
             if net.use_bouncer && !net.bouncer_addr.is_empty() { net.bouncer_addr.clone() } else { format!("{}:{}", net.server, net.port) };
-        let wire = match connect(&addr, net.tls, net.tls_skip_verify).await {
+        let wire = match connect(&addr, net.tls, net.tls_skip_verify, proxy.as_ref()).await {
             Ok(w) => w,
             Err(ConnectError::Certificate(e)) => {
                 let e = format!("TLS certificate verification failed: {e}");
@@ -2511,34 +2522,51 @@ impl tokio_rustls::rustls::client::danger::ServerCertVerifier for NoVerify {
     }
 }
 
-/// Connects to `addr` (`host:port`), with TLS when asked.
-async fn connect(addr: &str, tls: bool, skip_verify: bool) -> Result<Box<dyn Wire>, ConnectError> {
-    let (host, port) = addr.rsplit_once(':').ok_or_else(|| ConnectError::Other(format!("{addr} has no port")))?;
-    let host = host.trim_start_matches('[').trim_end_matches(']').to_string();
-    let port: u16 = port.parse().map_err(|_| ConnectError::Other(format!("{addr} has no valid port")))?;
-    let tcp = tokio::time::timeout(Duration::from_secs(20), tokio::net::TcpStream::connect((host.as_str(), port)))
-        .await
-        .map_err(|_| ConnectError::Other(format!("{addr} didn't answer within 20 seconds")))?
-        .map_err(|e| ConnectError::Other(format!("{addr} can't be reached: {e}")))?;
-    let _ = tcp.set_nodelay(true);
-    if !tls {
-        return Ok(Box::new(tcp));
-    }
+/// The TLS settings for an IRC server (or an `https` proxy): the bundled roots, or any certificate when
+/// `skip_verify` (the network's "skip TLS verification").
+pub(crate) fn tls_client_config(skip_verify: bool) -> Result<tokio_rustls::rustls::ClientConfig, String> {
     use tokio_rustls::rustls;
     let provider = Arc::new(rustls::crypto::ring::default_provider());
     let builder = rustls::ClientConfig::builder_with_provider(provider.clone())
         .with_safe_default_protocol_versions()
-        .map_err(|e| ConnectError::Other(format!("TLS can't be set up: {e}")))?;
-    let config = if skip_verify {
+        .map_err(|e| format!("TLS can't be set up: {e}"))?;
+    Ok(if skip_verify {
         builder.dangerous().with_custom_certificate_verifier(Arc::new(NoVerify(provider))).with_no_client_auth()
     } else {
         let mut roots = rustls::RootCertStore::empty();
         roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
         builder.with_root_certificates(roots).with_no_client_auth()
+    })
+}
+
+/// Connects to `addr` (`host:port`), through `proxy` when there is one, with TLS when asked.
+async fn connect(addr: &str, tls: bool, skip_verify: bool, proxy: Option<&super::proxy::Proxy>) -> Result<Box<dyn Wire>, ConnectError> {
+    let (host, port) = addr.rsplit_once(':').ok_or_else(|| ConnectError::Other(format!("{addr} has no port")))?;
+    let host = host.trim_start_matches('[').trim_end_matches(']').to_string();
+    let port: u16 = port.parse().map_err(|_| ConnectError::Other(format!("{addr} has no valid port")))?;
+    let stream: Box<dyn Wire> = match proxy {
+        Some(p) => tokio::time::timeout(Duration::from_secs(20), super::proxy::dial(p, addr, skip_verify))
+            .await
+            .map_err(|_| ConnectError::Other(format!("{addr} didn't answer through the proxy within 20 seconds")))?
+            .map(|s| Box::new(s) as Box<dyn Wire>)
+            .map_err(ConnectError::Other)?,
+        None => {
+            let tcp = tokio::time::timeout(Duration::from_secs(20), tokio::net::TcpStream::connect((host.as_str(), port)))
+                .await
+                .map_err(|_| ConnectError::Other(format!("{addr} didn't answer within 20 seconds")))?
+                .map_err(|e| ConnectError::Other(format!("{addr} can't be reached: {e}")))?;
+            let _ = tcp.set_nodelay(true);
+            Box::new(tcp)
+        }
     };
+    if !tls {
+        return Ok(stream);
+    }
+    use tokio_rustls::rustls;
+    let config = tls_client_config(skip_verify).map_err(ConnectError::Other)?;
     let name = rustls::pki_types::ServerName::try_from(host.clone())
         .map_err(|_| ConnectError::Other(format!("{host} is not a server name TLS can check")))?;
-    tokio_rustls::TlsConnector::from(Arc::new(config)).connect(name, tcp).await.map(|s| Box::new(s) as Box<dyn Wire>).map_err(|e| {
+    tokio_rustls::TlsConnector::from(Arc::new(config)).connect(name, stream).await.map(|s| Box::new(s) as Box<dyn Wire>).map_err(|e| {
         if let Some(rustls::Error::InvalidCertificate(c)) = e.get_ref().and_then(|x| x.downcast_ref::<rustls::Error>()) {
             return ConnectError::Certificate(format!("{c:?}"));
         }

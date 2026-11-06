@@ -804,7 +804,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1542,6 +1542,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "kit-server-updates"
+version = "0.1.0"
+source = "git+https://github.com/Krifmaz/kit?tag=v0.8.0#37f6530471378e219957559c5b95356c4f83883b"
+dependencies = [
+ "axum",
+ "kit-server-core",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "lantern"
 version = "0.0.1"
 dependencies = [
@@ -1573,6 +1587,7 @@ dependencies = [
  "kit-server-notices",
  "kit-server-settings",
  "kit-server-setup",
+ "kit-server-updates",
  "lettre",
  "libc",
  "md-5",
@@ -2133,7 +2148,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2400,7 +2415,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]

@@ -42,6 +42,7 @@ pub mod list_api;
 pub mod macros;
 pub mod notify;
 pub mod notify_api;
+pub mod proxy;
 pub mod push;
 pub mod rejections;
 pub mod release;
@@ -53,6 +54,8 @@ pub mod sanitize;
 pub mod scheduler;
 pub mod shellquote;
 pub mod store;
+pub mod system;
+pub mod system_api;
 pub mod torrent;
 pub mod wildcard;
 
@@ -124,6 +127,8 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
     feed::migrate(db)?;
     list::migrate(db)?;
     notify::migrate(db)?;
+    proxy::migrate(db)?;
+    system::migrate(db)?;
     history::migrate(db)?;
     irc::migrate(db)
 }
@@ -328,6 +333,12 @@ pub struct Releases {
     pub feed_guards: feed::FeedGuards,
     /// The notification senders and the inbox's live events.
     pub notifier: notify::Notifier,
+    /// What a proxy test asks for ([`proxy::TEST_URL`]; tests point it at a stand-in).
+    proxy_test_url: Arc<RwLock<String>>,
+    /// The update check against Lantern's releases (autobrr's update service).
+    pub updates: system::Updates,
+    /// The release the update job told about last.
+    update_last: Arc<system::LastCheck>,
 }
 
 impl Releases {
@@ -344,7 +355,14 @@ impl Releases {
             .connect_timeout(Duration::from_secs(10))
             .build()
             .unwrap_or_default();
+        let proxies: run::ProxyLookup = {
+            let db = db.clone();
+            Arc::new(move |id| proxy::indexer_proxy(&db, id))
+        };
         Releases {
+            proxy_test_url: Arc::new(RwLock::new(proxy::TEST_URL.to_string())),
+            updates: system::Updates::default(),
+            update_last: Arc::default(),
             db,
             library,
             indexers,
@@ -352,7 +370,7 @@ impl Releases {
             settings,
             hub: Arc::new(RwLock::new(Arc::new(push::NoHub))),
             http,
-            downloads: Arc::new(run::HttpDownloader::new()),
+            downloads: Arc::new(run::HttpDownloader::with_proxies(proxies)),
             irc: irc::Irc::default(),
             scheduler: scheduler::Scheduler::default(),
             feed_guards: feed::FeedGuards::default(),
@@ -1052,6 +1070,7 @@ impl Releases {
         self.start_lists();
         self.start_notifications();
         self.start_cleanup_jobs();
+        self.start_app_jobs();
         rss::spawn(self.clone());
     }
 

@@ -28,6 +28,7 @@ kit-server-bugreports = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0"
 kit-server-diagnostics = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
 kit-server-setup = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
 kit-server-settings = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
+kit-server-updates = { git = "https://github.com/Krifmaz/kit", tag = "v0.8.0" }
 axum = { version = "0.8", features = ["multipart", "ws"] }
 axum-extra = { version = "0.10", features = ["cookie"] }
 cookie = "0.18"

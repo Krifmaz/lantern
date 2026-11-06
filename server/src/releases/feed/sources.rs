@@ -18,10 +18,25 @@ use std::time::Duration;
 /// How long a feed request may take without a timeout of its own (autobrr's `defaultTimeout`).
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60);
 
-/// The HTTP client of feed `f`: its timeout (60 seconds by default) and certificate setting (autobrr's
-/// `newHTTPClient`).
+/// The HTTP client of feed `f`: its timeout (60 seconds by default), certificate setting and proxy (autobrr's
+/// `newHTTPClient`). A proxy that can't be used gives a client that fails every request, so the feed never
+/// quietly goes direct.
 pub fn http_client(f: &Feed, cookies: bool) -> reqwest::Client {
     let timeout = if f.timeout > 0 { Duration::from_secs(f.timeout as u64) } else { DEFAULT_TIMEOUT };
+    if let Some(p) = f.proxy.as_ref().filter(|_| f.use_proxy) {
+        return match p.http_client(timeout, f.tls_skip_verify, cookies) {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::error!("feed {}: could not get proxy client: {e}", f.name);
+                // a proxy nobody answers at: every request fails instead of going around the proxy
+                reqwest::Client::builder()
+                    .proxy(reqwest::Proxy::all("http://127.0.0.1:9").expect("a fixed proxy address"))
+                    .timeout(timeout)
+                    .build()
+                    .unwrap_or_default()
+            }
+        };
+    }
     crate::releases::clients::http(timeout, f.tls_skip_verify, cookies)
 }
 

@@ -162,7 +162,7 @@ async fn the_frontends_api_calls_arrive_under_autobrr_api() {
     let (app, _) = server("api").await;
     let cookie = sign_in(&app).await;
     // paths not ported yet: a plain 404 in Lantern's error shape, never the page
-    for path in ["/autobrr/api/config", "/autobrr/api/auth/validate", "/autobrr/api/proxy"] {
+    for path in ["/autobrr/api/not-an-autobrr-path", "/autobrr/api/auth/nothing", "/autobrr/api/proxy/1/nothing"] {
         let (s, h, body) = get(&app, path, Some(&cookie)).await;
         assert_eq!(s, StatusCode::NOT_FOUND, "{path}");
         assert!(h[header::CONTENT_TYPE].to_str().unwrap().starts_with("application/json"), "{path}");

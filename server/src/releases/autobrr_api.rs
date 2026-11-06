@@ -73,8 +73,13 @@ use kit_server_core::{Admin, SignedIn};
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 
-/// autobrr's filter, action and download client routes, relative to its `/api`.
-pub fn router() -> Router<AppState> {
+/// autobrr's routes, relative to its `/api`, behind autobrr's sign-in check ([`super::system_api::guard`]).
+pub fn router(st: &AppState) -> Router<AppState> {
+    routes().merge(super::system_api::router()).layer(axum::middleware::from_fn_with_state(st.clone(), super::system_api::guard))
+}
+
+/// autobrr's filter, action, download client, IRC, indexer, feed, list, release and notification routes.
+fn routes() -> Router<AppState> {
     Router::new()
         .route("/filters", get(filters).post(store_filter))
         .route("/filters/indexers/prune-deprecated", post(prune_deprecated))

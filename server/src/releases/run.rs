@@ -1004,12 +1004,34 @@ async fn transmission_reannounce(c: &transmission::Client, a: &Action, id: i64) 
 pub struct HttpDownloader {
     /// The client used.
     pub http: reqwest::Client,
+    /// The proxy an indexer's downloads go through, by the indexer's id (none: no proxies).
+    pub proxies: Option<ProxyLookup>,
 }
+
+/// The proxy of an indexer, by its id: `None` when it uses none (or its proxy is off).
+pub type ProxyLookup = Arc<dyn Fn(i64) -> Result<Option<super::proxy::Proxy>, String> + Send + Sync>;
 
 impl HttpDownloader {
     /// A downloader that accepts any certificate, as autobrr's does.
     pub fn new() -> HttpDownloader {
-        HttpDownloader { http: clients::http(Duration::from_secs(30), true, false) }
+        HttpDownloader { http: clients::http(Duration::from_secs(30), true, false), proxies: None }
+    }
+
+    /// The same, with each indexer's downloads going through its proxy (autobrr's `DownloadService`).
+    pub fn with_proxies(proxies: ProxyLookup) -> HttpDownloader {
+        HttpDownloader { proxies: Some(proxies), ..HttpDownloader::new() }
+    }
+
+    /// The client for `r`'s indexer: through its proxy when it uses one (`GetProxiedHTTPClient`: 60 seconds).
+    fn client_for(&self, r: &Release) -> Result<reqwest::Client, String> {
+        let Some(lookup) = self.proxies.as_ref().filter(|_| r.indexer.id > 0) else { return Ok(self.http.clone()) };
+        match lookup(r.indexer.id)? {
+            Some(p) => {
+                tracing::debug!("release {}: using proxy {}", r.torrent_name, p.name);
+                p.http_client(Duration::from_secs(60), false, false).map_err(|e| format!("could not get proxied http client: {e}"))
+            }
+            None => Ok(self.http.clone()),
+        }
     }
 }
 
@@ -1029,9 +1051,9 @@ enum Try {
 
 impl HttpDownloader {
     /// One try at fetching `r`'s torrent.
-    async fn try_once(&self, r: &mut Release) -> Result<(), Try> {
+    async fn try_once(&self, http: &reqwest::Client, r: &mut Release) -> Result<(), Try> {
         let ua = "autobrr";
-        let resp = self.http.get(&r.download_url).header("User-Agent", ua).send().await.map_err(|e| {
+        let resp = http.get(&r.download_url).header("User-Agent", ua).send().await.map_err(|e| {
             let m = clients::req_err("Get", &r.download_url, &e);
             if e.is_builder() {
                 Try::Stop(format!("url parse error: {m}"))
@@ -1126,9 +1148,10 @@ impl ReleaseDownloader for HttpDownloader {
             if !r.torrent_data_raw_bytes.is_empty() {
                 return Ok(());
             }
+            let http = self.client_for(r)?;
             let mut last = String::new();
             for attempt in 0..3 {
-                match self.try_once(r).await {
+                match self.try_once(&http, r).await {
                     Ok(()) => return Ok(()),
                     Err(Try::Stop(e)) => return Err(e),
                     Err(Try::Again(e, wait)) => {
