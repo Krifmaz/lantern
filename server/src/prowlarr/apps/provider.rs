@@ -141,7 +141,13 @@ pub enum Options {
     Categories,
     /// An enum's members: (value, name), in order.
     Enum(&'static [(i64, &'static str)]),
+    /// An enum's members as Prowlarr lists them, with their `[FieldOption]` labels, order and hints.
+    Labeled(&'static [Choice]),
 }
+
+/// One choice of a select field: (value, name, order, hint). The order of a member with a `[FieldOption]` is the
+/// line it is declared on in Prowlarr's source (`CallerLineNumber`), as Prowlarr sorts them.
+pub type Choice = (i64, &'static str, i64, &'static str);
 
 /// A settings default (what Prowlarr's settings class sets in its constructor).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -156,6 +162,10 @@ pub enum Initial {
     Bool(bool),
     /// A list of numbers.
     Ints(&'static [i64]),
+    /// A number with a fraction.
+    Double(f64),
+    /// A list of texts.
+    Texts(&'static [&'static str]),
 }
 
 impl Initial {
@@ -167,6 +177,8 @@ impl Initial {
             Initial::Int(i) => json!(i),
             Initial::Bool(b) => json!(b),
             Initial::Ints(l) => json!(l),
+            Initial::Double(d) => json!(d),
+            Initial::Texts(l) => json!(l),
         }
     }
 }
@@ -184,6 +196,10 @@ pub struct FieldSpec {
     pub unit: Option<&'static str>,
     /// Its help text (a localization key or the text itself).
     pub help_text: Option<&'static str>,
+    /// A warning under its help text (a localization key or the text itself).
+    pub help_text_warning: Option<&'static str>,
+    /// A link to more help.
+    pub help_link: Option<&'static str>,
     /// What kind of value it holds.
     pub kind: ValueKind,
     /// How the web app shows it.
@@ -214,6 +230,8 @@ impl FieldSpec {
         label: "",
         unit: None,
         help_text: None,
+        help_text_warning: None,
+        help_link: None,
         kind: ValueKind::Text,
         field_type: FieldType::Textbox,
         advanced: false,
@@ -306,17 +324,40 @@ pub struct ProviderFailure {
     pub attempted: Value,
     /// Only a warning.
     pub is_warning: bool,
+    /// More about what to do (`DetailedDescription`).
+    pub detail: Option<String>,
+    /// Where to read more (`InfoLink`).
+    pub info_link: Option<String>,
 }
 
 impl ProviderFailure {
     /// A failure of `property` saying `message`.
     pub fn new(property: &str, message: impl Into<String>) -> ProviderFailure {
-        ProviderFailure { property: property.into(), message: message.into(), attempted: Value::Null, is_warning: false }
+        ProviderFailure {
+            property: property.into(),
+            message: message.into(),
+            attempted: Value::Null,
+            is_warning: false,
+            detail: None,
+            info_link: None,
+        }
     }
 
     /// The same failure with the value that was checked.
     pub fn with_value(mut self, v: Value) -> ProviderFailure {
         self.attempted = v;
+        self
+    }
+
+    /// The same failure as a warning (`AsWarning`).
+    pub fn warning(mut self) -> ProviderFailure {
+        self.is_warning = true;
+        self
+    }
+
+    /// The same failure with more about what to do.
+    pub fn detailed(mut self, detail: impl Into<String>) -> ProviderFailure {
+        self.detail = Some(detail.into());
         self
     }
 
@@ -326,6 +367,12 @@ impl ProviderFailure {
             json!({ "isWarning": self.is_warning, "propertyName": self.property, "errorMessage": self.message, "severity": "error" });
         if !self.attempted.is_null() {
             v["attemptedValue"] = self.attempted.clone();
+        }
+        if let Some(d) = &self.detail {
+            v["detailedDescription"] = json!(d);
+        }
+        if let Some(l) = &self.info_link {
+            v["infoLink"] = json!(l);
         }
         v
     }
@@ -423,6 +470,19 @@ pub trait Family: Send + Sync + 'static {
         name: &str,
         query: &HashMap<String, String>,
     ) -> impl Future<Output = Result<Value, ApiError>> + Send;
+
+    /// Whether the family has the bulk routes (notifications don't: Prowlarr marks them `NonAction`).
+    const BULK: bool = true;
+
+    /// The checks the family adds to every save (`SharedValidator` in its controller).
+    fn extra_checks(_body: &Map<String, Value>) -> Vec<Option<validation::Failure>> {
+        Vec::new()
+    }
+
+    /// What people should know about an implementation (`ProviderMessage`), `{"message", "type"}`.
+    fn message(_def: &Definition) -> Option<Value> {
+        None
+    }
 
     /// The wiki link of an implementation.
     fn info_link(def: &Definition) -> String {
@@ -538,6 +598,12 @@ pub fn to_schema(imp: &Implementation, settings: &Map<String, Value>, lang: &str
                 let tokens: Vec<(&str, String)> = f.help_tokens.iter().map(|(k, v)| (*k, v.to_string())).collect();
                 v.insert("helpText".into(), json!(localization::localized(lang, h, &tokens).unwrap_or_default()));
             }
+            if let Some(w) = f.help_text_warning {
+                v.insert("helpTextWarning".into(), json!(say(w)));
+            }
+            if let Some(l) = f.help_link {
+                v.insert("helpLink".into(), json!(l));
+            }
             let mut value = settings.get(f.name).cloned().unwrap_or_else(|| f.default.value());
             if f.privacy.secret() && !value.is_null() && value != json!("") {
                 value = json!(MASK);
@@ -560,6 +626,15 @@ pub fn to_schema(imp: &Implementation, settings: &Map<String, Value>, lang: &str
                     let list = members
                         .iter()
                         .map(|(value, name)| json!({ "value": value, "name": name, "order": value, "hint": format!("({value})") }))
+                        .collect();
+                    v.insert("selectOptions".into(), Value::Array(list));
+                }
+                Options::Labeled(choices) => {
+                    let mut choices: Vec<&Choice> = choices.iter().collect();
+                    choices.sort_by_key(|c| c.2);
+                    let list = choices
+                        .iter()
+                        .map(|(value, name, order, hint)| json!({ "value": value, "name": name, "order": order, "hint": hint }))
                         .collect();
                     v.insert("selectOptions".into(), Value::Array(list));
                 }
@@ -726,6 +801,7 @@ fn shared_checks<F: Family>(db: &SqliteDb, body: &Map<String, Value>) -> Result<
     }
     out.push(validation::not_empty("Implementation", text_prop(body, "implementation").as_deref()));
     out.push(validation::not_empty("ConfigContract", text_prop(body, "configContract").as_deref()));
+    out.extend(F::extra_checks(body));
     Ok(out)
 }
 
@@ -769,6 +845,9 @@ pub fn to_resource<F: Family>(def: &Definition, lang: &str) -> Value {
     v.insert("implementation".into(), json!(def.implementation));
     v.insert("configContract".into(), json!(def.config_contract));
     v.insert("infoLink".into(), json!(F::info_link(def)));
+    if let Some(m) = F::message(def) {
+        v.insert("message".into(), m);
+    }
     v.insert("tags".into(), json!(def.tags));
     F::extra_json(def, &mut v);
     Value::Object(v)
@@ -848,9 +927,10 @@ fn answer(status: StatusCode, body: Value, location: Option<String>) -> Response
 /// Every route of family `F` (Prowlarr's `ProviderControllerBase`).
 pub fn routes<F: Family>() -> Router<AppState> {
     let base = format!("/api/v1/{}", F::RESOURCE);
-    Router::new()
+    let router = Router::new();
+    let router = if F::BULK { router.route(&format!("{base}/bulk"), put(bulk_update::<F>).delete(bulk_delete::<F>)) } else { router };
+    router
         .route(&base, get(get_all::<F>).post(create::<F>))
-        .route(&format!("{base}/bulk"), put(bulk_update::<F>).delete(bulk_delete::<F>))
         .route(&format!("{base}/schema"), get(templates::<F>))
         .route(&format!("{base}/test"), post(test::<F>))
         .route(&format!("{base}/testall"), post(test_all::<F>))

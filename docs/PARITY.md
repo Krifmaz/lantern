@@ -74,23 +74,23 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `PUT /api/v1/config/development/{id}` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
 | `GET /api/v1/config/development/{id}` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
 | `GET /api/v1/config/development` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
-| `GET /api/v1/downloadclient/{id}` | P-app | todo | |  |
-| `PUT /api/v1/downloadclient/{id}` | P-app | todo | |  |
-| `DELETE /api/v1/downloadclient/{id}` | P-app | todo | |  |
-| `GET /api/v1/downloadclient` | P-app | todo | |  |
-| `POST /api/v1/downloadclient` | P-app | todo | |  |
-| `PUT /api/v1/downloadclient/bulk` | P-app | todo | |  |
-| `DELETE /api/v1/downloadclient/bulk` | P-app | todo | |  |
-| `GET /api/v1/downloadclient/schema` | P-app | todo | |  |
-| `POST /api/v1/downloadclient/test` | P-app | todo | |  |
-| `POST /api/v1/downloadclient/testall` | P-app | todo | |  |
-| `POST /api/v1/downloadclient/action/{name}` | P-app | todo | |  |
-| `GET /api/v1/config/downloadclient/{id}` | P-app | todo | |  |
-| `PUT /api/v1/config/downloadclient/{id}` | P-app | todo | |  |
-| `GET /api/v1/config/downloadclient` | P-app | todo | |  |
+| `GET /api/v1/downloadclient/{id}` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/apps/downloads/`); one store with the download hub |
+| `PUT /api/v1/downloadclient/{id}` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/apps/downloads/`); one store with the download hub |
+| `DELETE /api/v1/downloadclient/{id}` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/apps/downloads/`); one store with the download hub |
+| `GET /api/v1/downloadclient` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/apps/downloads/`); one store with the download hub |
+| `POST /api/v1/downloadclient` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/apps/downloads/`); one store with the download hub |
+| `PUT /api/v1/downloadclient/bulk` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/apps/downloads/`); one store with the download hub |
+| `DELETE /api/v1/downloadclient/bulk` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/apps/downloads/`); one store with the download hub |
+| `GET /api/v1/downloadclient/schema` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/apps/downloads/`); one store with the download hub |
+| `POST /api/v1/downloadclient/test` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/apps/downloads/`); one store with the download hub |
+| `POST /api/v1/downloadclient/testall` | P-app | done | `server/tests/prowlarr_connect.rs::each_download_client_is_tested_and_sent_to` | ported |
+| `POST /api/v1/downloadclient/action/{name}` | P-app | done |  | ported; no download client has actions, so `null`, as in Prowlarr |
+| `GET /api/v1/config/downloadclient/{id}` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/config.rs`); Prowlarr keeps no settings there, only `{"id": 1}` |
+| `PUT /api/v1/config/downloadclient/{id}` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/config.rs`); Prowlarr keeps no settings there, only `{"id": 1}` |
+| `GET /api/v1/config/downloadclient` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/config.rs`); Prowlarr keeps no settings there, only `{"id": 1}` |
 | `GET /api/v1/filesystem` | P-api | todo | |  |
 | `GET /api/v1/filesystem/type` | P-api | todo | |  |
-| `GET /api/v1/health` | P-api | partial | `server/tests/prowlarr_indexers.rs::sites_on_hold_show_in_status_and_health`, `server/tests/prowlarr_api.rs::localization_and_health` | ported answer; 11 of Prowlarr's 20 checks (the indexer, proxy, VIP and download client ones added) |
+| `GET /api/v1/health` | P-api | partial | `server/tests/prowlarr_indexers.rs::sites_on_hold_show_in_status_and_health`, `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/apps/notifications/mod.rs::tests` | ported answer; 13 of Prowlarr's 20 checks (DownloadClientStatusCheck and NotificationStatusCheck added); changes go to the notifications when the page is read (the scheduler is the next slice) |
 | `GET /api/v1/history` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/history.rs`); no download ids, no auth events yet |
 | `GET /api/v1/history/since` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/history.rs`); no download ids, no auth events yet |
 | `GET /api/v1/history/indexer` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/history.rs`); no download ids, no auth events yet |
@@ -129,20 +129,20 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `GET /{id}/api` | P-idx | done | `server/tests/indexers_prowlarr.rs` `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr`, `searches_follow_prowlarr_limits_holds_and_paging` | ported |
 | `GET /api/v1/indexer/{id}/download` | P-idx | done | `server/tests/indexers_prowlarr.rs` `downloads_follow_prowlarr_grab_limits_redirects_and_file_names` | ported |
 | `GET /{id}/download` | P-idx | done | `server/tests/indexers_prowlarr.rs` `downloads_follow_prowlarr_grab_limits_redirects_and_file_names`, `magnet_links_go_through_lantern_and_can_come_first` | ported |
-| `GET /api/v1/notification/{id}` | P-app | todo | |  |
-| `PUT /api/v1/notification/{id}` | P-app | todo | |  |
-| `DELETE /api/v1/notification/{id}` | P-app | todo | |  |
-| `GET /api/v1/notification` | P-app | todo | |  |
-| `POST /api/v1/notification` | P-app | todo | |  |
-| `GET /api/v1/notification/schema` | P-app | todo | |  |
-| `POST /api/v1/notification/test` | P-app | todo | |  |
-| `POST /api/v1/notification/testall` | P-app | todo | |  |
-| `POST /api/v1/notification/action/{name}` | P-app | todo | |  |
+| `GET /api/v1/notification/{id}` | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); no bulk routes, as in Prowlarr |
+| `PUT /api/v1/notification/{id}` | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); no bulk routes, as in Prowlarr |
+| `DELETE /api/v1/notification/{id}` | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); no bulk routes, as in Prowlarr |
+| `GET /api/v1/notification` | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); no bulk routes, as in Prowlarr |
+| `POST /api/v1/notification` | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); no bulk routes, as in Prowlarr |
+| `GET /api/v1/notification/schema` | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); no bulk routes, as in Prowlarr |
+| `POST /api/v1/notification/test` | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); no bulk routes, as in Prowlarr |
+| `POST /api/v1/notification/testall` | P-app | partial |  | ported (the generic provider route); no test of it yet |
+| `POST /api/v1/notification/action/{name}` | P-app | partial |  | ported; Twitter's sign-in actions are not |
 | `GET /ping` | P-api | done | `server/tests/prowlarr_api.rs::ping_and_status` | ported (`prowlarr/system.rs`); appName is Lantern |
 | `HEAD /ping` | P-api | done | `server/tests/prowlarr_api.rs::ping_and_status` | ported (`prowlarr/system.rs`); appName is Lantern |
-| `POST /api/v1/search` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported; grabs go to Lantern's download clients (Prowlarr's own download clients are not in this slice) |
+| `POST /api/v1/search` | P-api | done | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported; grabs go to Prowlarr's download clients (`DownloadClientProvider` turns) and tell the notifications |
 | `GET /api/v1/search` | P-api | done | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/search.rs`); releases kept 30 minutes for a grab |
-| `POST /api/v1/search/bulk` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported; grabs go to Lantern's download clients |
+| `POST /api/v1/search/bulk` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported; grabs go to Prowlarr's download clients; no bulk grab test yet |
 | `GET /content/{path}` | P-ui | partial | `server/tests/prowlarr_ui.rs::only_content_is_open_without_signing_in`, `::the_manifest_names_the_instance_like_manifest_mapper` | the built files, open to everyone, served at `/prowlarr/Content/` for now (moves to `/` later) |
 | `GET /` | P-ui | partial | | fresh version |
 | `GET /{path}` | P-ui | partial | `server/tests/prowlarr_ui.rs::every_page_is_the_frontend_under_prowlarr`, `::the_page_gets_the_url_base_like_html_mapper_base`, `::pages_are_paths_without_a_dot_outside_content`, `::initialize_json_has_prowlarrs_fields_with_lanterns_api` | Prowlarr's frontend with its URL base set to `/prowlarr` (moves to `/` later); no `?h=` cache breaker |
@@ -314,47 +314,47 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Aria2 | P-app | todo | |  |
-| Blackhole | P-app | todo | |  |
-| Deluge | P-app | partial | | hub client |
-| DownloadStation | P-app | todo | |  |
-| Flood | P-app | todo | |  |
-| FreeboxDownload | P-app | todo | |  |
-| Hadouken | P-app | todo | |  |
-| NzbVortex | P-app | todo | |  |
-| Nzbget | P-app | partial | | hub client |
-| Pneumatic | P-app | todo | |  |
-| QBittorrent | P-app | partial | | hub client |
-| Sabnzbd | P-app | partial | | hub client |
-| Transmission | P-app | partial | | hub client |
-| Vuze | P-app | todo | |  |
-| rTorrent | P-app | partial | | hub client |
-| uTorrent | P-app | todo | |  |
+| Aria2 | P-app | done | `server/tests/prowlarr_connect.rs::each_download_client_is_tested_and_sent_to` | ported (XML-RPC, `downloads/clients.rs`) |
+| Blackhole | P-app | done | `server/tests/prowlarr_connect.rs::each_download_client_is_tested_and_sent_to`, `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (torrent and usenet); writes only inside the data folder |
+| Deluge | P-app | partial | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | through the hub's client; Prowlarr's priority and add paused are not sent |
+| DownloadStation | P-app | partial |  | settings, checks and schema; sending is not ported (the test says so) |
+| Flood | P-app | partial | `server/tests/prowlarr_connect.rs::each_download_client_is_tested_and_sent_to` | ported; of the additional tags only Indexer is added |
+| FreeboxDownload | P-app | partial |  | settings, checks and schema; sending is not ported (the test says so) |
+| Hadouken | P-app | done | `server/tests/prowlarr_connect.rs::each_download_client_is_tested_and_sent_to` | ported (JSON-RPC) |
+| NzbVortex | P-app | partial | `server/tests/prowlarr_connect.rs::each_download_client_is_tested_and_sent_to` | settings, checks and schema; sending is not ported (the test says so) |
+| Nzbget | P-app | partial | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | through the hub's client (v16+); Prowlarr's priority and add paused are not sent |
+| Pneumatic | P-app | done | `server/tests/prowlarr_connect.rs::each_download_client_is_tested_and_sent_to` | ported (.nzb and .strm); writes only inside the data folder |
+| QBittorrent | P-app | partial | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | through the hub's client (API v2); the API key, priority, initial state, sequential order, first and last and content layout are not sent |
+| Sabnzbd | P-app | partial | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | through the hub's client; Prowlarr's priority is not sent |
+| Transmission | P-app | partial | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | through the hub's client; the directory is sent, priority and add paused are not |
+| Vuze | P-app | partial |  | through the hub's Transmission client; no stand-in Vuze test |
+| rTorrent | P-app | partial | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | through the hub's client; the directory is sent, priority and add stopped are not |
+| uTorrent | P-app | partial | `server/tests/prowlarr_connect.rs::each_download_client_is_tested_and_sent_to` | ported (token, add, label); priority and initial state are not sent |
 
 #### Notifications
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Apprise | P-app | todo | |  |
-| CustomScript | P-app | todo | |  |
-| Discord | P-app | todo | |  |
-| Email | P-app | todo | |  |
-| Gotify | P-app | todo | |  |
-| Join | P-app | todo | |  |
-| Mailgun | P-app | todo | |  |
-| Notifiarr | P-app | todo | |  |
-| Ntfy | P-app | todo | |  |
-| Prowl | P-app | todo | |  |
-| PushBullet | P-app | todo | |  |
-| Pushcut | P-app | todo | |  |
-| Pushover | P-app | todo | |  |
-| SendGrid | P-app | todo | |  |
-| Signal | P-app | todo | |  |
-| Simplepush | P-app | todo | |  |
-| Slack | P-app | todo | |  |
-| Telegram | P-app | todo | |  |
-| Twitter | P-app | todo | |  |
-| Webhook | P-app | todo | |  |
+| Apprise | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| CustomScript | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); runs the script itself, no arguments, no shell; "Prowlarr" in titles reads "Lantern" |
+| Discord | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Email | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`) (SMTP through lettre); "Prowlarr" in titles reads "Lantern" |
+| Gotify | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Join | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Mailgun | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Notifiarr | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Ntfy | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Prowl | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| PushBullet | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Pushcut | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Pushover | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| SendGrid | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Signal | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Simplepush | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Slack | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Telegram | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
+| Twitter | P-app | partial |  | settings, checks and schema; Twitter's sign-in and sending are not ported (the test says so) |
+| Webhook | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); "Prowlarr" in titles reads "Lantern" |
 
 #### Native indexers (C#, not Cardigann)
 
@@ -1323,20 +1323,21 @@ cross-seed has no web UI in v6; its daemon, API and CLI are ported. Its settings
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `daemon` | X | todo | |  |
-| `rss` | X | todo | |  |
-| `search` | X | todo | |  |
-| `inject` | X | todo | |  |
-| `restore` | X | todo | |  |
-| `gen-config` | X | todo | |  |
-| `update-torrent-cache-trackers` | X | todo | |  |
-| `diff` | X | todo | |  |
-| `tree` | X | todo | |  |
-| `clear-indexer-failures` | X | todo | |  |
-| `clear-cache` | X | todo | |  |
-| `clear-client-cache` | X | todo | |  |
-| `api-key` | X | todo | |  |
-| `reset-api-key` | X | todo | |  |
+| `daemon` | X | done | `server/tests/crossseed_cli.rs::the_daemon_serves_cross_seeds_api_with_the_given_port_and_key` | `lantern cross-seed daemon`: the daemon API on `--port`/`--host` with `--api-key`, and the jobs on their cadence even while the `cross_seed` setting is off |
+| `rss` | X | done | `server/tests/crossseed_cli.rs::running_commands_check_the_settings_first` | `lantern cross-seed rss`: settings and folders checked first, then one RSS scan |
+| `search` | X | done | `server/tests/crossseed_cli.rs::running_commands_check_the_settings_first` | `lantern cross-seed search`, with `--no-exclude-older`, `--no-exclude-recent-search` and the hidden `--torrents` |
+| `inject` | X | done | `server/tests/crossseed_cli.rs::running_commands_check_the_settings_first` | `lantern cross-seed inject`, with `--inject-dir` and `--ignore-titles` |
+| `restore` | X | done | `server/tests/crossseed_cli.rs::restore_copies_the_torrent_cache_for_inject` | `restoreFromTorrentCache` from `torrent_cache/` in the data folder (Lantern doesn't fill it; bring cross-seed's over) to `outputDir` |
+| `gen-config` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | Lantern's settings are the config file: saves the template values for the `cross_seed_*` settings when none is saved yet, makes `torrent_cache/` |
+| `update-torrent-cache-trackers` | X | done | `server/tests/crossseed_cli.rs::update_torrent_cache_trackers_rewrites_announce_addresses` | on `torrent_cache/` in the data folder; the first match in `announce` and each `announce-list` address, as JavaScript's `replace` |
+| `diff` | X | partial | `server/tests/crossseed_cli.rs::tree_and_diff_print_as_cross_seed_prints` | equal files print as Node prints them; different ones print the `AssertionError` with a line diff, not Node's own diff layout |
+| `tree` | X | done | `server/tests/crossseed_cli.rs::tree_and_diff_print_as_cross_seed_prints` | Node's `util.inspect` of the `Metafile` (80 columns, `compact: 3`, grouped arrays) |
+| `clear-indexer-failures` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | takes every torrent indexer off hold (Lantern's failure count and hold) |
+| `clear-cache` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | `cross_seeds` rows without an info hash, `cross_seed_timestamps` and `cross_seed_searches` |
+| `clear-client-cache` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | `cross_seed_torrents`, `cross_seed_client_searchees`, `cross_seed_data`, `cross_seed_ensemble` |
+| `api-key` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | Lantern's `api_key`, made (24 random bytes) when empty; `--api-key` changes nothing, as in cross-seed |
+| `reset-api-key` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | a new `api_key` (24 random bytes); refused while `APP_API_KEY` sets it |
+| `test-notification` | X | done | `server/tests/crossseed_cli.rs::running_commands_check_the_settings_first` | sends cross-seed's test message to the notification webhooks |
 
 ## FlareSolverr v3.5.2
 

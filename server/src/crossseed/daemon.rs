@@ -86,7 +86,7 @@ fn authorized(xs: &CrossSeed, headers: &HeaderMap, uri: &Uri) -> bool {
         Some(v) => Some(v.to_str().unwrap_or("").to_string()),
         None => url::form_urlencoded::parse(uri.query().unwrap_or("").as_bytes()).find(|(k, _)| k == "apikey").map(|(_, v)| v.into_owned()),
     };
-    let want = xs.hub.settings.str("api_key");
+    let want = xs.api_key();
     !want.is_empty() && given.is_some_and(|g| crate::auth::ct_eq(&g, &want))
 }
 

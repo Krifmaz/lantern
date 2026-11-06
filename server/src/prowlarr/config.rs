@@ -33,6 +33,19 @@ pub fn router() -> Router<AppState> {
         .route("/api/v1/config/ui/{id}", get(get_ui_by_id).put(put_ui))
         .route("/api/v1/config/development", get(get_dev))
         .route("/api/v1/config/development/{id}", get(get_dev_by_id).put(put_dev))
+        .route("/api/v1/config/downloadclient", get(get_download_client).put(put_download_client))
+        .route("/api/v1/config/downloadclient/{id}", get(get_download_client).put(put_download_client))
+}
+
+/// `GET /api/v1/config/downloadclient[/{id}]` (`DownloadClientConfigResource`): Prowlarr's download client
+/// settings page has no settings of its own, so only its id.
+async fn get_download_client(_: V1) -> Json<Value> {
+    Json(json!({ "id": 1 }))
+}
+
+/// `PUT /api/v1/config/downloadclient[/{id}]`: nothing to save; the resource back. 202.
+async fn put_download_client(_: V1) -> (axum::http::StatusCode, Json<Value>) {
+    (axum::http::StatusCode::ACCEPTED, Json(json!({ "id": 1 })))
 }
 
 // ---- reading Prowlarr's settings, with its defaults ----

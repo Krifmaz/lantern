@@ -239,7 +239,7 @@ fn torrent_rows(db: &SqliteDb) -> Vec<(String, String, String)> {
 impl CrossSeed {
     /// The first client and whether it is qBittorrent, and the torrents it has when it isn't (what
     /// `loadTorrentDirLight` and the lookups read `.torrent` files with).
-    async fn torrent_infos(&self, clients: &[Arc<Client>]) -> (Vec<TorrentInClient>, bool) {
+    pub(super) async fn torrent_infos(&self, clients: &[Arc<Client>]) -> (Vec<TorrentInClient>, bool) {
         match clients.first() {
             Some(c) if c.info.client_type == "qbittorrent" => (Vec::new(), true),
             Some(c) => (c.get_all_torrents().await, false),

@@ -373,10 +373,19 @@ impl CrossSeed {
     }
 
     /// `findAllSearchees`: the client torrents (`useClientTorrents`) or `torrentDir`'s, and the data of
-    /// `dataDirs`, labelled `label`.
+    /// `dataDirs`, labelled `label`; only the `.torrent` files of `torrents` when it is given.
     pub async fn find_all_searchees(&self, label: Label, cfg: &RuntimeConfig) -> Vec<Searchee> {
         let _one = self.create_all.lock().await;
         let mut raw: Vec<Searchee> = Vec::new();
+        if let Some(torrents) = &cfg.torrents {
+            // `cross-seed search --torrents`: these files alone
+            let clients = self.clients(cfg).await;
+            let (infos, qbit) = self.torrent_infos(&clients).await;
+            raw.extend(
+                torrents.iter().filter_map(|t| super::index::create_searchee_from_torrent_file(t, &infos, qbit, !clients.is_empty()).ok()),
+            );
+            return raw.into_iter().map(|s| Searchee { label, ..s }).collect();
+        }
         if cfg.use_client_torrents {
             let o = SearcheeOptions { include_files: true, include_trackers: true, ..SearcheeOptions::default() };
             for c in self.clients(cfg).await {

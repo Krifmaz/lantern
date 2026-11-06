@@ -484,3 +484,48 @@ Non-obvious calls, one line each, newest last.
   INBOX_CHANGED), next to `irc`; `logs` still answers "Stream not found!" until the logs slice.
 - 2026-11-06 — The A-api releases slice ships the releases API and the notifications; autobrr's config, updates,
   logs, healthz, API keys, auth and proxies routes are the next slice.
+- 2026-11-06 — One store for download clients: Prowlarr's `prowlarr_download_clients` holds them all, and the
+  hub's `clients`/`client`/`add_client`/`update_client`/`remove_client` read and write it
+  (`prowlarr/apps/downloads/hub.rs`). The hub sees the six kinds it drives; what only the hub has (its exact
+  address, the client's view of the downloads folder, when it was added) sits beside them, and the hub's address
+  gives way to one built from the settings once they change through Prowlarr's API. Old `download_clients` rows
+  are copied in once with their ids; the old table stays.
+- 2026-11-06 — Prowlarr grabs to qBittorrent, Transmission, Vuze, Deluge, rTorrent, SABnzbd and NZBGet go through
+  the hub's clients (category and directory sent; Prowlarr's priority, initial state and paused options not yet).
+  qBittorrent is API v2 only and NZBGet v16+, as the hub's clients are.
+- 2026-11-06 — NZBVortex (always https), Download Station, Freebox and Twitter (sign-in flow) have Prowlarr's
+  settings, schema and checks, but their test and sending say "Lantern can't … yet"; their rows stay partial.
+- 2026-11-06 — Blackhole and Pneumatic folders must be inside the data folder (the container writes nowhere else);
+  the test says so in plain words.
+- 2026-11-06 — "Prowlarr" in notification titles, test messages, provider messages and Prowl's application name
+  reads "Lantern"; CustomScript keeps the `Prowlarr_*` variable names so scripts written for Prowlarr work. The
+  script runs with no arguments and no shell (Prowlarr also refuses arguments).
+- 2026-11-06 — Services at a fixed address (Telegram, Pushover, Join, …) can be pointed at a local stand-in
+  (`notifications::senders::route_fixed_hosts_to`), so tests never reach the internet. Join and Discord get no
+  icon: Lantern has no hosted logo.
+- 2026-11-06 — Health notifications follow `HealthCheckService`: a check that newly finds something, or stops
+  finding it, is sent (not in the first 15 minutes after a start). Until the scheduler lands (next slice) the
+  checks run when `/api/v1/health` is read.
+- 2026-11-06 — A download client's or notification's test only steps its back-off back on success, as Prowlarr's
+  factories do; a send to a notification notes a failure too, as `NotificationService` does.
+- 2026-11-06 — cross-seed's command line is a subcommand of the one binary: `lantern cross-seed <command> …`,
+  next to `--version` and `healthcheck` in `main.rs`, with the rest of the arguments handed to
+  `crossseed::cli::run` (a small parser that reads them as commander 8 does; no clap). It works on `APP_DATA_DIR`
+  as cross-seed's works on its config folder. An option left out keeps Lantern's setting (Lantern's settings are
+  cross-seed's `config.js`); options given are laid over the settings for that run only (`CrossSeed::set_overlay`,
+  never saved) and checked with cross-seed's checks before anything runs, then the folders and clients are
+  checked as `doStartupValidation` does. Problems print without cross-seed's option name and link anchor, since
+  Lantern's checks name the setting in the message. `--torznab` is read but not used (Lantern searches its own
+  indexers); `-v` turns on debug logging.
+- 2026-11-06 — `gen-config` can't write a `config.js` Lantern would read, so it saves cross-seed's template values
+  for the `cross_seed_*` settings when none is saved yet ("Configuration file already exists." otherwise) and makes
+  `torrent_cache/`. `restore` and `update-torrent-cache-trackers` work on `torrent_cache/` in the data folder as
+  cross-seed does; Lantern doesn't fill that folder (it keeps no cache of fetched `.torrent` files), so they help
+  when cross-seed's folder is brought over. `clear-indexer-failures` takes every torrent indexer off hold in
+  Lantern's indexer table (cross-seed's `status`/`retry_after`); `clear-cache` also forgets `cross_seed_searches`
+  (the grabs' last search times).
+- 2026-11-06 — `cross-seed daemon` runs the daemon API on its port and the jobs on their cadence whatever the
+  `cross_seed` setting says, as cross-seed's daemon does; it doesn't start Lantern's web server. `reset-api-key`
+  changes Lantern's `api_key` (cross-seed's `apiKey` is Lantern's), so apps using the old key need the new one,
+  and a running server takes it after a restart. `diff` prints Node's `AssertionError` heading and its fields, with
+  a plain line diff instead of Node's diff layout.

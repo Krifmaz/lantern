@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Added
+- Prowlarr's download clients and notifications. Settings → Download Clients now has all of Prowlarr's
+  download clients, with their settings, checks and tests. The download hub uses the same list. A grab from
+  Lantern's search goes to them the way Prowlarr picks: the indexer's own client first, then the best priority,
+  taking turns. Settings → Connect sends grabs, health issues and fixed health issues to Apprise, Discord, email,
+  Gotify, Join, Mailgun, Notifiarr, ntfy, Prowl, Pushbullet, Pushcut, Pushover, SendGrid, Signal, Simplepush,
+  Slack, Telegram, a webhook or a script of your own. A few are not finished yet, and their test says so:
+  NZBVortex, Download Station, Freebox and Twitter.
+- Cross-seed's command line: `lantern cross-seed <command>` runs cross-seed v6.13.9's commands on the data folder,
+  with its options and output: `daemon`, `rss`, `search`, `inject`, `restore`, `test-notification`, `gen-config`,
+  `update-torrent-cache-trackers`, `diff`, `tree`, `clear-indexer-failures`, `clear-cache`, `clear-client-cache`,
+  `api-key` and `reset-api-key`. Options change the settings for that run only, and are checked as cross-seed
+  checks them before anything runs.
+
 ### Changed
 - Cross-seed now searches and runs its jobs as cross-seed v6.13.9 does. Besides your client torrents, it can search
   the `.torrent` files of a folder (Torrent folder) and the files in your data folders (Data folders, looked into

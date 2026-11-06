@@ -343,7 +343,7 @@ async fn indexers_are_added_checked_changed_and_removed_as_in_prowlarr() {
 #[tokio::test]
 async fn searches_grabs_history_and_stats_answer_as_prowlarr_does() {
     let site = start_tracker().await;
-    let (app, _) = lantern("search").await;
+    let (app, st) = lantern("search").await;
     let (s, v, _) = call(&app, api("POST", "/api/v1/indexer", Some(tracker_body(&app, &site, "Lantern Test Tracker").await))).await;
     assert_eq!(s, StatusCode::CREATED, "{v}");
 
@@ -399,6 +399,20 @@ async fn searches_grabs_history_and_stats_answer_as_prowlarr_does() {
         assert_eq!(stats["indexers"][0][k], want["indexers"][0][k], "{k}");
     }
     assert_eq!(stats["userAgents"][0]["userAgent"], "Prowlarr");
+
+    // with a Prowlarr download client (a blackhole in the data folder) the grab goes there
+    let hole = st.data_dir.join("hole");
+    std::fs::create_dir_all(&hole).unwrap();
+    let (_, schema, _) = call(&app, api("GET", "/api/v1/downloadclient/schema", None)).await;
+    let mut bh = schema.as_array().unwrap().iter().find(|t| t["implementation"] == "TorrentBlackhole").unwrap().clone();
+    bh["name"] = json!("Hole");
+    bh["enable"] = json!(true);
+    set_field(&mut bh, "torrentFolder", json!(hole.display().to_string()));
+    let (s, v, _) = call(&app, api("POST", "/api/v1/downloadclient", Some(bh))).await;
+    assert_eq!(s, StatusCode::CREATED, "{v}");
+    let (s, v, _) = call(&app, api("POST", "/api/v1/search", Some(r.clone()))).await;
+    assert_eq!(s, StatusCode::OK, "{v}");
+    assert!(hole.join("Show.Name.S01E02.1080p.WEB-DL-GRP.torrent").exists());
 }
 
 #[tokio::test]

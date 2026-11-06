@@ -8,6 +8,8 @@
 //! ```text
 //! *    /api/v1/applications[/{id}], /schema, /test, /testall, /bulk, /action/{name}
 //! *    /api/v1/appprofile[/{id}], /schema
+//! *    /api/v1/downloadclient[/{id}], /schema, /test, /testall, /bulk, /action/{name}
+//! *    /api/v1/notification[/{id}], /schema, /test, /testall, /action/{name}
 //! ```
 //!
 //! [`provider`] is the generic provider API (Prowlarr's `ProviderControllerBase`), ready for download clients,
@@ -16,8 +18,10 @@
 pub mod applications;
 pub mod arr;
 pub mod categories;
+pub mod downloads;
 pub mod http;
 pub mod nab;
+pub mod notifications;
 pub mod profiles;
 pub mod provider;
 pub mod status;
@@ -44,6 +48,8 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
     for sql in tables {
         db.execute_batch(&sql).map_err(|e| anyhow::anyhow!("The applications' tables can't be made: {}", e.detail))?;
     }
+    downloads::migrate(db)?;
+    notifications::migrate(db)?;
     profiles::seed(db).map_err(|e| anyhow::anyhow!("The app profiles can't be set up: {}", e.detail))?;
     status::mark_started(crate::auth::now());
     Ok(())
@@ -51,7 +57,11 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
 
 /// The application and app profile routes.
 pub fn router() -> Router<AppState> {
-    Router::new().merge(provider::routes::<Applications>()).merge(profiles::router())
+    Router::new()
+        .merge(provider::routes::<Applications>())
+        .merge(provider::routes::<downloads::DownloadClients>())
+        .merge(provider::routes::<notifications::Notifications>())
+        .merge(profiles::router())
 }
 
 /// `ApplicationStatusCheck` and `ApplicationLongTermStatusCheck`: the enabled apps with valid settings that are
