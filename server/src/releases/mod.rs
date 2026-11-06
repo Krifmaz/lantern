@@ -24,6 +24,7 @@ pub mod announce;
 pub mod api;
 pub mod autobrr_api;
 pub mod clients;
+pub mod cronspec;
 pub mod definition;
 pub mod downloader;
 pub mod external;
@@ -31,12 +32,16 @@ pub mod feed;
 pub mod feed_api;
 pub mod filter;
 pub mod gotemplate;
+pub mod history;
+pub mod history_api;
 pub mod humanize;
 pub mod indexer;
 pub mod irc;
 pub mod list;
 pub mod list_api;
 pub mod macros;
+pub mod notify;
+pub mod notify_api;
 pub mod push;
 pub mod rejections;
 pub mod release;
@@ -118,6 +123,8 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
     indexer::migrate(db)?;
     feed::migrate(db)?;
     list::migrate(db)?;
+    notify::migrate(db)?;
+    history::migrate(db)?;
     irc::migrate(db)
 }
 
@@ -310,6 +317,8 @@ pub struct Releases {
     pub scheduler: scheduler::Scheduler,
     /// Each feed's locks.
     pub feed_guards: feed::FeedGuards,
+    /// The notification senders and the inbox's live events.
+    pub notifier: notify::Notifier,
 }
 
 impl Releases {
@@ -338,6 +347,7 @@ impl Releases {
             irc: irc::Irc::default(),
             scheduler: scheduler::Scheduler::default(),
             feed_guards: feed::FeedGuards::default(),
+            notifier: notify::Notifier::default(),
         }
     }
 
@@ -909,6 +919,8 @@ impl Releases {
         self.start_irc();
         self.start_feeds();
         self.start_lists();
+        self.start_notifications();
+        self.start_cleanup_jobs();
         rss::spawn(self.clone());
     }
 
