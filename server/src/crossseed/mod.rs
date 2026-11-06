@@ -25,6 +25,7 @@
 //! | notification webhooks | [`notify`] | `pushNotifier.ts` |
 //! | adding saved torrents | [`inject`] | `inject.ts` |
 //! | Lantern's page | [`api`] | – |
+//! | `lantern cross-seed <command>` | [`cli`] | `cmd.ts`, `startup.ts`, `auth.ts`, `diff.ts` |
 //!
 //! Searchees are the torrents of cross-seed's torrent clients (by default Lantern's torrent download clients), or
 //! the `.torrent` files of `torrentDir`, and the data of `dataDirs` ([`CrossSeed::find_all_searchees`]); the jobs
@@ -40,6 +41,7 @@
 pub mod action;
 pub mod api;
 pub mod arr;
+pub mod cli;
 pub mod clients;
 pub mod config;
 pub mod constants;
@@ -251,6 +253,21 @@ pub struct CrossSeed {
     candidates: Arc<tokio::sync::Mutex<()>>,
     /// `checkJobs`' lock: one check of the jobs at a time.
     checking: Arc<tokio::sync::Mutex<()>>,
+    /// The settings a command line changes for this run (`lantern cross-seed <command> --option`), over
+    /// Lantern's ([`cli`]).
+    overlay: Arc<Mutex<Option<Arc<Overlay>>>>,
+}
+
+/// Lays a command line's options over the settings read from Lantern's, adding the problems found in them.
+pub type ApplyOptions = Box<dyn Fn(&mut RuntimeConfig, &mut Vec<String>) + Send + Sync>;
+
+/// What a command line changes ([`cli`]): its options laid over Lantern's settings each time they are read, and
+/// whether the jobs run on schedule whatever the `cross_seed` setting says (`cross-seed daemon`).
+pub struct Overlay {
+    /// Lays the options over the settings read from Lantern's; adds the problems found in them.
+    pub apply: ApplyOptions,
+    /// The jobs run on schedule even while the `cross_seed` setting is off.
+    pub scheduled: bool,
 }
 
 /// Now in milliseconds since 1970, as cross-seed counts.
@@ -301,6 +318,7 @@ impl CrossSeed {
             create_all: Arc::new(tokio::sync::Mutex::new(())),
             candidates: Arc::new(tokio::sync::Mutex::new(())),
             checking: Arc::new(tokio::sync::Mutex::new(())),
+            overlay: Arc::new(Mutex::new(None)),
         };
         xs.refresh_jobs();
         xs
@@ -320,14 +338,34 @@ impl CrossSeed {
 
     /// cross-seed's settings from Lantern's, and the problems found in them (cross-seed's words).
     pub fn config(&self) -> (RuntimeConfig, Vec<String>) {
-        let (mut c, mut problems) = RuntimeConfig::from_settings_with(&self.hub.settings, &self.lantern_client_entries());
+        let (mut c, mut problems) = RuntimeConfig::read_settings_with(&self.hub.settings, &self.lantern_client_entries());
         c.output_dir = Some(self.output_dir().to_string_lossy().into_owned());
-        // the folder checks again, now that outputDir is known
-        let dir_messages = config::dir_problems(&RuntimeConfig { output_dir: None, ..c.clone() });
-        problems.retain(|p| !dir_messages.contains(p));
-        problems.extend(config::dir_problems(&c));
+        if let Some(o) = self.overlay() {
+            (o.apply)(&mut c, &mut problems);
+        }
+        problems.extend(config::validate(&mut c));
         problems.extend(config::arr_url_problems(&c));
         (c, problems)
+    }
+
+    /// The command line's changes in effect, if any.
+    pub fn overlay(&self) -> Option<Arc<Overlay>> {
+        self.overlay.lock().ok().and_then(|o| o.clone())
+    }
+
+    /// Lays a command line's options over the settings from now on (`None`: Lantern's settings alone).
+    pub fn set_overlay(&self, o: Option<Overlay>) {
+        if let Ok(mut slot) = self.overlay.lock() {
+            *slot = o.map(Arc::new);
+        }
+    }
+
+    /// The API key the daemon API takes: a command line's `--api-key`, else Lantern's `api_key`.
+    pub fn api_key(&self) -> String {
+        match self.overlay() {
+            Some(_) => self.config().0.api_key.unwrap_or_default(),
+            None => self.hub.settings.str("api_key"),
+        }
     }
 
     /// `outputDir`: `cross-seeds` in the data folder.
@@ -337,7 +375,7 @@ impl CrossSeed {
 
     /// Whether it runs by itself (the `cross_seed` setting).
     pub fn enabled(&self) -> bool {
-        self.hub.settings.bool("cross_seed")
+        self.overlay().is_some_and(|o| o.scheduled) || self.hub.settings.bool("cross_seed")
     }
 
     /// The wait between two searches (cross-seed's `delay`, seconds), so sites aren't flooded.
@@ -362,7 +400,12 @@ impl CrossSeed {
 
     /// What `performAction` needs now.
     async fn action_ctx(&self, cfg: &RuntimeConfig) -> action::Ctx {
-        action::Ctx { clients: self.clients(cfg).await, db: self.db().clone(), cfg: cfg.clone(), output_dir: self.output_dir() }
+        action::Ctx {
+            clients: self.clients(cfg).await,
+            db: self.db().clone(),
+            cfg: cfg.clone(),
+            output_dir: cfg.output_dir.as_ref().map(std::path::PathBuf::from).unwrap_or_else(|| self.output_dir()),
+        }
     }
 
     /// The client torrents, refreshed (cross-seed's `indexTorrentsAndDataDirs` for client torrents): only
