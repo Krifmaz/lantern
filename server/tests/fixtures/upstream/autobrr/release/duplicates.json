@@ -1,0 +1,748 @@
+{
+ "source": "autobrr v1.90.0 internal/database/release_test.go TestReleaseRepo_CheckIsDuplicateRelease",
+ "cases": [
+  {
+   "name": "1",
+   "release_titles": [
+    "Inkheart 2008 BluRay 1080p DD5.1 x264-BADGROUP"
+   ],
+   "release_title": "Inkheart 2008 BluRay 1080p DD5.1 x264-GROUP",
+   "profile": {
+    "Title": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "2",
+   "release_titles": [
+    "That.Movie.2023.BluRay.2160p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.BluRay.720p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.WEB.2160p.x265.DTS-HD-GROUP"
+   ],
+   "release_title": "That.Movie.2023.BluRay.2160p.x265.DTS-HD-GROUP1",
+   "profile": {
+    "Title": true,
+    "Source": true,
+    "Resolution": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "3",
+   "release_titles": [
+    "That.Movie.2023.BluRay.2160p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.BluRay.720p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.WEB.2160p.x265.DTS-HD-GROUP"
+   ],
+   "release_title": "That.Movie.2023.BluRay.2160p.x265.DTS-HD-GROUP1",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "4",
+   "release_titles": [
+    "That.Movie.2023.BluRay.2160p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.BluRay.720p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.WEB.2160p.x265.DTS-HD-GROUP"
+   ],
+   "release_title": "That.Movie.2023.BluRay.2160p.x265.DTS-HD-GROUP1",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "5",
+   "release_titles": [
+    "That.Tv.Show.2023.S01E01.BluRay.2160p.x265.DTS-HD-GROUP"
+   ],
+   "release_title": "That.Tv.Show.2023.S01E01.BluRay.2160p.x265.DTS-HD-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Season": true,
+    "Episode": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Group": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "6",
+   "release_titles": [
+    "That.Tv.Show.2023.S01E01.BluRay.2160p.x265.DTS-HD-GROUP"
+   ],
+   "release_title": "That.Tv.Show.2023.S01E02.BluRay.2160p.x265.DTS-HD-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Season": true,
+    "Episode": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "7",
+   "release_titles": [
+    "That.Tv.Show.2023.S01.BluRay.2160p.x265.DTS-HD-GROUP"
+   ],
+   "release_title": "That.Tv.Show.2023.S01.BluRay.2160p.x265.DTS-HD-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Season": true,
+    "Episode": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Group": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "8",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p AMZN WEB-DL DDP 5.1 SDR H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E10 1080p AMZN WEB-DL DDP 5.1 SDR H.264-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Season": true,
+    "Episode": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Website": true,
+    "Group": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "9",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.HULU.WEB-DL.DDP.5.1.SDR.H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E10 1080p AMZN WEB-DL DDP 5.1 SDR H.264-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Season": true,
+    "Episode": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Website": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "10",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p HULU WEB-DL DDP 5.1 H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.HDR.DV.H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E10 1080p AMZN WEB-DL DDP 5.1 H.264-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Season": true,
+    "Episode": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Website": true,
+    "DynamicRange": true,
+    "Group": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "11",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.HDR.DV.H.264-GROUP",
+    "The Best Show 2020 S04E10 1080p amzn web-dl ddp 5.1 hdr dv h.264-group"
+   ],
+   "release_title": "The Best Show 2020 S04E10 1080p AMZN WEB-DL DDP 5.1 HDR DV H.264-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Season": true,
+    "Episode": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Website": true,
+    "DynamicRange": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "12",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.HDR.DV.H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E10 1080p AMZN WEB-DL DDP 5.1 DV H.264-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Season": true,
+    "Episode": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Website": true,
+    "DynamicRange": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "13",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.HDR.DV.H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E10 Episode Title 1080p AMZN WEB-DL DDP 5.1 HDR DV H.264-GROUP",
+   "profile": {
+    "Title": true,
+    "SubTitle": true,
+    "Year": true,
+    "Season": true,
+    "Episode": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Website": true,
+    "DynamicRange": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "14",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The.Best.Show.2020.S04E10.Episode.Title.1080p.AMZN.WEB-DL.DDP.5.1.HDR.DV.H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E10 Episode Title 1080p AMZN WEB-DL DDP 5.1 HDR DV H.264-GROUP",
+   "profile": {
+    "Title": true,
+    "SubTitle": true,
+    "Year": true,
+    "Season": true,
+    "Episode": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Website": true,
+    "DynamicRange": true,
+    "Group": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "15",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The.Best.Show.2020.S04E10.Episode.Title.1080p.AMZN.WEB-DL.DDP.5.1.HDR.DV.H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E10 Episode Title 1080p AMZN WEB-DL DDP 5.1 HDR DV H.264-GROUP",
+   "profile": {
+    "Title": true,
+    "SubTitle": true,
+    "Season": true,
+    "Episode": true,
+    "DynamicRange": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "16",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The.Best.Show.2020.S04E10.Episode.Title.1080p.AMZN.WEB-DL.DDP.5.1.HDR.DV.H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E11 Episode Title 1080p AMZN WEB-DL DDP 5.1 HDR DV H.264-GROUP",
+   "profile": {
+    "Title": true,
+    "SubTitle": true,
+    "Season": true,
+    "Episode": true,
+    "DynamicRange": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "17",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The.Best.Show.2020.S04E10.Episode.Title.1080p.AMZN.WEB-DL.DDP.5.1.HDR.DV.H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E10 Episode Title REPACK 1080p AMZN WEB-DL DDP 5.1 HDR DV H.264-GROUP",
+   "profile": {
+    "Title": true,
+    "SubTitle": true,
+    "Season": true,
+    "Episode": true,
+    "DynamicRange": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "18",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The.Best.Show.2020.S04E10.Episode.Title.REPACK.1080p.AMZN.WEB-DL.DDP.5.1.HDR.DV.H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E10 Episode Title REPACK 1080p AMZN WEB-DL DDP 5.1 DV H.264-OTHERGROUP",
+   "profile": {
+    "Title": true,
+    "Season": true,
+    "Episode": true,
+    "Repack": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "19",
+   "release_titles": [
+    "The Daily Show 2024-09-21 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The Daily Show 2024-09-21.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The Daily Show 2024-09-21.Guest.1080p.AMZN.WEB-DL.DDP.5.1.H.264-GROUP1"
+   ],
+   "release_title": "The Daily Show 2024-09-21.Other.Guest.1080p.AMZN.WEB-DL.DDP.5.1.H.264-GROUP1",
+   "profile": {
+    "Title": true,
+    "Season": true,
+    "Episode": true,
+    "Year": true,
+    "Month": true,
+    "Day": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "20",
+   "release_titles": [
+    "The Daily Show 2024-09-21 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The Daily Show 2024-09-21.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The Daily Show 2024-09-21.Guest.1080p.AMZN.WEB-DL.DDP.5.1.H.264-GROUP1"
+   ],
+   "release_title": "The Daily Show 2024-09-21 Other Guest 1080p AMZN WEB-DL DDP 5.1 H.264-GROUP1",
+   "profile": {
+    "Title": true,
+    "Season": true,
+    "Episode": true,
+    "Year": true,
+    "Month": true,
+    "Day": true,
+    "SubTitle": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "21",
+   "release_titles": [
+    "The Daily Show 2024-09-21 1080p HULU WEB-DL DDP 5.1 SDR H.264-GROUP",
+    "The Daily Show 2024-09-21.1080p.AMZN.WEB-DL.DDP.5.1.SDR.H.264-GROUP",
+    "The Daily Show 2024-09-21.Guest.1080p.AMZN.WEB-DL.DDP.5.1.H.264-GROUP1"
+   ],
+   "release_title": "The Daily Show 2024-09-22 Other Guest 1080p AMZN WEB-DL DDP 5.1 H.264-GROUP1",
+   "profile": {
+    "Title": true,
+    "Season": true,
+    "Episode": true,
+    "Year": true,
+    "Month": true,
+    "Day": true,
+    "SubTitle": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "22",
+   "release_titles": [
+    "That.Movie.2023.BluRay.2160p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.BluRay.720p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.2160p.BluRay.DTS-HD.5.1.x265-GROUP"
+   ],
+   "release_title": "That.Movie.2023.2160p.BluRay.DD.2.0.x265-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Audio": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "23",
+   "release_titles": [
+    "That.Movie.2023.BluRay.2160p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.BluRay.720p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.2160p.BluRay.DTS-HD.5.1.x265-GROUP"
+   ],
+   "release_title": "That.Movie.2023.2160p.BluRay.DTS-HD.5.1.x265-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Audio": true,
+    "Group": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "24",
+   "release_titles": [
+    "That.Movie.2023.BluRay.2160p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.BluRay.720p.x265.DTS-HD-GROUP",
+    "That.Movie.2023.2160p.BluRay.DD.5.1.x265-GROUP"
+   ],
+   "release_title": "That.Movie.2023.2160p.BluRay.AC3.5.1.x265-GROUP",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Audio": true,
+    "Group": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "25",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Audio": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "26",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 Collectors Edition UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Audio": true,
+    "Group": true,
+    "Hybrid": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "26_1",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 Collectors Edition UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Audio": true,
+    "Group": true,
+    "Hybrid": false
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "27",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX Hybrid-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 Collectors Edition UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Edition": false,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Audio": true,
+    "Group": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "28",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX-FraMeSToR",
+    "Despicable Me 4 2024 Collectors Edition UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX Hybrid-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 Collectors Edition UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Edition": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Audio": true,
+    "Group": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "29",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HDR10 HEVC REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HDR HEVC REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HDR DV HEVC REMUX Hybrid-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "DynamicRange": true,
+    "Audio": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "30",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HDR10 HEVC REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HDR HEVC REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX Hybrid-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HDR DV HEVC REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "DynamicRange": true,
+    "Audio": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "31",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HDR10 HEVC REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HDR HEVC REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 DV HEVC REMUX Hybrid-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HEVC REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "DynamicRange": true,
+    "Audio": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "32",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HDR10 HEVC REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HDR HEVC REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HEVC REMUX Hybrid-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "DynamicRange": true,
+    "Audio": true,
+    "Group": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "33",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 FRENCH UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 GERMAN UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "DynamicRange": true,
+    "Audio": true,
+    "Group": true,
+    "Language": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "34",
+   "release_titles": [
+    "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 FRENCH UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 GERMAN UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 GERMAN UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "DynamicRange": true,
+    "Audio": true,
+    "Group": true,
+    "Language": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "35",
+   "release_titles": [
+    "Despicable Me 4 2024 FRENCH UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR",
+    "Despicable Me 4 2024 GERMAN UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR"
+   ],
+   "release_title": "Despicable Me 4 2024 UHD BluRay 2160p TrueHD Atmos 7.1 HEVC DV REMUX Hybrid-FraMeSToR",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "DynamicRange": true,
+    "Audio": true,
+    "Group": true,
+    "Language": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "36",
+   "release_titles": [
+    "Road House 1989 1080p GER Blu-ray AVC LPCM 2.0-MONUMENT"
+   ],
+   "release_title": "Road House 1989 1080p Blu-ray AVC LPCM 2.0-MONUMENT",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Group": true,
+    "Language": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "37",
+   "release_titles": [
+    "Road House 1989 1080p ITA Blu-ray AVC LPCM 2.0-MONUMENT",
+    "Road House 1989 1080p GER Blu-ray AVC LPCM 2.0-MONUMENT"
+   ],
+   "release_title": "Road House 1989 1080p NOR Blu-ray AVC LPCM 2.0-MONUMENT",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Group": true,
+    "Language": true
+   },
+   "is_duplicate": false
+  },
+  {
+   "name": "38",
+   "release_titles": [
+    "Road House 1989 1080p GER Blu-ray AVC LPCM 2.0-MONUMENT"
+   ],
+   "release_title": "Road House 1989 1080p GER Blu-ray AVC LPCM 2.0-MONUMENT",
+   "profile": {
+    "Title": true,
+    "Year": true,
+    "Source": true,
+    "Codec": true,
+    "Resolution": true,
+    "Group": true,
+    "Language": true
+   },
+   "is_duplicate": true
+  },
+  {
+   "name": "39",
+   "release_titles": [
+    "The Best Show 2020 S04E10 1080p AMZN WEB-DL DDP 5.1 H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.H.264-GROUP",
+    "The.Best.Show.2020.S04E10.1080p.AMZN.WEB-DL.DDP.5.1.HDR.DV.H.264-GROUP"
+   ],
+   "release_title": "The Best Show 2020 S04E10 1080p AMZN WEB-DL DDP 5.1 H.264-GROUP",
+   "profile": {
+    "ReleaseName": true
+   },
+   "is_duplicate": true
+  }
+ ]
+}
