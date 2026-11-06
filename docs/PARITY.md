@@ -58,10 +58,10 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `POST /login` | P-ui | todo | |  |
 | `GET /login` | P-ui | todo | |  |
 | `GET /logout` | P-ui | todo | |  |
-| `GET /api/v1/system/backup` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/system.rs`); updates come from Lantern's release notes |
-| `DELETE /api/v1/system/backup/{id}` | P-api | todo | |  |
-| `POST /api/v1/system/backup/restore/{id}` | P-api | todo | |  |
-| `POST /api/v1/system/backup/restore/upload` | P-api | todo | |  |
+| `GET /api/v1/system/backup` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates`, `server/tests/prowlarr_system.rs::backups_are_made_listed_deleted_and_restored_only_when_asked` | ported (`prowlarr/backup.rs`); Lantern's zips are `lantern_backup_v…zip` |
+| `DELETE /api/v1/system/backup/{id}` | P-api | done | `server/tests/prowlarr_system.rs::backups_are_made_listed_deleted_and_restored_only_when_asked` | ported (`prowlarr/backup.rs`) |
+| `POST /api/v1/system/backup/restore/{id}` | P-api | done | `server/tests/prowlarr_system.rs::backups_are_made_listed_deleted_and_restored_only_when_asked` | ported (`prowlarr/backup.rs`): put aside, swapped in at the next start; the replaced database is kept |
+| `POST /api/v1/system/backup/restore/upload` | P-api | done | `server/tests/prowlarr_system.rs::backups_are_made_listed_deleted_and_restored_only_when_asked` | ported (`prowlarr/backup.rs`); .zip and .db; a Prowlarr zip or config.xml is refused in words |
 | `GET /api/v1/command/{id}` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported queue (`prowlarr/commands.rs`); commands Lantern can't run yet answer as unknown |
 | `DELETE /api/v1/command/{id}` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported queue (`prowlarr/commands.rs`); commands Lantern can't run yet answer as unknown |
 | `POST /api/v1/command` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported queue (`prowlarr/commands.rs`); commands Lantern can't run yet answer as unknown |
@@ -122,9 +122,9 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `GET /api/v1/indexerstatus` | P-api | done | `server/tests/prowlarr_indexers.rs::sites_on_hold_show_in_status_and_health` | ported |
 | `GET /api/v1/localization` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/localization.rs::tests` | ported; Prowlarr's strings copied as data (GPL-3.0) |
 | `GET /api/v1/localization/options` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/localization.rs::tests` | ported; Prowlarr's strings copied as data (GPL-3.0) |
-| `GET /api/v1/log` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
-| `GET /api/v1/log/file` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
-| `GET /api/v1/log/file/{filename}` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
+| `GET /api/v1/log` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates`, `server/tests/prowlarr_system.rs::the_log_writer_fills_the_log_page_and_files`, `server/src/prowlarr/logwriter.rs::tests` | ported (`prowlarr/logs.rs`); filled by the log writer (`prowlarr/logwriter.rs`) |
+| `GET /api/v1/log/file` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates`, `server/tests/prowlarr_system.rs::the_log_writer_fills_the_log_page_and_files`, `server/src/prowlarr/logwriter.rs::tests` | ported (`prowlarr/logs.rs`); `lantern.txt`, `.debug.txt`, `.trace.txt` written by the log writer |
+| `GET /api/v1/log/file/{filename}` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates`, `server/tests/prowlarr_system.rs::the_log_writer_fills_the_log_page_and_files`, `server/src/prowlarr/logwriter.rs::tests` | ported (`prowlarr/logs.rs`); written by the log writer |
 | `GET /api/v1/indexer/{id}/newznab` | P-idx | done | `server/tests/indexers_prowlarr.rs` `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr` | ported |
 | `GET /{id}/api` | P-idx | done | `server/tests/indexers_prowlarr.rs` `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr`, `searches_follow_prowlarr_limits_holds_and_paging` | ported |
 | `GET /api/v1/indexer/{id}/download` | P-idx | done | `server/tests/indexers_prowlarr.rs` `downloads_follow_prowlarr_grab_limits_redirects_and_file_names` | ported |
@@ -164,8 +164,8 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `GET /api/v1/config/ui/{id}` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
 | `GET /api/v1/config/ui` | P-api | done | `server/tests/prowlarr_api.rs::ui_and_development_settings` | ported (`prowlarr/config.rs`) |
 | `GET /api/v1/update` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/system.rs`); updates come from Lantern's release notes |
-| `GET /api/v1/log/file/update` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
-| `GET /api/v1/log/file/update/{filename}` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); nothing writes the log table or files yet |
+| `GET /api/v1/log/file/update` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); Lantern has no built-in updater to write update logs |
+| `GET /api/v1/log/file/update/{filename}` | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported answers (`prowlarr/logs.rs`); Lantern has no built-in updater to write update logs |
 | Newznab/Torznab `t=caps` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/tests/indexers_prowlarr.rs` `caps_of_the_test_indexer_match_prowlarr`, `caps_of_a_cardigann_definition_match_prowlarr`; `server/tests/indexers_proxies.rs` `newznab_capabilities_come_from_the_api_once`; `server/src/indexers/newznab_caps.rs` (Prowlarr's `NewznabCapabilitiesProviderFixture`) | generic Newznab/Torznab indexers read the remote caps (kept 7 days, stored with the indexer) |
 | Newznab/Torznab `t=search` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/tests/indexers_prowlarr.rs` `search_answers_match_prowlarr`, `searches_follow_prowlarr_limits_holds_and_paging` | ported |
 | Newznab/Torznab `t=tvsearch` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/src/indexers/newznab_request.rs` `reads_parameters_like_aspnet`, `should_normalize_imdbid_search_criteria`; `server/tests/indexers_prowlarr.rs` `searches_follow_prowlarr_limits_holds_and_paging` | ported |
@@ -174,7 +174,7 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | Newznab/Torznab `t=book` (all of Prowlarr's parameters and answer fields) | P-idx | done | `server/src/indexers/newznab_request.rs` `music_and_book_searches_take_every_prowlarr_parameter` | ported |
 | Newznab/Torznab errors (codes 100–910 as Prowlarr answers them) | P-idx | done | `server/tests/indexers_prowlarr.rs` `errors_match_prowlarr`, `the_api_key_parameters_and_the_test_indexer_answer_like_prowlarr` | ported (Prowlarr answers 200, 201, 202, 410, 429 and an empty 401) |
 | `apikey` in query or `X-Api-Key` header; `/api/v1/…` behind forms/basic/external auth | P-api | done | `server/tests/prowlarr_api.rs::the_key_or_a_session_is_needed_like_prowlarr` | ported (`prowlarr::V1`); forms means Lantern's own sign-in |
-| SignalR `/signalr/messages` (live updates the web UI listens to) | P-api | partial | `server/tests/prowlarr_indexers.rs::live_updates_come_over_signalr` | ported negotiate and the JSON hub over WebSockets (`prowlarr/signalr.rs`); indexer and command updates; no long polling or health pushes yet |
+| SignalR `/signalr/messages` (live updates the web UI listens to) | P-api | partial | `server/tests/prowlarr_indexers.rs::live_updates_come_over_signalr`, `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health` | ported negotiate and the JSON hub over WebSockets (`prowlarr/signalr.rs`); indexer, command and health updates; no long polling yet |
 
 ### Settings
 
@@ -194,8 +194,8 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `Username` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; renames the owner |
 | `Password` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; sets the owner's password (shown masked) |
 | `PasswordConfirmation` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; checked with Password |
-| `LogLevel` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
-| `LogSizeLimit` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `LogLevel` | P-api | done | `server/tests/prowlarr_system.rs::the_log_writer_fills_the_log_page_and_files`, `server/src/prowlarr/logwriter.rs::tests` | acted on by the log writer: which log files are written |
+| `LogSizeLimit` | P-api | partial | `server/tests/prowlarr_system.rs::the_log_writer_fills_the_log_page_and_files`, `server/src/prowlarr/logwriter.rs::tests` | acted on by the log writer (files roll over past it); the test rolls with a fixed size |
 | `ConsoleLogLevel` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
 | `Branch` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
 | `ApiKey` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; Lantern's API key; changed by ResetApiKey |
@@ -217,9 +217,9 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `ProxyBypassFilter` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
 | `ProxyBypassLocalAddresses` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
 | `CertificateValidation` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
-| `BackupFolder` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
-| `BackupInterval` | P-api | done | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | ported; the backup task's interval |
-| `BackupRetention` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
+| `BackupFolder` | P-api | done | `server/tests/prowlarr_system.rs::backups_are_made_listed_deleted_and_restored_only_when_asked` | acted on (`prowlarr/backup.rs`); a folder outside the data folder is refused in words |
+| `BackupInterval` | P-api | done | `server/src/prowlarr/scheduler.rs::tests::the_backup_task_follows_the_backup_interval_in_days` | acted on: the backup task's interval |
+| `BackupRetention` | P-api | done | `server/tests/prowlarr_system.rs::backups_are_made_listed_deleted_and_restored_only_when_asked` | acted on: scheduled backups past it are deleted |
 | `HistoryCleanupDays` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
 | `TrustCgnatIpAddresses` | P-api | partial | `server/tests/prowlarr_api.rs::host_settings_have_prowlarrs_fields_defaults_and_checks` | stored and checked like Prowlarr; not acted on yet |
 
@@ -244,7 +244,7 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `ConsoleLogLevel` | P-api | partial | `server/tests/prowlarr_api.rs::ui_and_development_settings` | stored like Prowlarr; not acted on yet |
 | `LogSql` | P-api | partial | `server/tests/prowlarr_api.rs::ui_and_development_settings` | stored like Prowlarr; not acted on yet |
 | `LogIndexerResponse` | P-api | partial | `server/tests/prowlarr_api.rs::ui_and_development_settings` | stored like Prowlarr; not acted on yet |
-| `LogRotate` | P-api | partial | `server/tests/prowlarr_api.rs::ui_and_development_settings` | stored like Prowlarr; not acted on yet |
+| `LogRotate` | P-api | partial | `server/tests/prowlarr_system.rs::the_log_writer_fills_the_log_page_and_files`, `server/src/prowlarr/logwriter.rs::tests` | acted on by the log writer (old files kept); the test rolls with a fixed count |
 | `FilterSentryEvents` | P-api | partial | `server/tests/prowlarr_api.rs::ui_and_development_settings` | stored like Prowlarr; not acted on yet |
 
 #### Indexer (every indexer, besides its definition's own fields)
@@ -584,32 +584,32 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `MessagingCleanupCommand` every 5 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
-| `ClearExpiredCacheCommand` every 5 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
-| `ApplicationUpdateCheckCommand` every 6 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
-| `CheckHealthCommand` every 6 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
-| `HousekeepingCommand` every 24 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
-| `CleanUpHistoryCommand` every 24 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
-| `IndexerDefinitionUpdateCommand` every 24 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
-| `ApplicationIndexerSyncCommand` every 6 * 60 min | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; queued every 6 h by the app sync watcher (`prowlarr/apps/sync.rs`, P-app); no test of the schedule yet |
-| `BackupCommand` (backup interval setting) | P-api | partial | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | listed with Prowlarr's interval; no scheduler runs it yet |
+| `MessagingCleanupCommand` every 5 min | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | run by the scheduler (`prowlarr/scheduler.rs`) |
+| `ClearExpiredCacheCommand` every 5 min | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | run by the scheduler; nothing to clear (Lantern's caches expire as they are read) |
+| `ApplicationUpdateCheckCommand` every 6 * 60 min | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | run by the scheduler; the check itself only looks (Lantern updates by image) |
+| `CheckHealthCommand` every 6 * 60 min | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | run by the scheduler; sends SignalR `health` `sync` |
+| `HousekeepingCommand` every 24 * 60 min | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | run by the scheduler |
+| `CleanUpHistoryCommand` every 24 * 60 min | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | run by the scheduler |
+| `IndexerDefinitionUpdateCommand` every 24 * 60 min | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | run by the scheduler while `definitions_auto_update` is on |
+| `ApplicationIndexerSyncCommand` every 6 * 60 min | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | run by the scheduler with `forceSync` false (moved from the app sync watcher) |
+| `BackupCommand` (backup interval setting) | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | run by the scheduler; interval from `BackupInterval` days (1 to 7) |
 
 #### Commands (`POST /api/v1/command`)
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
 | `ApplicationIndexerSyncCommand` | P-api | done | `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step` | ported by P-app (`prowlarr/commands.rs` runs `prowlarr/apps/sync.rs`), with `forceSync` |
-| `ApplicationUpdateCheckCommand` | P-api | todo | |  |
+| `ApplicationUpdateCheckCommand` | P-api | partial | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | completes without looking for a release (Lantern updates by image) |
 | `ApplicationUpdateCommand` | P-api | todo | |  |
-| `BackupCommand` | P-api | todo | |  |
+| `BackupCommand` | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests`, `server/tests/prowlarr_system.rs::backups_are_made_listed_deleted_and_restored_only_when_asked` | ported (`prowlarr/backup.rs`): manual or scheduled, with the retention |
 | `CheckHealthCommand` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported (`prowlarr/commands.rs`) |
 | `CleanupHistoryCommand` | P-api | todo | |  |
-| `ClearExpiredCacheCommand` | P-api | todo | |  |
+| `ClearExpiredCacheCommand` | P-api | done | `server/tests/prowlarr_system.rs::the_scheduler_queues_due_tasks_and_pushes_health`, `server/src/prowlarr/scheduler.rs::tests` | completes; nothing to clear |
 | `ClearHistoryCommand` | P-api | todo | |  |
 | `ClearLogCommand` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/commands.rs`) |
 | `DeleteLogFilesCommand` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/commands.rs`) |
 | `DeleteUpdateLogFilesCommand` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/commands.rs`) |
-| `HousekeepingCommand` | P-api | todo | |  |
+| `HousekeepingCommand` | P-api | done | `server/tests/prowlarr_system.rs::housekeeping_tidies_prowlarrs_tables` | ported the housekeepers whose tables Lantern has (`prowlarr/scheduler.rs`) |
 | `IndexerDefinitionUpdateCommand` | P-api | partial | | runs Lantern's definition update; no test yet (it needs the network) |
 | `MessagingCleanupCommand` | P-api | done | `server/tests/prowlarr_api.rs::tasks_logs_backups_and_updates` | ported (`prowlarr/commands.rs`) |
 | `ResetApiKeyCommand` | P-api | done | `server/tests/prowlarr_api.rs::commands_queue_run_and_report_like_prowlarr` | ported (`prowlarr/commands.rs`) |

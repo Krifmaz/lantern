@@ -3,6 +3,16 @@
 ## Unreleased
 
 ### Added
+- Prowlarr's scheduled tasks now run on their own: every 30 seconds Lantern starts each task whose time is up
+  (health checks, app sync every 6 hours, backups, clean-ups, housekeeping and the daily definition update), and
+  System → Tasks shows when each ran. The health page updates by itself after each check. When Lantern starts
+  on a new version, the notifications on for application updates are told.
+- Backups in Prowlarr's way: System → Backup makes, lists, downloads, deletes and restores backups (a zip of
+  Lantern's database). Scheduled backups older than the backup retention are deleted. A restore only happens when
+  you ask for one, and takes effect the next time Lantern starts; the database it replaces is kept beside it.
+- System → Logs now shows what Lantern logs, page by page and by level, and the log files (`lantern.txt`, and the
+  debug and trace files when the log level asks for them). Passwords, API keys and other secrets are taken out
+  first, as Prowlarr does.
 - Prowlarr's download clients and notifications. Settings → Download Clients now has all of Prowlarr's
   download clients, with their settings, checks and tests. The download hub uses the same list. A grab from
   Lantern's search goes to them the way Prowlarr picks: the indexer's own client first, then the best priority,

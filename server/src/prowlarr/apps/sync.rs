@@ -25,7 +25,7 @@ use super::provider::{self, Definition};
 use super::{profiles, status};
 use crate::AppState;
 use kit_server_core::{p, Db, RowExt, SqliteDb};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -537,47 +537,16 @@ pub fn reset_watcher(st: &AppState) {
     }
 }
 
-/// The command's body as Prowlarr's scheduler queues it.
-fn scheduled_body(last_execution: f64) -> Value {
-    json!({
-        "forceSync": false,
-        "sendUpdatesToClient": true,
-        "updateScheduledTask": true,
-        "completionMessage": "Completed",
-        "requiresDiskAccess": false,
-        "isExclusive": false,
-        "isTypeExclusive": false,
-        "name": "ApplicationIndexerSync",
-        "lastExecutionTime": super::super::date(last_execution),
-        "trigger": "scheduled",
-        "suppressMessages": false,
-    })
-}
-
-/// Queues `ApplicationIndexerSync` when its six hours are up (Prowlarr's scheduler, for this task).
-fn schedule(st: &AppState) {
-    let row = st.db.one("SELECT interval, last_execution FROM prowlarr_tasks WHERE type_name LIKE '%.ApplicationIndexerSyncCommand'", p![]);
-    let Ok(Some(r)) = row else { return };
-    let last = r.f("last_execution");
-    if crate::auth::now() < last + r.i("interval") as f64 * 60.0 {
-        return;
-    }
-    let Some(kind) = super::super::commands::KINDS.iter().find(|k| k.name == "ApplicationIndexerSync") else { return };
-    if let Err(e) = super::super::commands::push(st, kind, scheduled_body(last), -1, 2) {
-        tracing::warn!("App sync couldn't be queued: {}", e.detail);
-    }
-}
-
 /// How often the watcher looks, in seconds.
 const WATCH_EVERY: u64 = 5;
 
-/// Starts the watcher: it takes over imported apps, handles indexer changes and queues the six-hourly sync.
+/// Starts the watcher: it takes over imported apps and handles indexer changes (the six-hourly sync is queued by
+/// the scheduler, `prowlarr/scheduler.rs`).
 pub fn spawn(st: AppState) {
     tokio::spawn(async move {
         loop {
             applications::take_imported(&st);
             check_changes(&st).await;
-            schedule(&st);
             tokio::time::sleep(std::time::Duration::from_secs(WATCH_EVERY)).await;
         }
     });

@@ -46,15 +46,19 @@ pub fn router() -> Router<AppState> {
         .route("/api/v1/system/routes", get(routes))
         .route("/api/v1/system/task", get(tasks))
         .route("/api/v1/system/task/{id}", get(task))
-        .route("/api/v1/system/backup", get(backups))
         .route("/api/v1/update", get(updates))
 }
 
 /// Saves Prowlarr's scheduled tasks the first time (last run: now), and sets their intervals as Prowlarr does at
-/// every start.
+/// every start (`TaskManager.Handle(ApplicationStartedEvent)`); a task that is no longer one of them is removed.
 pub fn seed_tasks(db: &SqliteDb) -> kit_server_core::Result<()> {
     let now = crate::auth::now();
     let _ = STARTED.set(now);
+    for r in db.query("SELECT id, type_name FROM prowlarr_tasks", p![])? {
+        if !TASKS.iter().any(|(t, _)| *t == r.s("type_name")) {
+            db.execute("DELETE FROM prowlarr_tasks WHERE id=?", p![r.i("id")])?;
+        }
+    }
     for (type_name, interval) in TASKS {
         let interval = if interval == 0 { backup_interval(db) } else { interval };
         db.execute(
@@ -254,44 +258,6 @@ pub fn backup_folder(st: &AppState) -> std::path::PathBuf {
 pub fn hash_int31(text: &str) -> i64 {
     let h = Sha1::digest(text.as_bytes());
     (i32::from_le_bytes([h[0], h[1], h[2], h[3]]) & 0x7fff_ffff) as i64
-}
-
-/// `GET /api/v1/system/backup`: the backup files (Prowlarr's and Lantern's) in the backup folder's `scheduled`,
-/// `manual` and `update` folders, newest first.
-async fn backups(State(st): State<AppState>, _: V1) -> ApiResult<Json<Value>> {
-    let re = regex::Regex::new(r"(?i)(nzbdrone|prowlarr|lantern)_backup_v?[._0-9]+\.zip").expect("a fixed pattern");
-    let root = backup_folder(&st);
-    let mut list: Vec<(f64, Value)> = Vec::new();
-    for (kind, type_name) in [("scheduled", "Scheduled"), ("manual", "Manual"), ("update", "Update")] {
-        let Ok(dir) = std::fs::read_dir(root.join(kind)) else { continue };
-        for entry in dir.flatten() {
-            let path = entry.path();
-            let name = entry.file_name().to_string_lossy().into_owned();
-            if !re.is_match(&path.to_string_lossy()) {
-                continue;
-            }
-            let meta = entry.metadata().ok();
-            let time = meta
-                .as_ref()
-                .and_then(|m| m.modified().ok())
-                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                .map(|d| d.as_secs_f64())
-                .unwrap_or(0.0);
-            list.push((
-                time,
-                json!({
-                    "id": hash_int31(&format!("backup-{type_name}-{name}")),
-                    "name": name,
-                    "path": format!("/backup/{kind}/{name}"),
-                    "type": kind,
-                    "size": meta.map(|m| m.len()).unwrap_or(0),
-                    "time": date(time),
-                }),
-            ));
-        }
-    }
-    list.sort_by(|a, b| b.0.total_cmp(&a.0));
-    Ok(Json(Value::Array(list.into_iter().map(|(_, v)| v).collect())))
 }
 
 /// `GET /api/v1/update`: Lantern's releases (from the release notes built into this server) as Prowlarr's

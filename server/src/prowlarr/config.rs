@@ -118,6 +118,26 @@ pub fn backup_folder_setting(db: &SqliteDb) -> String {
     text(db, "backupfolder", "Backups")
 }
 
+/// `BackupRetention` in days (default 28).
+pub fn backup_retention(db: &SqliteDb) -> i64 {
+    int(db, "backupretention", 28)
+}
+
+/// `LogLevel` (default `debug`), in lower case.
+pub fn log_level(db: &SqliteDb) -> String {
+    text(db, "loglevel", "debug").to_lowercase()
+}
+
+/// `LogSizeLimit` in megabytes (default 1, 1 to 10).
+pub fn log_size_limit(db: &SqliteDb) -> i64 {
+    int(db, "logsizelimit", 1).clamp(1, 10)
+}
+
+/// `LogRotate`: how many old log files are kept (default 50).
+pub fn log_rotate(db: &SqliteDb) -> i64 {
+    int(db, "logrotate", 50)
+}
+
 /// `UILanguage` (default `en`).
 pub fn ui_language(db: &SqliteDb) -> String {
     text(db, "uilanguage", "en")

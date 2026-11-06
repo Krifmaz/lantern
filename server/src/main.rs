@@ -26,10 +26,21 @@ async fn main() -> anyhow::Result<()> {
         }
         _ => {}
     }
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
-        .init();
+    {
+        // the console as before, and Prowlarr's log table and log files (`prowlarr::logwriter`) beside it
+        use tracing_subscriber::layer::SubscriberExt;
+        use tracing_subscriber::util::SubscriberInitExt;
+        use tracing_subscriber::Layer;
+        let console = tracing_subscriber::fmt::layer()
+            .with_filter(tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()));
+        tracing_subscriber::registry().with(console).with(server::prowlarr::logwriter::Layer).init();
+    }
     let st = server::AppState::from_env().await?;
+    server::prowlarr::logwriter::attach(server::prowlarr::logwriter::Writer {
+        db: st.db.clone(),
+        folder: server::prowlarr::logs::log_folder(&st),
+    });
+    server::prowlarr::scheduler::spawn(st.clone());
     server::spawn_definition_updates(st.clone());
     server::spawn_hub(st.clone());
     server::spawn_keeper(st.clone());

@@ -154,6 +154,8 @@ impl AppState {
             move |name: &str| env(name)
         };
         std::fs::create_dir_all(data).map_err(|e| anyhow::anyhow!("The data folder {} can't be made: {e}", data.display()))?;
+        // a backup restored through Prowlarr's API takes the database's place now, before it opens
+        prowlarr::backup::apply_waiting_restore(data)?;
         let db = SqliteDb::open(&data.join("app.db")).map_err(|e| anyhow::anyhow!("The database can't be opened: {}", e.detail))?;
         auth::migrate(&db)?;
         indexers::migrate(&db)?;
@@ -485,24 +487,20 @@ pub mod prowlarr_ui {
     }
 }
 
-/// Keeps the indexer definitions current: at start when there are none, then once a day, while the
-/// `definitions_auto_update` setting is on.
+/// Gets the indexer definitions at start when there are none (or `APP_UPDATE_DEFINITIONS_AT_START` is set), while
+/// the `definitions_auto_update` setting is on. The daily update is Prowlarr's `IndexerDefinitionUpdate` task,
+/// queued by the scheduler (`prowlarr/scheduler.rs`).
 pub fn spawn_definition_updates(st: AppState) {
     tokio::spawn(async move {
-        let mut first = true;
-        loop {
-            let due = st.settings.bool("definitions_auto_update")
-                && (!first || st.indexers.library.is_empty() || std::env::var("APP_UPDATE_DEFINITIONS_AT_START").is_ok());
-            if due {
-                let source = st.settings.str("definitions_source");
-                let source = if source.is_empty() { indexers::library::DEFAULT_SOURCE.to_string() } else { source };
-                match st.indexers.library.update(&source).await {
-                    Ok(n) => tracing::info!("{n} indexer definitions updated"),
-                    Err(e) => tracing::warn!("{e}"),
-                }
+        let due = st.settings.bool("definitions_auto_update")
+            && (st.indexers.library.is_empty() || std::env::var("APP_UPDATE_DEFINITIONS_AT_START").is_ok());
+        if due {
+            let source = st.settings.str("definitions_source");
+            let source = if source.is_empty() { indexers::library::DEFAULT_SOURCE.to_string() } else { source };
+            match st.indexers.library.update(&source).await {
+                Ok(n) => tracing::info!("{n} indexer definitions updated"),
+                Err(e) => tracing::warn!("{e}"),
             }
-            first = false;
-            tokio::time::sleep(std::time::Duration::from_secs(24 * 3600)).await;
         }
     });
 }
