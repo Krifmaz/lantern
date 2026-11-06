@@ -30,6 +30,12 @@
   rules. A copy goes in the same category as the torrent it matches, tagged `cross-seed`. With linking, it goes under
   `cross-seed-link`. With "Own category for matches" turned on, it goes under `<category>.cross-seed` instead.
 
+- The release log, notifications and duplicate checks now work as autobrr v1.90.0's do. Every release a filter
+  sends is kept with each action's result, so the Releases page, the Dashboard's stats and Retry work. Filters can
+  skip a release you already grabbed (duplicate profiles) and older episodes (Smart episode). Cleanup jobs delete
+  old releases on a schedule. Notifications go to Discord, Notifiarr, Pushover, Telegram, Gotify, ntfy, LunaSea,
+  Shoutrrr, Bark, any webhook, or the built-in inbox, for pushes, new releases, list and feed refreshes and IRC
+  networks dropping or coming back. A filter can pick its own events for each notification.
 ### Fixed
 - Restarting an IRC network always says goodbye (QUIT) to the server before it reconnects. Before, the goodbye
   was sometimes lost.

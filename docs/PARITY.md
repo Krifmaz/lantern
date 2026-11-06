@@ -729,17 +729,17 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `DELETE /api/keys/{apikey}` | A-api | todo | |  |
 | `GET /api/logs/files` | A-api | todo | |  |
 | `GET /api/logs/files/{logFile}` | A-api | todo | |  |
-| `GET /api/notification` | A-api | todo | |  |
-| `POST /api/notification` | A-api | todo | |  |
-| `POST /api/notification/test` | A-api | todo | |  |
-| `GET /api/notification/pushover/sounds` | A-api | todo | |  |
-| `GET /api/notification/inbox` | A-api | todo | |  |
-| `DELETE /api/notification/inbox` | A-api | todo | |  |
-| `POST /api/notification/inbox/read` | A-api | todo | |  |
-| `POST /api/notification/inbox/delete` | A-api | todo | |  |
-| `GET /api/notification/{notificationID}` | A-api | todo | |  |
-| `PUT /api/notification/{notificationID}` | A-api | todo | |  |
-| `DELETE /api/notification/{notificationID}` | A-api | todo | |  |
+| `GET /api/notification` | A-api | done | server/tests/autobrr_notifications.rs::the_routes_save_change_and_remove_notifications | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
+| `POST /api/notification` | A-api | done | server/tests/autobrr_notifications.rs::the_routes_save_change_and_remove_notifications | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
+| `POST /api/notification/test` | A-api | done | server/tests/autobrr_notifications.rs::a_test_reaches_the_webhook, server/tests/autobrr_notifications.rs::the_routes_save_change_and_remove_notifications | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
+| `GET /api/notification/pushover/sounds` | A-api | done | server/src/releases/notify/sender_tests.rs::pushover_sounds, server/tests/autobrr_notifications.rs::the_routes_save_change_and_remove_notifications | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
+| `GET /api/notification/inbox` | A-api | done | server/tests/autobrr_notifications.rs::the_inbox_lifecycle, server/tests/autobrr_notifications.rs::the_built_in_one_writes_to_the_inbox | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/notification/inbox` | A-api | done | server/tests/autobrr_notifications.rs::the_inbox_lifecycle, server/tests/autobrr_notifications.rs::the_built_in_one_writes_to_the_inbox | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
+| `POST /api/notification/inbox/read` | A-api | done | server/tests/autobrr_notifications.rs::the_inbox_lifecycle, server/tests/autobrr_notifications.rs::the_built_in_one_writes_to_the_inbox | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
+| `POST /api/notification/inbox/delete` | A-api | done | server/tests/autobrr_notifications.rs::the_inbox_lifecycle, server/tests/autobrr_notifications.rs::the_built_in_one_writes_to_the_inbox | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
+| `GET /api/notification/{notificationID}` | A-api | done | server/tests/autobrr_notifications.rs::the_routes_save_change_and_remove_notifications | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
+| `PUT /api/notification/{notificationID}` | A-api | done | server/tests/autobrr_notifications.rs::the_routes_save_change_and_remove_notifications | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/notification/{notificationID}` | A-api | done | server/tests/autobrr_notifications.rs::the_routes_save_change_and_remove_notifications | ported (`releases/notify_api.rs`); served at `/autobrr/api` |
 | `GET /api/proxy` | A-api | todo | |  |
 | `POST /api/proxy` | A-api | todo | |  |
 | `POST /api/proxy/test` | A-api | todo | |  |
@@ -747,29 +747,29 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `PUT /api/proxy/{proxyID}` | A-api | todo | |  |
 | `DELETE /api/proxy/{proxyID}` | A-api | todo | |  |
 | `GET /api/proxy/{proxyID}/usage` | A-api | todo | |  |
-| `GET /api/release` | A-api | todo | |  |
-| `GET /api/release/recent` | A-api | todo | |  |
-| `GET /api/release/stats` | A-api | todo | |  |
-| `GET /api/release/stats/activity` | A-api | todo | |  |
-| `GET /api/release/stats/volume` | A-api | todo | |  |
-| `GET /api/release/stats/heatmap` | A-api | todo | |  |
-| `GET /api/release/stats/indexers` | A-api | todo | |  |
-| `GET /api/release/stats/filters` | A-api | todo | |  |
-| `GET /api/release/indexers` | A-api | todo | |  |
-| `DELETE /api/release` | A-api | todo | |  |
-| `POST /api/release/process` | A-api | todo | |  |
-| `GET /api/release/{releaseID}` | A-api | todo | |  |
-| `POST /api/release/{releaseID}/actions/{actionStatusID}/retry` | A-api | todo | |  |
-| `GET /api/release/profiles/duplicate` | A-api | todo | |  |
-| `POST /api/release/profiles/duplicate` | A-api | todo | |  |
-| `DELETE /api/release/profiles/duplicate/{profileId}` | A-api | todo | |  |
-| `GET /api/release/cleanup-jobs` | A-api | todo | |  |
-| `POST /api/release/cleanup-jobs` | A-api | todo | |  |
-| `GET /api/release/cleanup-jobs/{jobID}` | A-api | todo | |  |
-| `PUT /api/release/cleanup-jobs/{jobID}` | A-api | todo | |  |
-| `DELETE /api/release/cleanup-jobs/{jobID}` | A-api | todo | |  |
-| `PATCH /api/release/cleanup-jobs/{jobID}/enabled` | A-api | todo | |  |
-| `POST /api/release/cleanup-jobs/{jobID}/run` | A-api | todo | |  |
+| `GET /api/release` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/recent` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/stats` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/stats/activity` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/stats/volume` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/stats/heatmap` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/stats/indexers` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/stats/filters` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/indexers` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/release` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `POST /api/release/process` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | commented out in autobrr v1.90.0, so it answers 405 as autobrr does |
+| `GET /api/release/{releaseID}` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `POST /api/release/{releaseID}/actions/{actionStatusID}/retry` | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it, server/tests/autobrr_history.rs::a_retry_runs_the_action_again | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/profiles/duplicate` | A-api | done | server/tests/autobrr_history.rs::duplicate_profile_routes | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `POST /api/release/profiles/duplicate` | A-api | done | server/tests/autobrr_history.rs::duplicate_profile_routes | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/release/profiles/duplicate/{profileId}` | A-api | done | server/tests/autobrr_history.rs::duplicate_profile_routes | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/cleanup-jobs` | A-api | done | server/tests/autobrr_history.rs::cleanup_job_routes, server/tests/autobrr_history.rs::cleanup_runs_check_their_statuses | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `POST /api/release/cleanup-jobs` | A-api | done | server/tests/autobrr_history.rs::cleanup_job_routes, server/tests/autobrr_history.rs::cleanup_runs_check_their_statuses | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `GET /api/release/cleanup-jobs/{jobID}` | A-api | done | server/tests/autobrr_history.rs::cleanup_job_routes, server/tests/autobrr_history.rs::cleanup_runs_check_their_statuses | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `PUT /api/release/cleanup-jobs/{jobID}` | A-api | done | server/tests/autobrr_history.rs::cleanup_job_routes, server/tests/autobrr_history.rs::cleanup_runs_check_their_statuses | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `DELETE /api/release/cleanup-jobs/{jobID}` | A-api | done | server/tests/autobrr_history.rs::cleanup_job_routes, server/tests/autobrr_history.rs::cleanup_runs_check_their_statuses | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `PATCH /api/release/cleanup-jobs/{jobID}/enabled` | A-api | done | server/tests/autobrr_history.rs::cleanup_job_routes, server/tests/autobrr_history.rs::cleanup_runs_check_their_statuses | ported (`releases/history_api.rs`); served at `/autobrr/api` |
+| `POST /api/release/cleanup-jobs/{jobID}/run` | A-api | done | server/tests/autobrr_history.rs::cleanup_job_routes, server/tests/autobrr_history.rs::cleanup_runs_check_their_statuses | ported (`releases/history_api.rs`); served at `/autobrr/api` |
 | `GET /api/updates/latest` | A-api | todo | |  |
 | `GET /api/updates/check` | A-api | todo | |  |
 | `POST /api/webhook/lists/trigger` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
@@ -781,7 +781,7 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `POST /api/webhook/lists/trigger/{listID}` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported (`releases/list_api.rs`); served at `/autobrr/api` |
 | `GET /api/auth/oidc/config` | A-api | todo | |  |
 | `GET /api/auth/oidc/callback` | A-api | todo | |  |
-| GET /api/events (server-sent events: IRC, logs) | A-api | partial | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces | the `irc` stream (also at `/irc/events`); the `logs` stream comes with the logs slice |
+| GET /api/events (server-sent events: IRC, logs) | A-api | partial | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces, server/tests/autobrr_notifications.rs::the_built_in_one_writes_to_the_inbox | the `irc` stream (also at `/irc/events`) and the `notifications` stream (the inbox's NOTIFICATION and INBOX_CHANGED); the `logs` stream comes with the logs slice |
 | GET /metrics (metrics port, basic auth users) | A-api | todo | |  |
 
 ### Settings (`config.toml` and environment `AUTOBRR__*`)
@@ -852,7 +852,7 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `Bonus` | A-api | done | server/tests/releases_filter_fields.rs::announce_types_bonus_and_freeleech_percent | ported |
 | `Freeleech` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
 | `FreeleechPercent` | A-api | done | server/tests/releases_filter_fields.rs::announce_types_bonus_and_freeleech_percent | ported |
-| `SmartEpisode` | A-api | partial | | stored; the newer-episode check needs the release history (next slice) |
+| `SmartEpisode` | A-api | done | server/tests/autobrr_history.rs::smart_episode_reads_the_history, server/tests/autobrr_history.rs::smart_episode_and_duplicate_profiles_turn_releases_down | ported (release_test.go `CheckSmartEpisodeCanDownloadShow`) |
 | `Shows` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
 | `Seasons` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
 | `Episodes` | A-api | done | server/tests/upstream_autobrr.rs::filter_check_filter | ported |
@@ -903,10 +903,10 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | `MinLeechers` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
 | `MaxLeechers` | A-api | done | server/tests/releases_filter_fields.rs::seeders_and_leechers | ported |
 | `IsAutoUpdated` | A-api | done | server/tests/autobrr_feeds.rs::lists_fill_their_filters | ported; true while a list writes to the filter |
-| `ReleaseProfileDuplicateID` | A-api | partial | | stored; duplicate profiles come with the releases slice |
-| `DuplicateHandling` | A-api | todo | |  |
+| `ReleaseProfileDuplicateID` | A-api | done | server/tests/autobrr_history.rs::duplicate_profiles_find_releases_already_taken, server/tests/autobrr_history.rs::smart_episode_and_duplicate_profiles_turn_releases_down | ported; all 40 cases of release_test.go `CheckIsDuplicateRelease` |
+| `DuplicateHandling` | A-api | done | server/tests/autobrr_history.rs::smart_episode_and_duplicate_profiles_turn_releases_down | the profile the pipeline checks against; the API sends it null, as autobrr's FindByID does |
 | External filters (exec, webhook) with expected status | A-api | done | server/src/releases/external.rs::tests::exec_exit_code_decides, server/src/releases/external.rs::tests::webhook_status_and_retries, server/tests/autobrr_api.rs::a_passing_release_runs_the_filters_autobrr_actions | ported (exec with an argument list; webhook with retries) |
-| Filter notifications per event | A-api | partial | server/tests/autobrr_api.rs::filters_keep_autobrrs_shape_and_rules | stored and validated; sending comes with the notifications slice |
+| Filter notifications per event | A-api | done | server/tests/autobrr_notifications.rs::a_filter_s_own_picks_replace_the_global_events, server/tests/autobrr_notifications.rs::a_push_reaches_the_webhook | ported (service_test.go `TestRoutingSnapshotResolve`): a filter's own picks replace the global events |
 
 ### Actions
 
@@ -1010,19 +1010,19 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `DISCORD` | A-api | todo | |  |
-| `NOTIFIARR` | A-api | todo | |  |
-| `PUSHOVER` | A-api | todo | |  |
-| `SLACK` | A-api | todo | |  |
-| `TELEGRAM` | A-api | todo | |  |
-| `GOTIFY` | A-api | todo | |  |
-| `NTFY` | A-api | todo | |  |
-| `LUNASEA` | A-api | todo | |  |
-| `SHOUTRRR` | A-api | todo | |  |
-| `WEBHOOK` | A-api | todo | |  |
-| `BARK` | A-api | todo | |  |
-| `BUILTIN` | A-api | todo | |  |
-| Events: push approved, rejected, error; IRC disconnected, reconnected; app update available | A-api | todo | |  |
+| `DISCORD` | A-api | done | server/src/releases/notify/sender_tests.rs::discord_sends, server/src/releases/notify/sender_tests.rs::discord_rate_limited_then_success, server/src/releases/notify/sender_tests.rs::discord_errors, server/src/releases/notify/sender_tests.rs::discord_sender_sends_an_embed, server/src/releases/notify/senders.rs::tests::discord_embed_limits | ported; tested against a local stand-in |
+| `NOTIFIARR` | A-api | done | server/src/releases/notify/sender_tests.rs::notifiarr_sends, server/src/releases/notify/sender_tests.rs::notifiarr_rate_limits, server/src/releases/notify/sender_tests.rs::notifiarr_errors | ported; tested against a local stand-in |
+| `PUSHOVER` | A-api | done | server/src/releases/notify/sender_tests.rs::pushover_sends, server/src/releases/notify/sender_tests.rs::pushover_errors, server/src/releases/notify/sender_tests.rs::pushover_sounds | ported; tested against a local stand-in |
+| `SLACK` | A-api | done | server/tests/autobrr_notifications.rs::the_routes_save_change_and_remove_notifications | autobrr v1.90.0 has no Slack sender either: one that is on is refused as unsupported, one that is off is kept as a draft |
+| `TELEGRAM` | A-api | done | server/src/releases/notify/sender_tests.rs::telegram_sends, server/src/releases/notify/sender_tests.rs::telegram_rate_limits, server/src/releases/notify/sender_tests.rs::telegram_errors | ported; tested against a local stand-in |
+| `GOTIFY` | A-api | done | server/src/releases/notify/sender_tests.rs::gotify | ported; tested against a local stand-in |
+| `NTFY` | A-api | done | server/src/releases/notify/sender_tests.rs::ntfy_sends, server/src/releases/notify/sender_tests.rs::ntfy_retries | ported; tested against a local stand-in |
+| `LUNASEA` | A-api | done | server/src/releases/notify/sender_tests.rs::lunasea, server/src/releases/notify/senders.rs::tests::lunasea_urls | ported; tested against a local stand-in |
+| `SHOUTRRR` | A-api | partial | server/src/releases/notify/sender_tests.rs::shoutrrr_generic | ported for the generic, gotify, ntfy, telegram and pushover schemes; other schemes answer an unsupported-service error |
+| `WEBHOOK` | A-api | done | server/src/releases/notify/sender_tests.rs::webhook, server/src/releases/notify/senders.rs::tests::webhook_events, server/tests/autobrr_notifications.rs::a_push_reaches_the_webhook | ported; tested against a local stand-in |
+| `BARK` | A-api | done | server/src/releases/notify/sender_tests.rs::bark_sends, server/src/releases/notify/sender_tests.rs::bark_errors, server/src/releases/notify/sender_tests.rs::bark_sender_levels | ported; tested against a local stand-in |
+| `BUILTIN` | A-api | done | server/tests/autobrr_notifications.rs::the_built_in_one_writes_to_the_inbox, server/tests/autobrr_notifications.rs::the_inbox_lifecycle | ported; writes to the inbox, which the UI shows |
+| Events: push approved, rejected, error; IRC disconnected, reconnected; app update available | A-api | partial | server/tests/autobrr_notifications.rs::a_push_reaches_the_webhook, server/tests/autobrr_notifications.rs::lists_feeds_and_irc_tell_their_events, server/src/releases/notify/mod.rs::tests::titles | ported, with RELEASE_NEW and the list and feed refresh events; the IRC events are proven by their words, not yet from a stand-in IRC server dropping; IRC_UNHEALTHY and IRC_HEALTHY wait for the health monitor; APP_UPDATE_AVAILABLE waits for the updates slice |
 
 ### Feeds
 
@@ -1078,12 +1078,12 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| Release log with every action status | A-api | partial | | fresh version |
-| Duplicate release profiles (skip if already grabbed by title, year, quality, ...) | A-api | todo | |  |
-| Cleanup jobs (scheduled delete of old releases) | A-api | todo | |  |
-| Retry an action | A-api | todo | |  |
-| Stats: activity, volume, heatmap, top indexers and filters | A-api | todo | |  |
-| Delete releases older than / by status / by indexer | A-api | todo | |  |
+| Release log with every action status | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it, server/tests/autobrr_history.rs::a_retry_runs_the_action_again | ported (service.go `processFilters`) |
+| Duplicate release profiles (skip if already grabbed by title, year, quality, ...) | A-api | done | server/tests/autobrr_history.rs::duplicate_profiles_find_releases_already_taken, server/tests/autobrr_history.rs::duplicate_profile_routes | ported |
+| Cleanup jobs (scheduled delete of old releases) | A-api | done | server/tests/autobrr_history.rs::cleanup_job_routes, server/tests/autobrr_history.rs::cleanup_runs_check_their_statuses | ported |
+| Retry an action | A-api | done | server/tests/autobrr_history.rs::a_retry_runs_the_action_again | ported |
+| Stats: activity, volume, heatmap, top indexers and filters | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported |
+| Delete releases older than / by status / by indexer | A-api | done | server/tests/autobrr_history.rs::the_pipeline_keeps_each_push_and_the_routes_read_it | ported |
 
 ### Pages and actions (web UI)
 
@@ -1239,10 +1239,10 @@ Every route mounted in `internal/http/server.go` (under the base URL).
 | Feed refresh per feed (its interval, anchored to last run) | A-api | done | server/src/releases/scheduler.rs::tests::test_anchored_schedule_next, server/src/releases/scheduler.rs::tests::test_anchored_schedule_spreads_feeds_sharing_an_interval, server/tests/autobrr_feeds.rs::feeds_are_added_changed_run_and_removed | ported (`releases/scheduler.rs`) |
 | Feed cache cleanup (daily 03:05) | A-api | done | server/tests/autobrr_feeds.rs::the_cleanup_and_list_jobs_are_scheduled_and_the_cleanup_drops_old_items, server/src/releases/scheduler.rs::tests::cron_lines | ported |
 | List refresh (every 6 h) | A-api | done | server/tests/autobrr_feeds.rs::the_cleanup_and_list_jobs_are_scheduled_and_the_cleanup_drops_old_items, server/src/releases/scheduler.rs::tests::cron_lines | ported, with autobrr's random 1 to 35 second wait |
-| Release cleanup jobs (their cron) | A-api | todo | |  |
+| Release cleanup jobs (their cron) | A-api | done | server/tests/autobrr_history.rs::cleanup_job_routes, server/src/releases/cronspec.rs::tests::runs_next | ported (robfig cron) |
 | Update check (every 2 h) | A-api | todo | |  |
 | Temp folder cleanup (daily 04:00) | A-api | todo | |  |
-| Notification inbox cleanup (every hour) | A-api | todo | |  |
+| Notification inbox cleanup (every hour) | A-api | done | server/tests/autobrr_notifications.rs::the_inbox_lifecycle | ported: older than 30 days, and all but the newest 1000 |
 | IRC health monitor and reconnect | A-api | partial | server/tests/autobrr_irc.rs::a_network_signs_in_with_nickserv_is_invited_and_reads_multi_line_announces, server/tests/autobrr_irc.rs::a_ban_stops_the_network_with_the_reason | each network reconnects on its own; no separate health job |
 | Max downloads per period counting | A-api | partial | | fresh version |
 

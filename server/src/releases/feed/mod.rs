@@ -893,8 +893,9 @@ impl Releases {
         let job = Arc::new(tokio::sync::Mutex::new(self.new_refresh_job(f)?));
         let run = self.feed_guards.of(f.id).run.clone();
         let name = f.name.clone();
+        let me = self.clone();
         let work: JobFn = Arc::new(move || {
-            let (job, run, name) = (job.clone(), run.clone(), name.clone());
+            let (job, run, name, me) = (job.clone(), run.clone(), name.clone(), me.clone());
             Box::pin(async move {
                 // a task of its own, so a job replaced mid-run still finishes the run it began
                 let task = tokio::spawn(async move {
@@ -902,7 +903,10 @@ impl Releases {
                         tracing::debug!("feed {name}: still running, this run is skipped");
                         return;
                     };
-                    if let Err(e) = job.lock().await.run().await {
+                    let mut job = job.lock().await;
+                    let res = job.run().await;
+                    me.feed_refreshed(&job.feed, &res);
+                    if let Err(e) = res {
                         tracing::warn!("feed {name}: couldn't be read: {e}");
                     }
                 });
@@ -914,6 +918,12 @@ impl Releases {
         self.scheduler.register(&key, Box::new(schedule), work);
         tracing::debug!("feed {}: started", f.name);
         Ok(())
+    }
+
+    /// Tells the notifications how a run of feed `f` went (autobrr's `refresh` and its `FeedRefreshEvent`).
+    fn feed_refreshed(&self, f: &Feed, res: &Result<(), String>) {
+        let error = res.as_ref().err().map(String::as_str).unwrap_or_default();
+        self.notify(super::notify::feed_payload(&f.name, f.id, &f.kind, &f.indexer.name, error));
     }
 
     /// Stops feed `id`'s job.
@@ -950,7 +960,9 @@ impl Releases {
         let Ok(_held) = run.try_lock_owned() else {
             return Err(ApiError::Internal(format!("feed {} is already running", f.name)));
         };
-        job.run().await.map_err(ApiError::Internal)?;
+        let res = job.run().await;
+        self.feed_refreshed(&job.feed, &res);
+        res.map_err(ApiError::Internal)?;
         drop(_held);
         if let Err(e) = self.sync_feed_job(id) {
             tracing::warn!("feed {}: couldn't be rescheduled after the forced run: {}", f.name, e.message());
