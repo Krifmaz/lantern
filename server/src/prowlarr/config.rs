@@ -138,6 +138,27 @@ pub fn log_rotate(db: &SqliteDb) -> i64 {
     int(db, "logrotate", 50)
 }
 
+/// `Branch` as it was saved (default `master`), for the messages that name it.
+pub fn branch_as_saved(db: &SqliteDb) -> String {
+    text(db, "branch", "master")
+}
+
+/// `UpdateAutomatically` (default off).
+pub fn update_automatically(db: &SqliteDb) -> bool {
+    boolean(db, "updateautomatically", false)
+}
+
+/// `UpdateMechanism` by its name (default `builtIn`).
+pub fn update_mechanism(db: &SqliteDb) -> String {
+    enum_name(&json!(text(db, "updatemechanism", "builtIn")), UPDATE_MECHANISMS).unwrap_or_else(|| "builtIn".into())
+}
+
+/// The proxy in effect, for `ProxyCheck`: `(enabled, type, host, port)`.
+pub fn proxy_in_effect(st: &AppState) -> (bool, String, String, i64) {
+    let (enabled, kind, host, port, _, _) = proxy(st);
+    (enabled, kind, host, port)
+}
+
 /// `UILanguage` (default `en`).
 pub fn ui_language(db: &SqliteDb) -> String {
     text(db, "uilanguage", "en")

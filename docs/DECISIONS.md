@@ -548,3 +548,10 @@ Non-obvious calls, one line each, newest last.
   cleaned repeat by repeat (Rust keeps only a group's last capture).
 - 2026-11-06 — Lantern's version history is Prowlarr's `UpdateHistory` table; a start on a new version tells the
   notifications on for application updates "Lantern updated from X to Y".
+- 2026-11-06 — `SystemTimeCheck` asks Prowlarr's own time service (`https://prowlarr.servarr.com/v1/time`) as Prowlarr
+  does, in release builds only (Prowlarr skips it in debug builds too), at most every 6 hours; tests use the fixture's
+  rule on a given time and never reach it. `UpdateCheck` finds a newer release in the release notes built in, since
+  Lantern updates by image and has no update server.
+- 2026-11-06 — `OutdatedDefinitionCheck` is left partial on purpose: it warns about sites whose YAML Prowlarr
+  replaced with C# code. Lantern has no C# indexers and keeps running those sites from their definitions, so there
+  is nothing outdated to warn about.

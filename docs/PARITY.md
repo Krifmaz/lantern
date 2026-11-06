@@ -90,7 +90,7 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `GET /api/v1/config/downloadclient` | P-app | done | `server/tests/prowlarr_connect.rs::download_clients_answer_and_check_as_prowlarr_does` | ported (`prowlarr/config.rs`); Prowlarr keeps no settings there, only `{"id": 1}` |
 | `GET /api/v1/filesystem` | P-api | todo | |  |
 | `GET /api/v1/filesystem/type` | P-api | todo | |  |
-| `GET /api/v1/health` | P-api | partial | `server/tests/prowlarr_indexers.rs::sites_on_hold_show_in_status_and_health`, `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/apps/notifications/mod.rs::tests` | ported answer; 13 of Prowlarr's 20 checks (DownloadClientStatusCheck and NotificationStatusCheck added); changes go to the notifications when the page is read (the scheduler is the next slice) |
+| `GET /api/v1/health` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/tests/prowlarr_indexers.rs::sites_on_hold_show_in_status_and_health`, `server/tests/prowlarr_system.rs::the_indexer_health_checks_follow_prowlarr`, `server/tests/prowlarr_system.rs::the_proxy_check_follows_prowlarr`, `server/src/prowlarr/health.rs::tests` | ported answer; 19 of Prowlarr's 20 checks (OutdatedDefinitionCheck is partial, see below); the scheduler runs them and tells the notifications and the web page of changes |
 | `GET /api/v1/history` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/history.rs`); no download ids, no auth events yet |
 | `GET /api/v1/history/since` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/history.rs`); no download ids, no auth events yet |
 | `GET /api/v1/history/indexer` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/history.rs`); no download ids, no auth events yet |
@@ -136,13 +136,13 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | `POST /api/v1/notification` | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); no bulk routes, as in Prowlarr |
 | `GET /api/v1/notification/schema` | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); no bulk routes, as in Prowlarr |
 | `POST /api/v1/notification/test` | P-app | done | `server/tests/prowlarr_connect.rs::notifications_answer_test_and_send_as_prowlarr_does` | ported (`prowlarr/apps/notifications/`); no bulk routes, as in Prowlarr |
-| `POST /api/v1/notification/testall` | P-app | partial |  | ported (the generic provider route); no test of it yet |
+| `POST /api/v1/notification/testall` | P-app | done | `server/tests/prowlarr_system.rs::an_update_is_told_and_testall_tests_every_notification` | ported (the generic provider route) |
 | `POST /api/v1/notification/action/{name}` | P-app | partial |  | ported; Twitter's sign-in actions are not |
 | `GET /ping` | P-api | done | `server/tests/prowlarr_api.rs::ping_and_status` | ported (`prowlarr/system.rs`); appName is Lantern |
 | `HEAD /ping` | P-api | done | `server/tests/prowlarr_api.rs::ping_and_status` | ported (`prowlarr/system.rs`); appName is Lantern |
 | `POST /api/v1/search` | P-api | done | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported; grabs go to Prowlarr's download clients (`DownloadClientProvider` turns) and tell the notifications |
 | `GET /api/v1/search` | P-api | done | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported (`prowlarr/search.rs`); releases kept 30 minutes for a grab |
-| `POST /api/v1/search/bulk` | P-api | partial | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported; grabs go to Prowlarr's download clients; no bulk grab test yet |
+| `POST /api/v1/search/bulk` | P-api | done | `server/tests/prowlarr_indexers.rs::searches_grabs_history_and_stats_answer_as_prowlarr_does` | ported; grabs go to Prowlarr's download clients; releases no longer kept are skipped |
 | `GET /content/{path}` | P-ui | partial | `server/tests/prowlarr_ui.rs::only_content_is_open_without_signing_in`, `::the_manifest_names_the_instance_like_manifest_mapper` | the built files, open to everyone, served at `/prowlarr/Content/` for now (moves to `/` later) |
 | `GET /` | P-ui | partial | | fresh version |
 | `GET /{path}` | P-ui | partial | `server/tests/prowlarr_ui.rs::every_page_is_the_frontend_under_prowlarr`, `::the_page_gets_the_url_base_like_html_mapper_base`, `::pages_are_paths_without_a_dot_outside_content`, `::initialize_json_has_prowlarrs_fields_with_lanterns_api` | Prowlarr's frontend with its URL base set to `/prowlarr` (moves to `/` later); no `?h=` cache breaker |
@@ -302,13 +302,13 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| LazyLibrarian | P-app | partial | `server/src/prowlarr/apps/nab.rs::tests` | ported (`prowlarr/apps/nab.rs`); no stand-in LazyLibrarian test yet |
-| Lidarr | P-app | partial |  | ported (`prowlarr/apps/arr.rs`, same code as Sonarr/Radarr); no stand-in Lidarr test yet |
-| Mylar | P-app | partial | `server/src/prowlarr/apps/nab.rs::tests` | ported (`prowlarr/apps/nab.rs`); no stand-in Mylar test yet |
+| LazyLibrarian | P-app | done | `server/tests/prowlarr_apps_more.rs::lazylibrarian_gets_the_providers_prowlarr_would_add`, `server/src/prowlarr/apps/nab.rs::tests` | ported (`prowlarr/apps/nab.rs`) |
+| Lidarr | P-app | done | `server/tests/prowlarr_apps_more.rs::lidarr_gets_the_indexers_prowlarr_would_push` | ported (`prowlarr/apps/arr.rs`, same code as Sonarr/Radarr) |
+| Mylar | P-app | done | `server/tests/prowlarr_apps_more.rs::mylar_gets_the_providers_prowlarr_would_add`, `server/src/prowlarr/apps/nab.rs::tests` | ported (`prowlarr/apps/nab.rs`) |
 | Radarr | P-app | done | `server/tests/prowlarr_apps.rs::radarr_gets_its_first_sync_fields_and_add_only_skips_changes` | ported (`prowlarr/apps/arr.rs`) |
-| Readarr | P-app | partial |  | ported (`prowlarr/apps/arr.rs`, same code as Sonarr/Radarr); no stand-in Readarr test yet |
+| Readarr | P-app | done | `server/tests/prowlarr_apps_more.rs::readarr_gets_the_indexers_prowlarr_would_push` | ported (`prowlarr/apps/arr.rs`, same code as Sonarr/Radarr) |
 | Sonarr | P-app | done | `server/tests/prowlarr_apps.rs::sonarr_gets_the_indexers_prowlarr_would_push_and_keeps_them_in_step`, `scripts/contract-arrs.sh` (real Sonarr) | ported (`prowlarr/apps/arr.rs`) |
-| Whisparr | P-app | partial |  | ported (`prowlarr/apps/arr.rs`, same code as Sonarr/Radarr); no stand-in Whisparr test yet |
+| Whisparr | P-app | done | `server/tests/prowlarr_apps_more.rs::whisparr_gets_the_indexers_prowlarr_would_push` | ported (`prowlarr/apps/arr.rs`, same code as Sonarr/Radarr) |
 
 #### Download clients
 
@@ -623,24 +623,24 @@ Every path in Prowlarr's `src/Prowlarr.Api.V1/openapi.json`, plus the Newznab/To
 | --- | --- | --- | --- | --- |
 | `AllowedHostsCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
 | `ApiKeyValidationCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
-| `AppDataLocationCheck` | P-api | todo | |  |
+| `AppDataLocationCheck` | P-api | done | `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`), with AppDataLocationFixture |
 | `ApplicationLongTermStatusCheck` | P-api | done | `server/tests/prowlarr_apps.rs::apps_held_back_after_failures_show_in_health`, `server/src/prowlarr/apps/status.rs::tests` | ported by P-app (`prowlarr/apps/mod.rs`) |
 | `ApplicationStatusCheck` | P-api | done | `server/tests/prowlarr_apps.rs::apps_held_back_after_failures_show_in_health`, `server/src/prowlarr/apps/status.rs::tests` | ported by P-app (`prowlarr/apps/mod.rs`) |
-| `DownloadClientStatusCheck` | P-api | todo | |  |
+| `DownloadClientStatusCheck` | P-api | done | `server/src/prowlarr/apps/notifications/mod.rs::tests` | ported by P-app (`prowlarr/apps/downloads/mod.rs`); the same rule as NotificationStatusCheckFixture |
 | `IndexerCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
-| `IndexerDownloadClientCheck` | P-api | todo | |  |
-| `IndexerLongTermStatusCheck` | P-api | todo | |  |
-| `IndexerNoDefinitionCheck` | P-api | todo | |  |
-| `IndexerProxyStatusCheck` | P-api | todo | |  |
+| `IndexerDownloadClientCheck` | P-api | done | `server/tests/prowlarr_system.rs::the_indexer_health_checks_follow_prowlarr` | ported (`prowlarr/health.rs`) |
+| `IndexerLongTermStatusCheck` | P-api | done | `server/tests/prowlarr_system.rs::the_indexer_health_checks_follow_prowlarr` | ported (`prowlarr/health.rs`) |
+| `IndexerNoDefinitionCheck` | P-api | done | `server/tests/prowlarr_indexers.rs::sites_on_hold_show_in_status_and_health` | ported (`prowlarr/health.rs`) |
+| `IndexerProxyStatusCheck` | P-api | done | `server/tests/prowlarr_system.rs::the_indexer_health_checks_follow_prowlarr`, `server/tests/prowlarr_indexers.rs::sites_on_hold_show_in_status_and_health` | ported (`prowlarr/health.rs`) |
 | `IndexerStatusCheck` | P-api | done | `server/tests/prowlarr_api.rs::localization_and_health`, `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`) |
-| `IndexerVIPCheck` | P-api | todo | |  |
-| `IndexerVIPExpiredCheck` | P-api | todo | |  |
-| `NotificationStatusCheck` | P-api | todo | |  |
-| `OutdatedDefinitionCheck` | P-api | todo | |  |
-| `ProxyCheck` | P-api | todo | |  |
-| `ReleaseBranchCheck` | P-api | todo | |  |
-| `SystemTimeCheck` | P-api | todo | |  |
-| `UpdateCheck` | P-api | todo | |  |
+| `IndexerVIPCheck` | P-api | done | `server/tests/prowlarr_system.rs::the_indexer_health_checks_follow_prowlarr` | ported (`prowlarr/health.rs`) |
+| `IndexerVIPExpiredCheck` | P-api | done | `server/tests/prowlarr_indexers.rs::sites_on_hold_show_in_status_and_health` | ported (`prowlarr/health.rs`) |
+| `NotificationStatusCheck` | P-api | done | `server/src/prowlarr/apps/notifications/mod.rs::tests` | ported by P-app (`prowlarr/apps/notifications/mod.rs`), with NotificationStatusCheckFixture |
+| `OutdatedDefinitionCheck` | P-api | partial |  | not needed as Prowlarr has it: it names sites whose YAML was replaced by C# code, and Lantern has no C# indexers, so it keeps running those sites from their definitions (see DECISIONS) |
+| `ProxyCheck` | P-api | done | `server/tests/prowlarr_system.rs::the_proxy_check_follows_prowlarr` | ported (`prowlarr/health.rs`) on Lantern's site proxy |
+| `ReleaseBranchCheck` | P-api | done | `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`), with ReleaseBranchCheckFixture |
+| `SystemTimeCheck` | P-api | done | `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`), with SystemTimeCheckFixture; asks Prowlarr's time service in release builds only, as Prowlarr does |
+| `UpdateCheck` | P-api | done | `server/src/prowlarr/health.rs::tests` | ported (`prowlarr/health.rs`), with UpdateCheckFixture; a newer release is read from the release notes built in |
 
 ## autobrr v1.90.0
 

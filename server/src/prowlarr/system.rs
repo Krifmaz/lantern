@@ -95,9 +95,20 @@ fn os_release() -> (String, String) {
 }
 
 /// Whether this runs in Docker, as Prowlarr checks it.
-fn is_docker() -> bool {
+pub fn is_docker() -> bool {
     std::path::Path::new("/.dockerenv").exists()
         || std::fs::read_to_string("/proc/1/cgroup").map(|c| c.contains("/docker/")).unwrap_or(false)
+}
+
+/// How many days ago this build was made (`BuildInfo.BuildDateTime`: the program file's time); 0 when unknown.
+pub fn build_age_days() -> f64 {
+    let built = std::env::current_exe()
+        .ok()
+        .and_then(|e| std::fs::metadata(e).ok())
+        .and_then(|m| m.modified().ok())
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs_f64());
+    built.map(|b| (crate::auth::now() - b) / 86_400.0).unwrap_or(0.0)
 }
 
 /// `GET /api/v1/system/status`: Prowlarr's `SystemResource`, with Lantern's values.

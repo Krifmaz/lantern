@@ -13,6 +13,8 @@
 - System → Logs now shows what Lantern logs, page by page and by level, and the log files (`lantern.txt`, and the
   debug and trace files when the log level asks for them). Passwords, API keys and other secrets are taken out
   first, as Prowlarr does.
+- More of Prowlarr's health checks: the data folder inside the program folder, a release branch that gets no
+  updates, a newer release, a proxy that doesn't work, and a system clock that is off by a day or more.
 - Prowlarr's download clients and notifications. Settings → Download Clients now has all of Prowlarr's
   download clients, with their settings, checks and tests. The download hub uses the same list. A grab from
   Lantern's search goes to them the way Prowlarr picks: the indexer's own client first, then the best priority,

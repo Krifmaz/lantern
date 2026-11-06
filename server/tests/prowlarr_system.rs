@@ -577,3 +577,94 @@ async fn an_update_is_told_and_testall_tests_every_notification() {
     assert!(!failed["validationFailures"].as_array().unwrap().is_empty());
     assert!(v.as_array().unwrap().iter().find(|r| r["id"] == updates["id"]).unwrap()["isValid"] == true);
 }
+
+#[tokio::test]
+async fn the_proxy_check_follows_prowlarr() {
+    let (app, st, _) = lantern("proxycheck").await;
+    let find = |health: &Value| health.as_array().unwrap().iter().find(|f| f["source"] == "ProxyCheck").cloned();
+    // no proxy: nothing to say
+    let (_, health) = call(&app, "GET", "/api/v1/health", None).await;
+    assert_eq!(find(&health), None);
+
+    // a proxy that answers 400: Prowlarr's bad request finding
+    let bad = Router::new().fallback(|| async { StatusCode::BAD_REQUEST });
+    let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = l.local_addr().unwrap();
+    tokio::spawn(async move { axum::serve(l, bad).await.unwrap() });
+    st.indexers.set_proxy_ping_url("http://ping.lantern.test/ping");
+    st.settings.set_many(&json!({ "site_proxy": format!("http://{addr}") })).await.unwrap();
+    let (_, health) = call(&app, "GET", "/api/v1/health", None).await;
+    let f = find(&health).unwrap_or_else(|| panic!("{health}"));
+    assert_eq!(
+        (f["type"].as_str(), f["message"].as_str(), f["wikiUrl"].as_str()),
+        (
+            Some("error"),
+            Some("Failed to test proxy. Status code: BadRequest"),
+            Some("https://wiki.servarr.com/prowlarr/system#proxy-failed-test")
+        )
+    );
+
+    // a proxy that can't be reached: the test failed, with the address it tried
+    let closed = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap().local_addr().unwrap();
+    st.settings.set_many(&json!({ "site_proxy": format!("http://{closed}") })).await.unwrap();
+    let (_, health) = call(&app, "GET", "/api/v1/health", None).await;
+    let f = find(&health).unwrap_or_else(|| panic!("{health}"));
+    assert_eq!(f["message"], "Failed to test proxy: http://ping.lantern.test/ping");
+}
+
+#[tokio::test]
+async fn the_indexer_health_checks_follow_prowlarr() {
+    // IndexerLongTermStatusCheck, IndexerVIPCheck, IndexerDownloadClientCheck and IndexerProxyStatusCheck, as
+    // Prowlarr's checks word them
+    let (app, st, _) = lantern("indexerchecks").await;
+    let site =
+        |name: &str, settings: Value| json!({ "kind": "newznab", "name": name, "base_url": "http://127.0.0.1:9/", "settings": settings });
+    let down = st.indexers.add(&site("Long Down", json!({ "apikey": "k" }))).unwrap();
+    let soon = (chrono::Local::now() + chrono::Duration::days(3)).format("%Y-%m-%d").to_string();
+    st.indexers.add(&site("VIP Soon", json!({ "apikey": "k", "vip_expiration": soon }))).unwrap();
+    let wrong = st.indexers.add(&site("Wrong Client", json!({ "apikey": "k" }))).unwrap();
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64();
+    st.db
+        .execute(
+            "UPDATE indexers SET failures=5, disabled_until=?, initial_failure=?, most_recent_failure=? WHERE id=?",
+            p![now + 3600.0, now - 7.0 * 3600.0, now - 60.0, down],
+        )
+        .unwrap();
+    st.db.execute("UPDATE indexers SET download_client_id=99 WHERE id=?", p![wrong]).unwrap();
+
+    // a proxy in use (it has a tag) that can't be reached
+    let closed = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap().local_addr().unwrap();
+    st.indexers.set_proxy_ping_url("http://ping.lantern.test/ping");
+    let (_, schema) = call(&app, "GET", "/api/v1/indexerproxy/schema", None).await;
+    let mut proxy = schema.as_array().unwrap().iter().find(|p| p["implementation"] == "Http").unwrap().clone();
+    proxy.as_object_mut().unwrap().remove("presets");
+    proxy["name"] = json!("Closed Proxy");
+    for f in proxy["fields"].as_array_mut().unwrap() {
+        match f["name"].as_str() {
+            Some("host") => f["value"] = json!("127.0.0.1"),
+            Some("port") => f["value"] = json!(closed.port()),
+            _ => {}
+        }
+    }
+    let (s, saved) = call(&app, "POST", "/api/v1/indexerproxy", Some(proxy)).await;
+    assert_eq!(s, StatusCode::CREATED, "{saved}");
+    let (_, t) = call(&app, "POST", "/api/v1/tag", Some(json!({ "label": "proxied" }))).await;
+    let mut tagged = saved.clone();
+    tagged["tags"] = json!([t["id"]]);
+    let (s, v) = call(&app, "PUT", &format!("/api/v1/indexerproxy/{}?forceSave=true", saved["id"]), Some(tagged)).await;
+    assert_eq!(s, StatusCode::ACCEPTED, "{v}");
+
+    let (_, health) = call(&app, "GET", "/api/v1/health", None).await;
+    let find = |source: &str| {
+        let f = health.as_array().unwrap().iter().find(|f| f["source"] == source).cloned().unwrap_or_else(|| panic!("{source}: {health}"));
+        (f["type"].as_str().unwrap().to_string(), f["message"].as_str().unwrap().to_string())
+    };
+    assert_eq!(
+        find("IndexerLongTermStatusCheck"),
+        ("warning".into(), "Indexers unavailable due to failures for more than 6 hours: Long Down".into())
+    );
+    assert!(health.as_array().unwrap().iter().all(|f| f["source"] != "IndexerStatusCheck"), "the failures began over 6 hours ago");
+    assert_eq!(find("IndexerVIPCheck"), ("warning".into(), "Indexer VIP benefits expiring soon: VIP Soon".into()));
+    assert_eq!(find("IndexerDownloadClientCheck"), ("warning".into(), "Indexers with invalid download clients: Wrong Client.".into()));
+    assert_eq!(find("IndexerProxyStatusCheck"), ("error".into(), "All indexer proxies are unavailable due to failures".into()));
+}
