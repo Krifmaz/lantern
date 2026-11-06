@@ -1323,20 +1323,21 @@ cross-seed has no web UI in v6; its daemon, API and CLI are ported. Its settings
 
 | Item | Track | Status | Proof | Lantern today |
 | --- | --- | --- | --- | --- |
-| `daemon` | X | todo | |  |
-| `rss` | X | todo | |  |
-| `search` | X | todo | |  |
-| `inject` | X | todo | |  |
-| `restore` | X | todo | |  |
-| `gen-config` | X | todo | |  |
-| `update-torrent-cache-trackers` | X | todo | |  |
-| `diff` | X | todo | |  |
-| `tree` | X | todo | |  |
-| `clear-indexer-failures` | X | todo | |  |
-| `clear-cache` | X | todo | |  |
-| `clear-client-cache` | X | todo | |  |
-| `api-key` | X | todo | |  |
-| `reset-api-key` | X | todo | |  |
+| `daemon` | X | done | `server/tests/crossseed_cli.rs::the_daemon_serves_cross_seeds_api_with_the_given_port_and_key` | `lantern cross-seed daemon`: the daemon API on `--port`/`--host` with `--api-key`, and the jobs on their cadence even while the `cross_seed` setting is off |
+| `rss` | X | done | `server/tests/crossseed_cli.rs::running_commands_check_the_settings_first` | `lantern cross-seed rss`: settings and folders checked first, then one RSS scan |
+| `search` | X | done | `server/tests/crossseed_cli.rs::running_commands_check_the_settings_first` | `lantern cross-seed search`, with `--no-exclude-older`, `--no-exclude-recent-search` and the hidden `--torrents` |
+| `inject` | X | done | `server/tests/crossseed_cli.rs::running_commands_check_the_settings_first` | `lantern cross-seed inject`, with `--inject-dir` and `--ignore-titles` |
+| `restore` | X | done | `server/tests/crossseed_cli.rs::restore_copies_the_torrent_cache_for_inject` | `restoreFromTorrentCache` from `torrent_cache/` in the data folder (Lantern doesn't fill it; bring cross-seed's over) to `outputDir` |
+| `gen-config` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | Lantern's settings are the config file: saves the template values for the `cross_seed_*` settings when none is saved yet, makes `torrent_cache/` |
+| `update-torrent-cache-trackers` | X | done | `server/tests/crossseed_cli.rs::update_torrent_cache_trackers_rewrites_announce_addresses` | on `torrent_cache/` in the data folder; the first match in `announce` and each `announce-list` address, as JavaScript's `replace` |
+| `diff` | X | partial | `server/tests/crossseed_cli.rs::tree_and_diff_print_as_cross_seed_prints` | equal files print as Node prints them; different ones print the `AssertionError` with a line diff, not Node's own diff layout |
+| `tree` | X | done | `server/tests/crossseed_cli.rs::tree_and_diff_print_as_cross_seed_prints` | Node's `util.inspect` of the `Metafile` (80 columns, `compact: 3`, grouped arrays) |
+| `clear-indexer-failures` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | takes every torrent indexer off hold (Lantern's failure count and hold) |
+| `clear-cache` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | `cross_seeds` rows without an info hash, `cross_seed_timestamps` and `cross_seed_searches` |
+| `clear-client-cache` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | `cross_seed_torrents`, `cross_seed_client_searchees`, `cross_seed_data`, `cross_seed_ensemble` |
+| `api-key` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | Lantern's `api_key`, made (24 random bytes) when empty; `--api-key` changes nothing, as in cross-seed |
+| `reset-api-key` | X | done | `server/tests/crossseed_cli.rs::api_key_gen_config_and_the_caches_work_on_the_data_folder` | a new `api_key` (24 random bytes); refused while `APP_API_KEY` sets it |
+| `test-notification` | X | done | `server/tests/crossseed_cli.rs::running_commands_check_the_settings_first` | sends cross-seed's test message to the notification webhooks |
 
 ## FlareSolverr v3.5.2
 

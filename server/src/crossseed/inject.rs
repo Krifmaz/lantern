@@ -190,7 +190,7 @@ pub fn is_similar(s: &Searchee, meta: &Metafile) -> bool {
 impl CrossSeed {
     /// `getHostToNameMap`: each tracker host Lantern knows, with its indexer's name. Lantern doesn't keep the
     /// tracker hosts of each indexer's torrents, so the hosts of the indexers' site addresses stand in.
-    fn host_to_name(&self) -> Vec<(String, String)> {
+    pub(super) fn host_to_name(&self) -> Vec<(String, String)> {
         let mut out: Vec<(String, String)> = Vec::new();
         for ix in self.hub.indexers.list().unwrap_or_default() {
             if let Some(host) = url::Url::parse(&ix.base_url).ok().and_then(|u| u.host_str().map(|h| h.to_string())) {

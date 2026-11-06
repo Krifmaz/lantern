@@ -133,6 +133,9 @@ pub struct RuntimeConfig {
     pub sonarr: Vec<String>,
     /// `radarr`.
     pub radarr: Vec<String>,
+    /// `torrents`: `.torrent` files to search for instead of the clients' torrents and `torrentDir`
+    /// (`cross-seed search --torrents`; `None`: not given).
+    pub torrents: Option<Vec<String>>,
 }
 
 impl Default for RuntimeConfig {
@@ -178,6 +181,7 @@ impl Default for RuntimeConfig {
             api_key: None,
             sonarr: Vec::new(),
             radarr: Vec::new(),
+            torrents: None,
         }
     }
 }
@@ -244,6 +248,14 @@ impl RuntimeConfig {
     /// [`from_settings`](Self::from_settings), with `lantern_clients` (Lantern's torrent download clients as
     /// cross-seed's `torrentClients` entries) used when `cross_seed_torrent_clients` is empty.
     pub fn from_settings_with(s: &kit_server_settings::Store, lantern_clients: &[String]) -> (RuntimeConfig, Vec<String>) {
+        let (mut c, mut problems) = RuntimeConfig::read_settings_with(s, lantern_clients);
+        problems.extend(validate(&mut c));
+        (c, problems)
+    }
+
+    /// The settings from Lantern's settings without [`validate`]'s checks, and the problems found reading them
+    /// (a command line changes them before they are checked).
+    pub fn read_settings_with(s: &kit_server_settings::Store, lantern_clients: &[String]) -> (RuntimeConfig, Vec<String>) {
         let mut problems = Vec::new();
         let mut c = RuntimeConfig::default();
         let mode = s.str("cross_seed_match_mode");
@@ -331,7 +343,6 @@ impl RuntimeConfig {
         c.notification_webhook_urls = lines("cross_seed_notification_webhook_urls");
         c.sonarr = lines("cross_seed_sonarr");
         c.radarr = lines("cross_seed_radarr");
-        problems.extend(validate(&mut c));
         (c, problems)
     }
 }
@@ -412,7 +423,8 @@ fn js_round(x: f64) -> i64 {
 }
 
 // cross-seed's validation messages (configSchema.ts `ZodErrorMessages`)
-const VERCEL: &str = "format does not follow vercel's `ms` style ( https://github.com/vercel/ms#examples )";
+/// `vercel`: a duration that isn't one.
+pub const VERCEL: &str = "format does not follow vercel's `ms` style ( https://github.com/vercel/ms#examples )";
 /// `delayNegative`.
 pub const DELAY_NEGATIVE: &str = "delay is in seconds, you can't travel back in time.";
 /// `delayUnsupported`.
@@ -549,7 +561,7 @@ pub fn match_mode_invalid() -> String {
 }
 
 /// `addZodIssue`: `Setting: "<value>"` and the message on the next line.
-fn issue(setting: &str, message: &str) -> String {
+pub fn issue(setting: &str, message: &str) -> String {
     format!("Setting: \"{setting}\"\n\t{message}")
 }
 
@@ -700,7 +712,7 @@ pub fn validate(c: &mut RuntimeConfig) -> Vec<String> {
     if c.action == Action::Inject && !c.torrent_clients.iter().any(|t| !t.contains(":readonly:")) {
         p.push(CLIENT_TYPE_READ_ONLY.to_string());
     }
-    if c.torrent_clients.len() > 1 && c.torrent_dir.is_some() {
+    if c.torrent_clients.len() > 1 && (c.torrent_dir.is_some() || c.torrents.as_ref().is_some_and(|t| !t.is_empty())) {
         p.push(MULTIPLE_CLIENTS_TORRENT_FILE.to_string());
     }
     if c.torrent_clients.len() > 1 && c.link_dirs.is_empty() && !c.data_dirs.is_empty() {
