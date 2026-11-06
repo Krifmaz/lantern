@@ -118,6 +118,47 @@ pub fn backup_folder_setting(db: &SqliteDb) -> String {
     text(db, "backupfolder", "Backups")
 }
 
+/// `BackupRetention` in days (default 28).
+pub fn backup_retention(db: &SqliteDb) -> i64 {
+    int(db, "backupretention", 28)
+}
+
+/// `LogLevel` (default `debug`), in lower case.
+pub fn log_level(db: &SqliteDb) -> String {
+    text(db, "loglevel", "debug").to_lowercase()
+}
+
+/// `LogSizeLimit` in megabytes (default 1, 1 to 10).
+pub fn log_size_limit(db: &SqliteDb) -> i64 {
+    int(db, "logsizelimit", 1).clamp(1, 10)
+}
+
+/// `LogRotate`: how many old log files are kept (default 50).
+pub fn log_rotate(db: &SqliteDb) -> i64 {
+    int(db, "logrotate", 50)
+}
+
+/// `Branch` as it was saved (default `master`), for the messages that name it.
+pub fn branch_as_saved(db: &SqliteDb) -> String {
+    text(db, "branch", "master")
+}
+
+/// `UpdateAutomatically` (default off).
+pub fn update_automatically(db: &SqliteDb) -> bool {
+    boolean(db, "updateautomatically", false)
+}
+
+/// `UpdateMechanism` by its name (default `builtIn`).
+pub fn update_mechanism(db: &SqliteDb) -> String {
+    enum_name(&json!(text(db, "updatemechanism", "builtIn")), UPDATE_MECHANISMS).unwrap_or_else(|| "builtIn".into())
+}
+
+/// The proxy in effect, for `ProxyCheck`: `(enabled, type, host, port)`.
+pub fn proxy_in_effect(st: &AppState) -> (bool, String, String, i64) {
+    let (enabled, kind, host, port, _, _) = proxy(st);
+    (enabled, kind, host, port)
+}
+
 /// `UILanguage` (default `en`).
 pub fn ui_language(db: &SqliteDb) -> String {
     text(db, "uilanguage", "en")

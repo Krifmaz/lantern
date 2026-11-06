@@ -393,7 +393,7 @@ async fn commands_queue_run_and_report_like_prowlarr() {
     assert_eq!(done["body"]["name"], "Test");
 
     // a command Lantern can't run is refused as Prowlarr refuses an unknown one
-    let (s, e, _) = call(&app, api("POST", "/api/v1/command", Some(json!({ "name": "Backup" })))).await;
+    let (s, e, _) = call(&app, api("POST", "/api/v1/command", Some(json!({ "name": "ApplicationUpdate" })))).await;
     assert_eq!(s, StatusCode::INTERNAL_SERVER_ERROR);
     assert_same_shape(&e, &upstream("command_unknown"), &[]);
     assert_eq!(e["message"], upstream("command_unknown")["message"]);

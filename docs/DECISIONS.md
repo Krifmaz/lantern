@@ -529,3 +529,44 @@ Non-obvious calls, one line each, newest last.
   changes Lantern's `api_key` (cross-seed's `apiKey` is Lantern's), so apps using the old key need the new one,
   and a running server takes it after a restart. `diff` prints Node's `AssertionError` heading and its fields, with
   a plain line diff instead of Node's diff layout.
+- 2026-11-06 — Prowlarr's scheduler (`prowlarr/scheduler.rs`) is started by `main` (not by `app()`, so tests drive
+  it with `scheduler::tick`). It takes over the six-hourly app sync from the app sync watcher and the daily
+  definition update from `spawn_definition_updates`, which now only fetches definitions at start when there are
+  none. The scheduled definition update still follows `definitions_auto_update`; one asked for always runs.
+  `ClearExpiredCache` and `ApplicationUpdateCheck` complete without work (Lantern's caches expire as they are read,
+  and Lantern is updated by pulling its image). The start's health check run and every `CheckHealth` command send
+  SignalR `health` `sync`; reading `/api/v1/health` still runs the checks live (Lantern has no change events to
+  keep Prowlarr's cached results fresh) and sends nothing, so the web app can't loop.
+- 2026-11-06 — Housekeeping ports the housekeepers whose tables Lantern has: old commands, orphaned application,
+  download client and notification statuses, history of deleted indexers, tasks that say they ran in the future
+  (also in debug builds, unlike Prowlarr) and the week-old log trim, then `VACUUM`. Not ported: CleanupAdditionalUsers
+  (Lantern has its own accounts), CleanupUnusedTags (Lantern's indexers keep tags elsewhere), the future status time
+  fixes and the update sandbox (no built-in updater).
+- 2026-11-06 — Backup zips keep Prowlarr's layout with Lantern's files: `app.db` (a `VACUUM INTO` copy, where
+  Prowlarr has `prowlarr.db`) and `INFO`; there is no `config.xml` (Lantern's settings are in the database). Names
+  are `lantern_backup_v<version>_<yyyy.MM.dd_HH.mm.ss>.zip`; Prowlarr's `prowlarr_`/`nzbdrone_` names are listed
+  too. `vault.key` is not in the zip, so a backup alone opens no saved logins; the vault's own encrypted backup is
+  the way to move them, and a restored database whose vault key differs starts with the vault locked. Backups are
+  written only inside the data folder: a `BackupFolder` outside it fails in words.
+- 2026-11-06 — A restore (`restore/{id}`, `restore/upload`) only puts the database aside as `<data>/lantern.restore`;
+  `AppState::open` swaps it in at the next start, as Prowlarr's `DatabaseRestorationService` does, and keeps the
+  database it replaces as `app.db.before-restore` (Prowlarr deletes it). Nothing else writes `lantern.restore`, so
+  a restore never happens without the call. A Prowlarr zip (`prowlarr.db`/`nzbdrone.db`) is refused with a pointer
+  to Migrate, and an uploaded `config.xml` is refused (Prowlarr would move it into the database's place); an upload
+  must start like an SQLite database. Restarting is still up to the user (`/system/restart` is not ported yet).
+- 2026-11-06 — The log writer (`prowlarr/logwriter.rs`) is a tracing layer beside the console. The table takes Info
+  and above; `lantern.txt`, `lantern.debug.txt` and `lantern.trace.txt` follow `LogLevel`, `LogSizeLimit` and
+  `LogRotate` with NLog's rolling names (`lantern.0.txt` newest). Lantern's own modules log from `LogLevel`, other
+  libraries from Warn. The logger is the module path without `server::` (Prowlarr strips `NzbDrone.`). Entries are
+  batched every 500 ms on a thread of their own. `CleanseLogMessage` is ported with each variable-length lookbehind
+  split into fixed ones or turned into a prefix the replacement leaves alone, and iptorrents' repeated group
+  cleaned repeat by repeat (Rust keeps only a group's last capture).
+- 2026-11-06 — Lantern's version history is Prowlarr's `UpdateHistory` table; a start on a new version tells the
+  notifications on for application updates "Lantern updated from X to Y".
+- 2026-11-06 — `SystemTimeCheck` asks Prowlarr's own time service (`https://prowlarr.servarr.com/v1/time`) as Prowlarr
+  does, in release builds only (Prowlarr skips it in debug builds too), at most every 6 hours; tests use the fixture's
+  rule on a given time and never reach it. `UpdateCheck` finds a newer release in the release notes built in, since
+  Lantern updates by image and has no update server.
+- 2026-11-06 — `OutdatedDefinitionCheck` is left partial on purpose: it warns about sites whose YAML Prowlarr
+  replaced with C# code. Lantern has no C# indexers and keeps running those sites from their definitions, so there
+  is nothing outdated to warn about.

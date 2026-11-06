@@ -10,6 +10,8 @@
 //! GET      /api/v1/system/routes                     every route, as text
 //! GET      /api/v1/system/task, /system/task/{id}    the scheduled tasks
 //! GET      /api/v1/system/backup                     the backups in the backup folder
+//! DELETE   /api/v1/system/backup/{id}, POST /system/backup/restore/{id}, /system/backup/restore/upload
+//! GET      /backup/{type}/{name}                     a backup, as a download
 //! GET/PUT  /api/v1/config/host[/{id}]                general settings (HostConfigResource)
 //! GET/PUT  /api/v1/config/ui[/{id}]                  UI settings (UiConfigResource)
 //! GET/PUT  /api/v1/config/development[/{id}]         development settings (DevelopmentConfigResource)
@@ -33,6 +35,7 @@
 //! reads them) or a signed-in Lantern session.
 
 pub mod apps;
+pub mod backup;
 pub mod commands;
 pub mod config;
 pub mod filters;
@@ -41,6 +44,8 @@ pub mod history;
 pub mod indexers;
 pub mod localization;
 pub mod logs;
+pub mod logwriter;
+pub mod scheduler;
 pub mod search;
 pub mod signalr;
 pub mod system;
@@ -107,6 +112,7 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
     .map_err(|e| anyhow::anyhow!("The Prowlarr API's tables can't be made: {}", e.detail))?;
     system::seed_tasks(db).map_err(|e| anyhow::anyhow!("The scheduled tasks can't be saved: {}", e.detail))?;
     commands::at_start(db).map_err(|e| anyhow::anyhow!("The commands can't be read: {}", e.detail))?;
+    scheduler::migrate(db).map_err(|e| anyhow::anyhow!("The update history can't be made: {}", e.detail))?;
     apps::migrate(db)
 }
 
@@ -114,6 +120,7 @@ pub fn migrate(db: &SqliteDb) -> anyhow::Result<()> {
 pub fn router() -> Router<AppState> {
     Router::new()
         .merge(system::router())
+        .merge(backup::router())
         .merge(config::router())
         .merge(tags::router())
         .merge(filters::router())

@@ -46,7 +46,7 @@ pub struct Kind {
 }
 
 /// The commands Lantern runs, as Prowlarr defines them.
-pub const KINDS: [Kind; 11] = [
+pub const KINDS: [Kind; 15] = [
     Kind { name: "MessagingCleanup", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
     Kind { name: "CheckHealth", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
     Kind {
@@ -86,6 +86,24 @@ pub const KINDS: [Kind; 11] = [
     },
     Kind { name: "CleanUpHistory", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
     Kind { name: "ClearHistory", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
+    Kind {
+        name: "ClearExpiredCache",
+        send_updates_to_client: false,
+        completion_message: None,
+        is_exclusive: false,
+        extra: &[],
+        flags: &[],
+    },
+    Kind {
+        name: "ApplicationUpdateCheck",
+        send_updates_to_client: true,
+        completion_message: None,
+        is_exclusive: false,
+        extra: &[],
+        flags: &[("installMajorUpdate", false)],
+    },
+    Kind { name: "Housekeeping", send_updates_to_client: false, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
+    Kind { name: "Backup", send_updates_to_client: true, completion_message: None, is_exclusive: false, extra: &[], flags: &[] },
 ];
 
 /// Prowlarr's `CommandStatus`, by number.
@@ -105,7 +123,7 @@ pub fn at_start(db: &SqliteDb) -> kit_server_core::Result<()> {
 }
 
 /// The command `name` names, in any case.
-fn kind_of(name: &str) -> Option<&'static Kind> {
+pub fn kind_of(name: &str) -> Option<&'static Kind> {
     KINDS.iter().find(|k| k.name.eq_ignore_ascii_case(name))
 }
 
@@ -170,6 +188,45 @@ fn command_body(kind: &Kind, asked: &Map<String, Value>, user_agent: Option<Stri
     for (k, default) in kind.flags {
         body[*k] = json!(get(k).and_then(Value::as_bool).unwrap_or(*default));
     }
+    own_fields(kind, &mut body, "manual");
+    body
+}
+
+/// What a command's class works out from its trigger: a backup's `type` (scheduled when the scheduler started it,
+/// else manual) and whether it marks its task as run (`BackupCommand.UpdateScheduledTask`: only a scheduled one).
+fn own_fields(kind: &Kind, body: &mut Value, trigger: &str) {
+    if kind.name == "Backup" {
+        let scheduled = trigger == "scheduled";
+        body["type"] = json!(if scheduled { "scheduled" } else { "manual" });
+        body["updateScheduledTask"] = json!(scheduled);
+    }
+}
+
+/// The body Prowlarr's scheduler queues for a task's command (`CommandQueueManager.Push(commandName,
+/// lastExecutionTime, lastStartTime, …)`): the class' defaults, the scheduled trigger and the task's last run.
+pub fn scheduled_body(kind: &Kind, last_execution: f64, last_start: f64) -> Value {
+    let mut body = json!({
+        "sendUpdatesToClient": kind.send_updates_to_client,
+        "updateScheduledTask": true,
+        "requiresDiskAccess": false,
+        "isExclusive": kind.is_exclusive,
+        "isTypeExclusive": false,
+        "name": kind.name,
+        "lastExecutionTime": date(last_execution),
+        "lastStartTime": date(last_start),
+        "trigger": "scheduled",
+        "suppressMessages": false,
+    });
+    if let Some(m) = kind.completion_message {
+        body["completionMessage"] = json!(m);
+    }
+    for (k, default) in kind.extra {
+        body[*k] = json!(default);
+    }
+    for (k, default) in kind.flags {
+        body[*k] = json!(default);
+    }
+    own_fields(kind, &mut body, "scheduled");
     body
 }
 
@@ -274,7 +331,11 @@ async fn execute(st: &AppState, name: &str, body: &Value, id: i64) -> Result<Opt
         }
         "CheckHealth" => {
             super::health::results(st).await.map_err(|e| e.detail)?;
+            // HealthCheckCompleteEvent: the web apps read the health again
+            super::signalr::broadcast(st, "health", "sync", None);
         }
+        // the daily run follows Lantern's `definitions_auto_update` switch; one asked for always runs
+        "IndexerDefinitionUpdate" if body["trigger"] == "scheduled" && !st.settings.bool("definitions_auto_update") => {}
         "IndexerDefinitionUpdate" => {
             let source = st.settings.str("definitions_source");
             let source = if source.is_empty() { crate::indexers::library::DEFAULT_SOURCE.to_string() } else { source };
@@ -312,6 +373,20 @@ async fn execute(st: &AppState, name: &str, body: &Value, id: i64) -> Result<Opt
         }
         "ClearHistory" => {
             super::history::clear(&st.db).map_err(|e| e.detail)?;
+        }
+        // Prowlarr empties its in-memory caches of expired entries; Lantern's caches drop expired entries as they
+        // are read, so there is nothing left to do
+        "ClearExpiredCache" => {}
+        // Lantern is updated by pulling its new image (`packageUpdateMechanism` docker), so the check only looks:
+        // the update page and UpdateCheck read the releases built into this server
+        "ApplicationUpdateCheck" => {}
+        "Housekeeping" => super::scheduler::housekeeping(st).map_err(|e| e.detail)?,
+        "Backup" => {
+            let kind = if body["type"] == "scheduled" { super::backup::Kind::Scheduled } else { super::backup::Kind::Manual };
+            progress(&st.db, id, "Starting Backup");
+            let st2 = st.clone();
+            tokio::task::spawn_blocking(move || super::backup::make(&st2, kind)).await.map_err(|e| e.to_string())?.map_err(|e| e.detail)?;
+            progress(&st.db, id, "Backup zip created");
         }
         _ => {}
     }

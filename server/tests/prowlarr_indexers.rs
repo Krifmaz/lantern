@@ -413,6 +413,16 @@ async fn searches_grabs_history_and_stats_answer_as_prowlarr_does() {
     let (s, v, _) = call(&app, api("POST", "/api/v1/search", Some(r.clone()))).await;
     assert_eq!(s, StatusCode::OK, "{v}");
     assert!(hole.join("Show.Name.S01E02.1080p.WEB-DL-GRP.torrent").exists());
+
+    // a bulk grab (ReleaseController.DownloadBulk): the releases sent back, ones no longer kept skipped, 400 when
+    // none could be sent
+    std::fs::remove_file(hole.join("Show.Name.S01E02.1080p.WEB-DL-GRP.torrent")).unwrap();
+    let gone = json!({ "indexerId": 1, "guid": "gone" });
+    let (s, v, _) = call(&app, api("POST", "/api/v1/search/bulk", Some(json!([r.clone(), gone.clone()])))).await;
+    assert_eq!((s, v.clone()), (StatusCode::OK, json!([r.clone()])), "{v}");
+    assert!(hole.join("Show.Name.S01E02.1080p.WEB-DL-GRP.torrent").exists());
+    let (s, v, _) = call(&app, api("POST", "/api/v1/search/bulk", Some(json!([gone])))).await;
+    assert_eq!((s, v["message"].clone()), (StatusCode::BAD_REQUEST, json!("Failed to grab any release")), "{v}");
 }
 
 #[tokio::test]
